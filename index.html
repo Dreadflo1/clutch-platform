@@ -3071,21 +3071,33 @@ function quickChallenge(game, mode, stake) {
   }
 }
 
-function executeQuickChallenge(game, mode, stake) {
+async function executeQuickChallenge(game, mode, stake) {
   if (U.balance < stake) { toast('Not enough CLU — get more tokens','error'); return; }
-  var duel = {
-    id:'D'+Date.now(), creator:U.addr, opponent:null,
-    game:game, betType:'outcome', condition:{type:'outcome',value:mode},
-    stake:stake, totalPot:stake*2,
-    expiry:Date.now()+86400000, createdAt:Date.now(),
-    status:'pending', creatorResult:null, opponentResult:null, winner:null,
-  };
-  DUELS.push(duel); saveDuels();
-  U.balance -= stake; U.escrow += stake; saveProfile();
-  var code = btoa(JSON.stringify({id:duel.id,creator:duel.creator,game:duel.game,betType:duel.betType,condition:duel.condition,stake:duel.stake,expiry:duel.expiry,createdAt:duel.createdAt}));
-  refreshAll();
-  showQRModal(duel, code);
-  toast('Challenge locked! Share with your friend.','success');
+
+  if (_authToken) {
+    // Server-side: create challenge via API
+    try {
+      var res = await authFetch('/api/challenges', {
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({game:game, mode:mode, stake:stake, betType:'outcome', condition:mode, expiryHours:24, creatorWins:0})
+      });
+      var data = await res.json();
+      if (data.error || data.errors) { toast(data.error || data.errors.join(', '),'error'); return; }
+      await syncBalance();
+      DUELS.push(data.challenge); saveDuels();
+      showQRModal(data.challenge, data.code);
+      toast('Challenge locked on server! Share with your friend.','success');
+    } catch(e) { toast('Server error: '+e.message,'error'); }
+  } else {
+    // Guest fallback: local only
+    var duel = {id:'D'+Date.now(), creator:U.addr, opponent:null, game:game, betType:'outcome', condition:{type:'outcome',value:mode}, stake:stake, totalPot:stake*2, expiry:Date.now()+86400000, createdAt:Date.now(), status:'pending', creatorResult:null, opponentResult:null, winner:null};
+    DUELS.push(duel); saveDuels();
+    U.balance -= stake; U.escrow += stake; saveProfile();
+    var code = btoa(JSON.stringify({id:duel.id,creator:duel.creator,game:duel.game,betType:duel.betType,condition:duel.condition,stake:duel.stake,expiry:duel.expiry,createdAt:duel.createdAt}));
+    refreshAll();
+    showQRModal(duel, code);
+    toast('Challenge locked (guest mode — local only).','info');
+  }
 }
 
 // ── HERO CAROUSEL ─────────────────────────────────────
@@ -3569,7 +3581,7 @@ function gatherCond() {
   return { text: rows.join(' + '), proof: proof };
 }
 
-function createDuel() {
+async function createDuel() {
   if (!U.addr || U.via==='guest') { toast('Connect a wallet to create challenges','error'); return; }
   if (!CREATE.game) { toast('Pick a game first','error'); return; }
   var stake = parseInt(document.getElementById('stake-input').value);
@@ -3577,38 +3589,30 @@ function createDuel() {
   if (stake > U.balance) { toast('Not enough CLU — get more tokens','error'); return; }
   var cond = gatherCond(); if (!cond) return;
   var expiry = parseInt(document.getElementById('expiry-sel').value);
+  var expiryHours = Math.round(expiry / 3600000) || 24;
 
-  var duel = {
-    id:'D'+Date.now(), creator:U.addr, opponent:null,
-    game:CREATE.game, betType:CREATE.betType, condition:cond,
-    stake:stake, totalPot:stake*2,
-    expiry:Date.now()+expiry, createdAt:Date.now(),
-    status:'pending', creatorResult:null, opponentResult:null, winner:null,
-  };
-
-  DUELS.push(duel);
-  saveDuels();
-
-  // Lock stake
-  U.balance -= stake; U.escrow += stake;
-  saveProfile();
-
-  var code = btoa(JSON.stringify({id:duel.id,creator:duel.creator,game:duel.game,betType:duel.betType,condition:duel.condition,stake:duel.stake,expiry:duel.expiry,createdAt:duel.createdAt}));
-  
-  // Store code for copy function
-  var codeEl = document.getElementById('code-val');
-  if(!codeEl){
-    var co = document.getElementById('code-output');
-    co.innerHTML = '<input type="hidden" id="code-val"/>';
+  if (_authToken) {
+    try {
+      var res = await authFetch('/api/challenges', {
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({game:CREATE.game, mode:cond.text||cond, stake:stake, betType:CREATE.betType, condition:cond.text||cond, expiryHours:expiryHours, creatorWins:0})
+      });
+      var data = await res.json();
+      if (data.error || data.errors) { toast(data.error || data.errors.join(', '),'error'); return; }
+      await syncBalance();
+      DUELS.push(data.challenge); saveDuels();
+      showQRModal(data.challenge, data.code);
+      toast('Challenge locked on server!','success');
+    } catch(e) { toast('Server error','error'); }
+  } else {
+    var duel = {id:'D'+Date.now(), creator:U.addr, opponent:null, game:CREATE.game, betType:CREATE.betType, condition:cond, stake:stake, totalPot:stake*2, expiry:Date.now()+expiry, createdAt:Date.now(), status:'pending', creatorResult:null, opponentResult:null, winner:null};
+    DUELS.push(duel); saveDuels();
+    U.balance -= stake; U.escrow += stake; saveProfile();
+    var code = btoa(JSON.stringify({id:duel.id,creator:duel.creator,game:duel.game,betType:duel.betType,condition:duel.condition,stake:duel.stake,expiry:duel.expiry,createdAt:duel.createdAt}));
+    refreshAll();
+    showQRModal(duel, code);
+    toast('Challenge locked (local mode).','info');
   }
-  document.getElementById('code-val').value = code; // hidden field
-
-  document.getElementById('code-output').style.display = 'none'; // QR modal takes over
-  refreshAll();
-  
-  // Show QR modal
-  showQRModal(duel, code);
-  toast('Challenge locked in! Share the QR with your friend.','success');
 }
 
 function copyCode() {
@@ -3649,23 +3653,36 @@ function previewAccept() {
   document.getElementById('accept-preview-panel').scrollIntoView({behavior:'smooth'});
 }
 
-function confirmAccept() {
+async function confirmAccept() {
   if (!U.addr||U.via==='guest') { toast('Connect a wallet to accept challenges','error'); return; }
   var d = PENDING_ACCEPT; if (!d) return;
   if (d.stake > U.balance) { toast('Not enough CLU — get tokens first','error'); goTo('tokens'); return; }
 
-  var ex = DUELS.find(function(x){ return x.id===d.id; });
-  if (ex) { ex.opponent=U.addr; ex.status='active'; ex.acceptedAt=Date.now(); }
-  else {
-    DUELS.push({id:d.id,creator:d.creator,opponent:U.addr,game:d.game,betType:d.betType,condition:d.condition,stake:d.stake,totalPot:d.stake*2,expiry:d.expiry,createdAt:d.createdAt,acceptedAt:Date.now(),status:'active',creatorResult:null,opponentResult:null,winner:null});
+  if (_authToken && d.id) {
+    try {
+      var res = await authFetch('/api/challenges?accept', {
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({challengeId: d.id})
+      });
+      var data = await res.json();
+      if (data.error) { toast(data.error,'error'); return; }
+      await syncBalance();
+      DUELS.push(data.challenge || {id:d.id,creator:d.creator,opponent:U.addr,game:d.game,betType:d.betType,condition:d.condition,stake:d.stake,totalPot:d.stake*2,status:'active',acceptedAt:Date.now()});
+      saveDuels();
+    } catch(e) { toast('Server error','error'); return; }
+  } else {
+    var ex = DUELS.find(function(x){ return x.id===d.id; });
+    if (ex) { ex.opponent=U.addr; ex.status='active'; ex.acceptedAt=Date.now(); }
+    else { DUELS.push({id:d.id,creator:d.creator,opponent:U.addr,game:d.game,betType:d.betType,condition:d.condition,stake:d.stake,totalPot:d.stake*2,expiry:d.expiry,createdAt:d.createdAt,acceptedAt:Date.now(),status:'active',creatorResult:null,opponentResult:null,winner:null}); }
+    saveDuels();
+    U.balance -= d.stake; U.escrow += d.stake; saveProfile();
   }
-  saveDuels();
-  U.balance -= d.stake; U.escrow += d.stake; saveProfile();
+
   PENDING_ACCEPT = null;
   document.getElementById('accept-input').value = '';
   document.getElementById('accept-preview-panel').style.display = 'none';
   refreshAll();
-  toast('Agreement accepted! Tokens locked. Go play!','success');
+  toast('Challenge accepted! Tokens locked. Go play!','success');
   goTo('duels');
 }
 
@@ -3784,7 +3801,7 @@ function openPostChallengeModal() {
   openModal('post-challenge-modal');
 }
 
-function postChallenge() {
+async function postChallenge() {
   var game = document.getElementById('board-game').value;
   var mode = document.getElementById('board-mode').value.trim();
   var stake = parseInt(document.getElementById('board-stake').value);
@@ -3797,100 +3814,64 @@ function postChallenge() {
 
   var integrity = getIntegrity();
   if (integrity.banned) { toast('Account suspended','error'); return; }
-
-  var g = GAMES.find(function(x) { return x.id === game; }) || {};
   var wins = DUELS.filter(function(d) { return d.winner && d.winner === U.addr; }).length;
 
-  var challenge = {
-    id: 'CB_' + Date.now() + '_' + Math.random().toString(36).slice(2, 6),
-    game: game,
-    mode: mode,
-    betType: 'outcome',
-    condition: mode,
-    stake: stake,
-    creator: U.addr,
-    creatorName: U.name || 'Anonymous',
-    creatorWins: wins,
-    status: 'open',
-    createdAt: Date.now(),
-    expiresAt: Date.now() + expiry * 3600000,
-    expiryHours: expiry,
-  };
-
-  // Lock stake immediately
-  U.balance -= stake;
-  U.escrow += stake;
-  saveProfile();
+  if (_authToken) {
+    try {
+      var res = await authFetch('/api/challenges', {
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({game:game, mode:mode, stake:stake, betType:'outcome', condition:mode, expiryHours:expiry, creatorWins:wins})
+      });
+      var data = await res.json();
+      if (data.error || data.errors) { toast(data.error || data.errors.join(', '),'error'); return; }
+      await syncBalance();
+      if (data.challenge) _boardCache.unshift(data.challenge);
+      renderBoard(_boardCache);
+      toast('Challenge posted — stake locked on server!','success');
+    } catch(e) { toast('Server error','error'); return; }
+  } else {
+    var challenge = {id:'CB_'+Date.now()+'_'+Math.random().toString(36).slice(2,6), game:game, mode:mode, betType:'outcome', condition:mode, stake:stake, creator:U.addr, creatorName:U.name||'Anonymous', creatorWins:wins, status:'open', createdAt:Date.now(), expiresAt:Date.now()+expiry*3600000};
+    U.balance -= stake; U.escrow += stake; saveProfile();
+    _boardCache.unshift(challenge);
+    renderBoard(_boardCache);
+    toast('Challenge posted (local mode)','info');
+  }
   refreshAll();
-
-  // Try backend first, fallback to localStorage
-  var base = ARENA_CONFIG.API_BASE || '';
-  fetch(base + '/api/challenges', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(challenge),
-  })
-  .then(function(r) { return r.json(); })
-  .then(function(data) {
-    if (data.error) throw new Error(data.error);
-    toast('Challenge posted to the board!','success');
-  })
-  .catch(function() {
-    // Fallback: save locally
-    var board = JSON.parse(localStorage.getItem('clutch_board') || '[]');
-    board.unshift(challenge);
-    localStorage.setItem('clutch_board', JSON.stringify(board.slice(0, 100)));
-    toast('Challenge posted (local mode)','success');
-  });
-
-  _boardCache.unshift(challenge);
-  renderBoard(_boardCache);
   closeModal('post-challenge-modal');
 }
 
-function acceptBoardChallenge(challengeId) {
+async function acceptBoardChallenge(challengeId) {
   var c = _boardCache.find(function(x) { return x.id === challengeId; });
   if (!c) { toast('Challenge not found','error'); return; }
   if (!U.addr || U.via === 'guest') { toast('Connect a wallet first','error'); return; }
-  if (c.creator === U.addr) { toast('Cannot accept your own challenge','error'); return; }
+  if (c.creatorUserId === (U.userId||'') || c.creator === U.addr) { toast('Cannot accept your own challenge','error'); return; }
   if (c.stake > U.balance) { toast('Not enough CLU — need ' + c.stake + ' CLU','error'); return; }
 
   var integrity = getIntegrity();
   if (integrity.banned) { toast('Account suspended','error'); return; }
 
-  // Lock stake
-  U.balance -= c.stake;
-  U.escrow += c.stake;
-  saveProfile();
+  if (_authToken) {
+    try {
+      var res = await authFetch('/api/challenges?accept', {
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({challengeId: c.id})
+      });
+      var data = await res.json();
+      if (data.error) { toast(data.error,'error'); return; }
+      await syncBalance();
+      if (data.challenge) { DUELS.push(data.challenge); saveDuels(); }
+    } catch(e) { toast('Server error','error'); return; }
+  } else {
+    U.balance -= c.stake; U.escrow += c.stake; saveProfile();
+    var duel = {id:c.id, creator:c.creator, opponent:U.addr, game:c.game, betType:c.betType||'outcome', condition:{type:'outcome',value:c.mode}, stake:c.stake, totalPot:c.stake*2, expiry:c.expiresAt, createdAt:c.createdAt, acceptedAt:Date.now(), status:'active', creatorResult:null, opponentResult:null, winner:null};
+    DUELS.push(duel); saveDuels();
+  }
 
-  // Create the duel
-  var duel = {
-    id: c.id,
-    creator: c.creator,
-    opponent: U.addr,
-    game: c.game,
-    betType: c.betType || 'outcome',
-    condition: { type: 'outcome', value: c.mode },
-    stake: c.stake,
-    totalPot: c.stake * 2,
-    expiry: c.expiresAt,
-    createdAt: c.createdAt,
-    acceptedAt: Date.now(),
-    status: 'active',
-    creatorResult: null,
-    opponentResult: null,
-    winner: null,
-  };
-  DUELS.push(duel);
-  saveDuels();
-
-  // Remove from board
-  c.status = 'accepted';
   _boardCache = _boardCache.filter(function(x) { return x.id !== challengeId; });
   renderBoard(_boardCache);
   refreshAll();
 
-  // Try notify backend
+  // Legacy backend notify (kept for compatibility)
   var base = ARENA_CONFIG.API_BASE || '';
   fetch(base + '/api/challenges?accept', {
     method: 'POST',
@@ -4205,7 +4186,7 @@ function renderMetaResult(el, checks, warnings) {
   el.innerHTML = html;
 }
 
-function submitResult() {
+async function submitResult() {
   if (!_selectedResult){toast('Pick win or loss first','error');return;}
 
   var integrity = getIntegrity();
@@ -4213,32 +4194,62 @@ function submitResult() {
 
   var d = DUELS.find(function(x){return x.id===_resultDuelId;});
   if (!d) return;
+
+  // Submit to server if authenticated
+  if (_authToken) {
+    try {
+      var res = await authFetch('/api/challenges/settle', {
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({challengeId: d.id, result: _selectedResult})
+      });
+      var data = await res.json();
+      if (data.error) { toast(data.error,'error'); closeModal('result-modal'); return; }
+
+      await syncBalance();
+
+      if (data.status === 'settled') {
+        d.status = 'settled';
+        d.winner = data.challenge.winner;
+        d.settledAt = Date.now();
+        var isWinner = data.challenge.winner === U.userId;
+        saveDuels();
+        closeModal('result-modal');
+        if (isWinner) { setTimeout(function(){ showWinModal(data.challenge.payout); }, 200); }
+        else { setTimeout(function(){ showLossModal(d.stake); }, 200); }
+      } else if (data.status === 'disputed') {
+        d.status = 'disputed';
+        var strikeResult = addStrike('Result conflict on duel '+d.id);
+        saveDuels();
+        closeModal('result-modal');
+        if (strikeResult.banned) { toast('Integrity violation limit reached. Account suspended.','error'); }
+        else { toast('Results conflict — dispute filed. Integrity: '+strikeResult.score+'/100. Strike '+strikeResult.strikes+'/3.','error'); }
+      } else {
+        d.status = 'awaiting_result';
+        saveDuels();
+        toast('Result submitted. Waiting for opponent.','success');
+      }
+    } catch(e) { toast('Server error','error'); }
+    _selectedResult=null; _resultDuelId=null;
+    closeModal('result-modal'); refreshAll(); renderDuels();
+    return;
+  }
+
+  // Fallback: local settlement for guests
   var role = U.addr&&d.creator.toLowerCase()===U.addr.toLowerCase()?'creator':'opponent';
   if (role==='creator') d.creatorResult=_selectedResult; else d.opponentResult=_selectedResult;
 
   if (d.creatorResult&&d.opponentResult) {
     if (d.creatorResult==='win'&&d.opponentResult==='loss') {
-      settleDuel(d, d.creator);
+      settleDuelLocal(d, d.creator);
     } else if (d.creatorResult==='loss'&&d.opponentResult==='win') {
-      settleDuel(d, d.opponent);
+      settleDuelLocal(d, d.opponent);
     } else {
-      // Both claim win or both claim loss — conflict
-      d.status='disputed';
-      d.disputedAt = Date.now();
-
-      // Both players get a strike — the liar's pattern will emerge over time
+      d.status='disputed'; d.disputedAt=Date.now();
       var result = addStrike('Result conflict on duel '+d.id);
       saveDuels();
-
-      if (result.banned) {
-        toast('Integrity violation limit reached. Account suspended.','error');
-      } else {
-        toast('Results conflict — dispute filed. Integrity score: '+result.score+'/100. Strike '+result.strikes+'/3.','error');
-      }
-
-      closeModal('result-modal');
-      refreshAll(); renderDuels();
-      return;
+      if (result.banned) { toast('Integrity violation limit reached. Account suspended.','error'); }
+      else { toast('Results conflict — dispute filed. Integrity: '+result.score+'/100. Strike '+result.strikes+'/3.','error'); }
+      closeModal('result-modal'); refreshAll(); renderDuels(); return;
     }
   } else {
     d.status='awaiting_result';
@@ -4248,7 +4259,7 @@ function submitResult() {
   closeModal('result-modal'); refreshAll(); renderDuels();
 }
 
-function settleDuel(d, winnerAddr) {
+function settleDuelLocal(d, winnerAddr) {
   d.status='settled'; d.winner=winnerAddr; d.settledAt=Date.now();
   var net = Math.floor(d.totalPot*(1-PLATFORM_FEE));
   var isWinner = U.addr && winnerAddr.toLowerCase()===U.addr.toLowerCase();
