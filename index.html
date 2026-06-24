@@ -3123,30 +3123,88 @@ function scrollToHow() {
   document.getElementById('how-it-works').scrollIntoView({behavior:'smooth'});
 }
 
+// ── AUTH TOKEN (in-memory only — never localStorage) ─────
+var _authToken = null;
+
+function authFetch(url, opts) {
+  opts = opts || {};
+  opts.headers = opts.headers || {};
+  if (_authToken) opts.headers['Authorization'] = 'Bearer ' + _authToken;
+  return fetch((ARENA_CONFIG.API_BASE || '') + url, opts);
+}
+
+async function syncBalance() {
+  if (!_authToken) return;
+  try {
+    var res = await authFetch('/api/wallet/balance');
+    var data = await res.json();
+    if (data.available !== undefined) {
+      U.balance = data.available;
+      U.escrow = data.escrow || 0;
+      refreshAll();
+    }
+  } catch(e) {}
+}
+
 // ── CONNECTION ────────────────────────────────────────
 async function connectMeta() {
   if (typeof window.ethereum === 'undefined') { toast('MetaMask not found — install it first','error'); return; }
   try {
     var accounts = await window.ethereum.request({method:'eth_requestAccounts'});
-    U.addr = accounts[0]; U.name = accounts[0].slice(0,6)+'...'+accounts[0].slice(-4); U.via = 'metamask';
-    var saved = loadProfile();
-    if (!saved) { U.balance = STARTING_BALANCE; U.escrow = 0; }
-    saveProfile(); enterApp(); toast('Connected via MetaMask','success');
-  } catch(e) { toast('Connection rejected','error'); }
+    var addr = accounts[0].toLowerCase();
+
+    // Step 1: Get nonce from server
+    toast('Authenticating...','info');
+    var nonceRes = await fetch((ARENA_CONFIG.API_BASE || '') + '/api/auth/nonce?addr=' + addr);
+    var nonceData = await nonceRes.json();
+    if (!nonceData.message) { toast('Auth server error','error'); return; }
+
+    // Step 2: Sign the nonce with MetaMask
+    var signature = await window.ethereum.request({
+      method: 'personal_sign',
+      params: [nonceData.message, accounts[0]]
+    });
+
+    // Step 3: Verify signature on server, get JWT
+    var authRes = await fetch((ARENA_CONFIG.API_BASE || '') + '/api/auth/metamask', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({ addr: addr, signature: signature })
+    });
+    var authData = await authRes.json();
+    if (!authData.token) { toast(authData.error || 'Auth failed','error'); return; }
+
+    // Step 4: Store token in memory (NOT localStorage)
+    _authToken = authData.token;
+    U.addr = authData.user.addr;
+    U.name = authData.user.name;
+    U.via = 'metamask';
+    U.userId = authData.user.id;
+
+    // Step 5: Fetch real balance from server
+    await syncBalance();
+    saveProfile();
+    enterApp();
+    toast('Wallet verified — connected via MetaMask','success');
+  } catch(e) {
+    toast('Connection rejected: ' + (e.message || ''),'error');
+  }
 }
 
 function connectTelegram() {
+  // For now: demo mode — real Telegram Login Widget needs a bot token configured
   U.addr = 'tg_' + Math.random().toString(36).slice(2,10);
   U.name = '@clutch_player'; U.via = 'telegram';
   var saved = loadProfile();
   if (!saved) { U.balance = STARTING_BALANCE; U.escrow = 0; }
-  saveProfile(); enterApp(); toast('Signed in via Telegram','success');
+  saveProfile(); enterApp(); toast('Signed in via Telegram (demo mode)','info');
 }
 
 function connectGuest() {
+  _authToken = null;
   U.addr = 'guest_' + Date.now(); U.name = 'Guest'; U.via = 'guest';
   U.balance = STARTING_BALANCE; U.escrow = 0;
-  saveProfile(); enterApp(); toast('Browsing as guest — connect a wallet to create challenges','info');
+  saveProfile(); enterApp(); toast('Browsing as guest — connect a wallet for real challenges','info');
 }
 
 function connectTwitch() { toast('Twitch login coming soon','info'); }
