@@ -51,14 +51,24 @@ async function saveChallenges(challenges) {
   await kvSet('challenges:open', challenges, 86400);
 }
 
+const VALID_GAMES = ['valorant','lol','dota2','clashroyale','brawlstars','cs2','fortnite','apex','ow2','rl','fifa','cod'];
+
+function sanitize(str, maxLen) {
+  if (typeof str !== 'string') return '';
+  return str.replace(/[<>"']/g, '').trim().slice(0, maxLen || 100);
+}
+
 function validateChallenge(body) {
   const errors = [];
-  if (!body.game || typeof body.game !== 'string') errors.push('game is required');
-  if (!body.stake || body.stake < 10) errors.push('stake must be >= 10 CLU');
-  if (body.stake > 100000) errors.push('stake cannot exceed 100,000 CLU');
-  if (!body.mode || typeof body.mode !== 'string') errors.push('mode is required');
-  if (!body.creator || typeof body.creator !== 'string') errors.push('creator address is required');
+  if (!body.game || !VALID_GAMES.includes(body.game)) errors.push('invalid game');
+  const stake = parseInt(body.stake);
+  if (isNaN(stake) || stake < 10) errors.push('stake must be >= 10 CLU');
+  if (stake > 100000) errors.push('stake cannot exceed 100,000 CLU');
+  if (!body.mode || typeof body.mode !== 'string' || body.mode.length < 2) errors.push('mode is required');
+  if (body.mode && body.mode.length > 200) errors.push('mode too long');
+  if (!body.creator || typeof body.creator !== 'string' || body.creator.length < 3) errors.push('creator address is required');
   if (!body.creatorName || typeof body.creatorName !== 'string') errors.push('creatorName is required');
+  if (/[<>]/.test(body.creatorName) || /[<>]/.test(body.mode)) errors.push('invalid characters');
   return errors;
 }
 

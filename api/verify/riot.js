@@ -108,22 +108,34 @@ export default async function handler(req, res) {
   }
 
   const { game, region, riotId, matchId, matchCount } = req.query;
-  const routingRegion = region || 'europe';
+  const validRegions = ['americas', 'europe', 'asia', 'sea'];
+  const routingRegion = validRegions.includes(region) ? region : 'europe';
 
   // Single match lookup
   if (matchId) {
+    if (!/^[A-Z]{2,4}_\d{6,15}$/.test(matchId)) {
+      return res.status(400).json({ error: 'Invalid match ID format' });
+    }
     const result = await getMatchDetail(matchId, routingRegion, apiKey);
     if (result.error) return res.status(result.status).json({ error: result.error });
     return res.status(200).json({ match: result.data });
   }
 
-  // Player match history lookup
-  if (!riotId || !riotId.includes('-')) {
+  // Player match history lookup — validate Riot ID
+  if (!riotId || typeof riotId !== 'string' || riotId.length > 60 || !riotId.includes('-')) {
     return res.status(400).json({ error: 'riotId must be in format Name-Tag (e.g. Player-EUW)' });
   }
+  if (/[<>"';&]/.test(riotId)) {
+    return res.status(400).json({ error: 'Invalid characters in riotId' });
+  }
 
-  const [gameName, tagLine] = riotId.split('-');
-  const count = Math.min(parseInt(matchCount) || 5, 20);
+  const parts = riotId.split('-');
+  const gameName = parts.slice(0, -1).join('-');
+  const tagLine = parts[parts.length - 1];
+  if (!gameName || !tagLine || tagLine.length > 5) {
+    return res.status(400).json({ error: 'Invalid Riot ID format' });
+  }
+  const count = Math.min(parseInt(matchCount) || 5, 10);
 
   // Step 1: Resolve Riot ID → PUUID
   const accountResult = await resolvePuuid(gameName, tagLine, routingRegion, apiKey);

@@ -276,11 +276,12 @@ function renderNews(articles, containerId) {
     var hidden = idx >= SHOW_LIMIT ? ' style="display:none" data-news-extra' : '';
 
     var imgHtml = '';
-    if (article.image) {
-      imgHtml = '<div class="nc-img"><img src="' + article.image + '" alt="" loading="lazy" onerror="this.parentElement.style.display=\'none\'"/></div>';
+    if (article.image && /^https?:\/\//.test(article.image) && !/[<>"']/.test(article.image)) {
+      imgHtml = '<div class="nc-img"><img src="' + encodeURI(article.image) + '" alt="" loading="lazy" onerror="this.parentElement.style.display=\'none\'"/></div>';
     }
 
-    html += '<div class="news-card"' + hidden + ' style="--nc-accent:' + color + '" onclick="window.open(\'' + article.link + '\',\'_blank\')">' +
+    var safeLink = (article.link && /^https?:\/\//.test(article.link)) ? article.link.replace(/'/g,'') : '#';
+    html += '<div class="news-card"' + hidden + ' style="--nc-accent:' + color + '" data-href="' + safeLink + '" onclick="if(this.dataset.href!==\'#\')window.open(this.dataset.href,\'_blank\')">' +
       imgHtml +
       '<div class="nc-head">' +
         '<div class="nc-icon" style="background:' + color + '22">' + icon + '</div>' +
