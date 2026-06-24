@@ -380,8 +380,22 @@ async function initHub() {
     t.addEventListener('click', function() { setHubTab(this.getAttribute('data-tab')); });
   });
 
-  renderNews(FALLBACK_NEWS);
-  var newsPromise = Promise.resolve();
+  // Fetch live news from backend RSS proxy
+  var base = (typeof ARENA_CONFIG !== 'undefined' && ARENA_CONFIG.API_BASE) || '';
+  var newsPromise = fetch(base + '/api/news?limit=15')
+    .then(function(r) { return r.json(); })
+    .then(function(data) {
+      if (data.articles && data.articles.length) {
+        _hubNewsCache = data.articles;
+        renderNews(data.articles);
+        renderTicker(data.articles);
+      } else {
+        renderNews(FALLBACK_NEWS);
+      }
+    })
+    .catch(function() {
+      renderNews(FALLBACK_NEWS);
+    });
 
   var twitchPromise = fetchTwitchClips('valorant', 3).then(function(clips) {
     if (clips) {
