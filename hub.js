@@ -267,18 +267,27 @@ function renderNews(articles, containerId) {
     return;
   }
 
+  var SHOW_LIMIT = 9;
   var html = '<div class="clip-section-hdr"><span class="gi gi-sm gi-blue"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 22h16a2 2 0 002-2V4a2 2 0 00-2-2H8a2 2 0 00-2 2v16a2 2 0 01-2 2zm0 0a2 2 0 01-2-2v-9c0-1.1.9-2 2-2h2"/></svg></span> ESPORTS NEWS</div>';
-  articles.forEach(function(article) {
+  articles.forEach(function(article, idx) {
     var cat = article.category.toUpperCase().slice(0, 15);
     var color = CATEGORY_COLORS[cat] || article.accent || '#229ed9';
     var icon = CATEGORY_ICONS[cat] || '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 22h16a2 2 0 002-2V4a2 2 0 00-2-2H8a2 2 0 00-2 2v16a2 2 0 01-2 2zm0 0a2 2 0 01-2-2v-9c0-1.1.9-2 2-2h2"/></svg>';
+    var hidden = idx >= SHOW_LIMIT ? ' style="display:none" data-news-extra' : '';
 
-    html += '<div class="news-card" style="--nc-accent:' + color + '" onclick="window.open(\'' + article.link + '\',\'_blank\')">' +
+    var imgHtml = '';
+    if (article.image) {
+      imgHtml = '<div class="nc-img"><img src="' + article.image + '" alt="" loading="lazy" onerror="this.parentElement.style.display=\'none\'"/></div>';
+    }
+
+    html += '<div class="news-card"' + hidden + ' style="--nc-accent:' + color + '" onclick="window.open(\'' + article.link + '\',\'_blank\')">' +
+      imgHtml +
       '<div class="nc-head">' +
         '<div class="nc-icon" style="background:' + color + '22">' + icon + '</div>' +
         '<div class="nc-content">' +
           '<div class="nc-tag" style="background:' + color + '22;color:' + color + '">' + cat + '</div>' +
           '<div class="nc-title">' + article.title + '</div>' +
+          (article.description ? '<div class="nc-desc">' + article.description + '</div>' : '') +
         '</div>' +
       '</div>' +
       '<div class="nc-foot">' +
@@ -287,6 +296,11 @@ function renderNews(articles, containerId) {
       '</div>' +
     '</div>';
   });
+
+  if (articles.length > SHOW_LIMIT) {
+    html += '<button class="news-show-more" onclick="showMoreNews(this)">Show ' + (articles.length - SHOW_LIMIT) + ' more articles</button>';
+  }
+
   container.innerHTML = html;
 }
 
@@ -342,6 +356,13 @@ function renderTicker(articles) {
    TAB FILTERING
    ════════════════════════════════════════════════════════════ */
 var _hubActiveTab = 'all';
+
+function showMoreNews(btn) {
+  document.querySelectorAll('[data-news-extra]').forEach(function(el) {
+    el.style.display = '';
+  });
+  if (btn) btn.remove();
+}
 
 function setHubTab(tab) {
   _hubActiveTab = tab;

@@ -32,6 +32,12 @@ function parseRSS(xml, feedMeta) {
     const desc = (item.match(/<description><!\[CDATA\[(.*?)\]\]>|<description>(.*?)<\/description>/) || [])[1] || '';
     const category = (item.match(/<category><!\[CDATA\[(.*?)\]\]>|<category>(.*?)<\/category>/) || [])[1] || 'NEWS';
 
+    // Extract image from media:content, media:thumbnail, enclosure, or img in description
+    const imgMatch = item.match(/url="(https?:\/\/[^"]+\.(?:jpg|jpeg|png|webp)[^"]*)"/i)
+      || item.match(/<img[^>]+src="(https?:\/\/[^"]+)"/i)
+      || item.match(/<enclosure[^>]+url="(https?:\/\/[^"]+)"/i);
+    const image = imgMatch ? imgMatch[1] : null;
+
     if (title) {
       articles.push({
         title: title.replace(/<[^>]*>/g, '').trim(),
@@ -42,6 +48,7 @@ function parseRSS(xml, feedMeta) {
         category: category.replace(/<[^>]*>/g, '').toUpperCase().slice(0, 20).trim(),
         source: feedMeta.name,
         accent: feedMeta.accent,
+        image: image,
       });
     }
   }
