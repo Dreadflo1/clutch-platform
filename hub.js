@@ -267,7 +267,7 @@ function renderNews(articles, containerId) {
     return;
   }
 
-  var SHOW_LIMIT = 9;
+  var SHOW_LIMIT = 5;
   var html = '<div class="clip-section-hdr"><span class="gi gi-sm gi-blue"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 22h16a2 2 0 002-2V4a2 2 0 00-2-2H8a2 2 0 00-2 2v16a2 2 0 01-2 2zm0 0a2 2 0 01-2-2v-9c0-1.1.9-2 2-2h2"/></svg></span> ESPORTS NEWS</div>';
   articles.forEach(function(article, idx) {
     var cat = article.category.toUpperCase().slice(0, 15);

@@ -1087,16 +1087,19 @@ a{color:inherit;text-decoration:none}
 .step-card h3{font-size:15px;font-weight:800;margin-bottom:6px}
 .step-card p{font-size:13px;color:var(--txt2);line-height:1.6}
 
-/* ── HERO QUOTE BANNER ────────────────────────────── */
-.hero-quote-banner{position:relative;border-radius:16px;overflow:hidden;margin-bottom:32px;height:200px;cursor:default;border:1px solid rgba(31,45,74,.4);width:100%;max-width:700px}
-.hero-quote-banner img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;transition:transform .6s ease}
-.hero-quote-banner:hover img{transform:scale(1.04)}
-.hero-quote-banner .hqb-overlay{position:absolute;inset:0;background:linear-gradient(135deg,rgba(7,9,15,.75) 0%,rgba(7,9,15,.5) 50%,rgba(0,212,110,.08) 100%)}
-.hqb-content{position:relative;z-index:2;padding:28px 24px;height:100%;display:flex;flex-direction:column;justify-content:center}
+/* ── HERO CAROUSEL ────────────────────────────────── */
+.hero-carousel{position:relative;border-radius:16px;overflow:hidden;margin-bottom:32px;height:200px;width:100%;max-width:700px;border:1px solid rgba(31,45,74,.4)}
+.hc-track{position:relative;width:100%;height:100%}
+.hc-slide{position:absolute;inset:0;opacity:0;transition:opacity .6s ease;pointer-events:none}
+.hc-slide.active{opacity:1;pointer-events:auto}
+.hc-slide img{position:absolute;inset:0;width:100%;height:100%;object-fit:cover}
+.hqb-overlay{position:absolute;inset:0;background:linear-gradient(135deg,rgba(7,9,15,.78) 0%,rgba(7,9,15,.5) 50%,rgba(0,212,110,.06) 100%)}
+.hqb-content{position:relative;z-index:2;padding:28px 28px;height:100%;display:flex;flex-direction:column;justify-content:center;text-align:left}
 .hqb-quote{font-size:24px;font-weight:900;color:#fff;line-height:1.2;margin-bottom:8px;text-shadow:0 2px 20px rgba(0,0,0,.5)}
 .hqb-sub{font-size:13px;color:rgba(255,255,255,.7);line-height:1.6;max-width:380px}
-.hqb-badge{position:absolute;top:14px;right:14px;z-index:3;display:flex;align-items:center;gap:6px;padding:5px 12px;border-radius:20px;background:rgba(0,0,0,.5);backdrop-filter:blur(12px);border:1px solid rgba(0,212,110,.3);font-size:10px;font-weight:800;color:var(--acc);letter-spacing:.06em}
-.hqb-live-dot{width:6px;height:6px;border-radius:50%;background:var(--acc);box-shadow:0 0 8px var(--acc);animation:bgpulse 2s infinite}
+.hc-dots{position:absolute;bottom:12px;left:50%;transform:translateX(-50%);z-index:3;display:flex;gap:8px}
+.hc-dot{width:8px;height:8px;border-radius:50%;background:rgba(255,255,255,.25);cursor:pointer;transition:all .2s;border:none}
+.hc-dot.active{background:var(--acc);box-shadow:0 0 8px var(--acc);width:24px;border-radius:4px}
 
 /* ── HERO PHOTO (right side decorative — legacy) ───── */
 .hero-photo-wrap{position:relative;overflow:hidden;height:200px}
@@ -1226,8 +1229,10 @@ a{color:inherit;text-decoration:none}
   <nav class="land-nav">
     <div class="land-logo">
       <div class="land-logo-icon">
-        <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-          <path d="M10 2l2.2 5.2H17l-4 3.1 1.6 5-4.6-2.9L5.4 15.3l1.6-5L3 7.2h4.8z" fill="#000"/>
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none">
+          <path d="M14.5 17.5L3 6V3h3l11.5 11.5" stroke="#000" stroke-width="2.5" stroke-linecap="round"/>
+          <path d="M9.5 6.5L21 18v3h-3L6.5 9.5" stroke="#000" stroke-width="2.5" stroke-linecap="round"/>
+          <circle cx="12" cy="12" r="3" fill="#000" opacity=".3"/>
         </svg>
       </div>
       <span class="land-logo-name"><em>CLUTCH</em></span>
@@ -1247,16 +1252,47 @@ a{color:inherit;text-decoration:none}
         </div>
         <h1>Make your friend<br><span class="hl">shut up</span> about their<br><span class="hl2">win streak</span></h1>
 
-        <!-- Cinematic quote banner -->
-        <div class="hero-quote-banner">
-          <img src="Photos_Gamers/pexels-yankrukov-7315194.jpg" alt="Friends competing" loading="lazy"/>
-          <div class="hqb-overlay"></div>
-          <div class="hqb-content">
-            <span class="hqb-quote">"5 kills in a row? Prove it."</span>
-            <span class="hqb-sub">Challenge your friend. Both lock tokens. Winner collects. No surprise, no BS.</span>
+        <!-- Hero carousel -->
+        <div class="hero-carousel" id="hero-carousel">
+          <div class="hc-track" id="hc-track">
+            <div class="hc-slide active">
+              <img src="Photos_Gamers/pexels-yankrukov-7315194.jpg" alt="Friends competing" loading="lazy"/>
+              <div class="hqb-overlay"></div>
+              <div class="hqb-content">
+                <span class="hqb-quote">"5 kills in a row? Prove it."</span>
+                <span class="hqb-sub">Challenge your friend. Both lock tokens. Winner collects.</span>
+              </div>
+            </div>
+            <div class="hc-slide">
+              <img src="Photos_Gamers/pexels-a-darmel-7862590.jpg" alt="Friends gaming" loading="lazy"/>
+              <div class="hqb-overlay"></div>
+              <div class="hqb-content">
+                <span class="hqb-quote">No house. No vig. Just skill.</span>
+                <span class="hqb-sub">Peer-to-peer escrow. API-verified results. Zero trust required.</span>
+              </div>
+            </div>
+            <div class="hc-slide">
+              <img src="Photos_Gamers/pexels-roman-odintsov-12718631.jpg" alt="Gaming session" loading="lazy"/>
+              <div class="hqb-overlay"></div>
+              <div class="hqb-content">
+                <span class="hqb-quote">Talk smack. Back it up.</span>
+                <span class="hqb-sub">Pick your game. Set the dare. Share the QR. Winner takes all.</span>
+              </div>
+            </div>
+            <div class="hc-slide">
+              <img src="Photos_Gamers/pexels-kevin-malik-8762754.jpg" alt="Competitive gaming" loading="lazy"/>
+              <div class="hqb-overlay"></div>
+              <div class="hqb-content">
+                <span class="hqb-quote">Your rank. Your reputation.</span>
+                <span class="hqb-sub">Integrity-scored profiles. 3 strikes and you're out. No cheaters.</span>
+              </div>
+            </div>
           </div>
-          <div class="hqb-badge">
-            <span class="hqb-live-dot"></span> LIVE CHALLENGES
+          <div class="hc-dots" id="hc-dots">
+            <span class="hc-dot active" onclick="goSlide(0)"></span>
+            <span class="hc-dot" onclick="goSlide(1)"></span>
+            <span class="hc-dot" onclick="goSlide(2)"></span>
+            <span class="hc-dot" onclick="goSlide(3)"></span>
           </div>
         </div>
 
@@ -1592,8 +1628,10 @@ a{color:inherit;text-decoration:none}
     <aside class="sidebar">
       <div class="sidebar-logo">
         <div class="sidebar-logo-icon">
-          <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
-            <path d="M9 1.5l2 4.7H15L11.5 9l1.4 4.5L9 11.2l-3.9 2.3L6.5 9 3 6.2h4z" fill="#000"/>
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
+            <path d="M14.5 17.5L3 6V3h3l11.5 11.5" stroke="#000" stroke-width="2.5" stroke-linecap="round"/>
+            <path d="M9.5 6.5L21 18v3h-3L6.5 9.5" stroke="#000" stroke-width="2.5" stroke-linecap="round"/>
+            <circle cx="12" cy="12" r="3" fill="#000" opacity=".3"/>
           </svg>
         </div>
         <span class="sidebar-logo-name"><em>CLUTCH</em></span>
@@ -2869,6 +2907,37 @@ function executeQuickChallenge(game, mode, stake) {
   refreshAll();
   showQRModal(duel, code);
   toast('Challenge locked! Share with your friend.','success');
+}
+
+// ── HERO CAROUSEL ─────────────────────────────────────
+var _slideIdx = 0;
+var _slideCount = 4;
+var _slideTimer = null;
+
+function goSlide(idx) {
+  _slideIdx = idx;
+  var slides = document.querySelectorAll('.hc-slide');
+  var dots = document.querySelectorAll('.hc-dot');
+  slides.forEach(function(s, i) { s.classList.toggle('active', i === idx); });
+  dots.forEach(function(d, i) { d.classList.toggle('active', i === idx); });
+}
+
+function nextSlide() {
+  goSlide((_slideIdx + 1) % _slideCount);
+}
+
+function initCarousel() {
+  if (!document.getElementById('hero-carousel')) return;
+  _slideTimer = setInterval(nextSlide, 5000);
+  var carousel = document.getElementById('hero-carousel');
+  carousel.addEventListener('mouseenter', function() { clearInterval(_slideTimer); });
+  carousel.addEventListener('mouseleave', function() { _slideTimer = setInterval(nextSlide, 5000); });
+}
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initCarousel);
+} else {
+  setTimeout(initCarousel, 100);
 }
 
 function scrollToHow() {
