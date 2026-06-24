@@ -16,7 +16,7 @@
         { "key": "X-XSS-Protection", "value": "1; mode=block" },
         { "key": "Referrer-Policy", "value": "strict-origin-when-cross-origin" },
         { "key": "Permissions-Policy", "value": "camera=(), microphone=(), geolocation=()" },
-        { "key": "Content-Security-Policy", "value": "default-src 'self'; script-src 'self' 'sha256-oBoMCTZLvfO7HEVLYJTDNNkGRvWrdaVAll9YFPAsz3E=' 'sha256-/vaE0MOwWQTLRgy0h+0ijIYDXVXOgMk+8DzJmaqedu4=' 'sha256-epoSO2LIW7fwyiThFoipZ/2XId5Woppooe1/yeoLY/Y='; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; connect-src 'self' https://clutch-wine.vercel.app https://*.youtube.com; frame-src https://www.youtube.com; object-src 'none'; base-uri 'self'" }
+        { "key": "Content-Security-Policy", "value": "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; connect-src 'self' https://clutch-wine.vercel.app https://*.youtube.com; frame-src https://www.youtube.com; object-src 'none'; base-uri 'self'" }
       ]
     },
     {
