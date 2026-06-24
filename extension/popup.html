@@ -1,0 +1,764 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>CLUTCH</title>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#07090f;--l1:#0c1020;--l2:#111827;--l3:#192035;
+  --b:#1f2d4a;--bh:#2e4272;
+  --acc:#00d46e;--acc-lo:rgba(0,212,110,.12);--acc-hi:#00ff83;
+  --gold:#e8a020;--gold-lo:rgba(232,160,32,.12);
+  --red:#e8344a;--red-lo:rgba(232,52,74,.12);
+  --blue:#3d7ff5;--blue-lo:rgba(61,127,245,.12);
+  --purple:#9b5cf6;--purple-lo:rgba(155,92,246,.12);
+  --txt:#dde2f0;--txt2:#8a95b3;--txt3:#4e5a7a;
+  --r:8px;--ease:cubic-bezier(.4,0,.2,1);
+}
+html{width:400px;min-height:580px}
+body{background:var(--bg);color:var(--txt);font-family:'Inter','Segoe UI',system-ui,sans-serif;font-size:13px;line-height:1.5;width:400px;min-height:580px;overflow-x:hidden;-webkit-font-smoothing:antialiased}
+button{cursor:pointer;font-family:inherit;border:none;background:none}
+input,select,textarea{font-family:inherit;color:var(--txt);outline:none;background:none;border:none}
+select{appearance:none}
+::-webkit-scrollbar{width:3px}
+::-webkit-scrollbar-track{background:var(--l1)}
+::-webkit-scrollbar-thumb{background:var(--b);border-radius:3px}
+
+/* HEADER */
+.hdr{display:flex;align-items:center;justify-content:space-between;padding:12px 16px;border-bottom:1px solid var(--b);background:var(--l1);position:sticky;top:0;z-index:10}
+.logo{display:flex;align-items:center;gap:8px}
+.logo-dot{width:22px;height:22px;background:linear-gradient(135deg,var(--acc),#005c30);border-radius:5px;display:flex;align-items:center;justify-content:center}
+.logo-name{font-size:14px;font-weight:900;letter-spacing:.06em;color:var(--txt)}
+.logo-name em{color:var(--acc);font-style:normal}
+.wallet-chip{display:flex;align-items:center;gap:6px;padding:5px 10px;border-radius:20px;border:1px solid var(--b);background:var(--l2);font-size:11px;font-weight:600;cursor:pointer;transition:border-color .15s}
+.wallet-chip:hover{border-color:var(--acc)}
+.wallet-chip.on{border-color:var(--acc);color:var(--acc)}
+.w-dot{width:6px;height:6px;border-radius:50%;background:var(--txt3);flex-shrink:0}
+.w-dot.live{background:var(--acc);box-shadow:0 0 5px var(--acc)}
+
+/* NAV */
+.nav{display:flex;border-bottom:1px solid var(--b);background:var(--l1)}
+.nt{flex:1;padding:10px 6px;font-size:11px;font-weight:700;color:var(--txt3);text-align:center;border-bottom:2px solid transparent;transition:all .15s;letter-spacing:.04em;text-transform:uppercase;cursor:pointer}
+.nt:hover{color:var(--txt2)}
+.nt.active{color:var(--acc);border-bottom-color:var(--acc)}
+
+/* SCREENS */
+.scr{display:none;padding:16px}
+.scr.active{display:block}
+
+/* BUTTONS */
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:8px 16px;border-radius:var(--r);font-size:12px;font-weight:700;transition:all .15s var(--ease);white-space:nowrap}
+.btn-p{background:var(--acc);color:#000}.btn-p:hover{background:var(--acc-hi)}
+.btn-s{background:var(--l3);color:var(--txt);border:1px solid var(--b)}.btn-s:hover{border-color:var(--bh)}
+.btn-o{background:transparent;color:var(--acc);border:1px solid var(--acc)}.btn-o:hover{background:var(--acc-lo)}
+.btn-d{background:var(--red-lo);color:var(--red);border:1px solid var(--red)}.btn-d:hover{background:var(--red);color:#fff}
+.btn-full{width:100%;margin-top:10px}
+.btn-sm{padding:5px 10px;font-size:11px;border-radius:5px}
+
+/* FORM FIELDS */
+.fl{display:flex;flex-direction:column;gap:4px;margin-bottom:12px}
+.fl label{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.06em;color:var(--txt3)}
+.fi{background:var(--l2);border:1px solid var(--b);border-radius:var(--r);padding:8px 12px;font-size:13px;color:var(--txt);transition:border-color .15s;width:100%}
+.fi:focus{border-color:var(--acc)}
+.fi::placeholder{color:var(--txt3)}
+.fs{background:var(--l2);border:1px solid var(--b);border-radius:var(--r);padding:8px 12px;font-size:13px;color:var(--txt);cursor:pointer;width:100%}
+.ft{background:var(--l2);border:1px solid var(--b);border-radius:var(--r);padding:8px 12px;font-size:13px;color:var(--txt);resize:vertical;min-height:64px;width:100%}
+.ft:focus,.fs:focus{border-color:var(--acc)}
+
+/* GAME GRID */
+.gg{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px}
+.go{border:2px solid var(--b);border-radius:var(--r);padding:10px 6px;text-align:center;cursor:pointer;transition:all .15s;background:var(--l2)}
+.go:hover{border-color:var(--bh)}
+.go.sel{border-color:var(--acc);background:var(--acc-lo)}
+.go .gi{width:28px;height:28px;border-radius:5px;margin:0 auto 6px;display:flex;align-items:center;justify-content:center}
+.go .gn{font-size:10px;font-weight:700}
+.go .gv{font-size:9px;margin-top:2px}
+.gv.auto{color:var(--acc)}.gv.manual{color:var(--txt3)}
+
+/* BET TYPE */
+.btg{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px;margin-bottom:12px}
+.bto{border:2px solid var(--b);border-radius:var(--r);padding:8px 6px;cursor:pointer;transition:all .15s;background:var(--l2);text-align:center}
+.bto:hover{border-color:var(--bh)}
+.bto.sel{border-color:var(--purple);background:var(--purple-lo)}
+.bto .bt{font-size:11px;font-weight:700}
+.bto .bd{font-size:9px;color:var(--txt3);margin-top:2px;line-height:1.4}
+
+/* STAKE */
+.stake-wrap{position:relative;margin-bottom:6px}
+.stake-input{background:var(--l2);border:1px solid var(--b);border-radius:var(--r);padding:8px 52px 8px 12px;font-size:16px;font-weight:800;color:var(--txt);width:100%;transition:border-color .15s}
+.stake-input:focus{border-color:var(--acc)}
+.stake-cur{position:absolute;right:12px;top:50%;transform:translateY(-50%);font-size:10px;font-weight:700;color:var(--txt3)}
+.stake-usd{font-size:10px;color:var(--txt3);margin-bottom:8px}
+.presets{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px}
+.preset{padding:4px 10px;border-radius:20px;font-size:10px;font-weight:700;border:1px solid var(--b);background:var(--l2);color:var(--txt2);cursor:pointer;transition:all .15s}
+.preset:hover{border-color:var(--acc);color:var(--acc)}
+
+/* CODE BOX */
+.code-box{background:var(--l2);border:1px solid var(--b);border-radius:var(--r);padding:14px;text-align:center;margin-top:10px}
+.code-val{font-family:monospace;font-size:10px;color:var(--acc);background:var(--l3);border:1px solid var(--b);border-radius:5px;padding:10px;margin:10px 0;word-break:break-all;line-height:1.6;text-align:left}
+.code-row{display:flex;gap:8px;justify-content:center}
+
+/* DUEL CARD */
+.dc{background:var(--l2);border:1px solid var(--b);border-radius:var(--r);padding:12px;margin-bottom:10px;border-left:3px solid var(--b)}
+.dc.pending{border-left-color:var(--gold)}
+.dc.active,.dc.awaiting_result{border-left-color:var(--acc)}
+.dc.disputed{border-left-color:var(--red)}
+.dc.settled{border-left-color:var(--txt3);opacity:.7}
+.ds{display:inline-flex;align-items:center;font-size:9px;font-weight:800;text-transform:uppercase;letter-spacing:.06em;padding:2px 7px;border-radius:20px;margin-bottom:8px}
+.ds.pending{background:var(--gold-lo);color:var(--gold)}
+.ds.active,.ds.awaiting_result{background:var(--acc-lo);color:var(--acc)}
+.ds.disputed{background:var(--red-lo);color:var(--red)}
+.ds.settled{background:var(--l3);color:var(--txt3)}
+.dvs{display:flex;align-items:center;justify-content:space-between;margin:6px 0;font-size:11px;font-weight:600}
+.dvs-sep{font-size:9px;color:var(--txt3);font-weight:800;letter-spacing:.1em}
+.daddr{font-size:10px;color:var(--txt3);font-family:monospace}
+.dcond{font-size:11px;color:var(--txt2);font-style:italic;margin:6px 0}
+.dstake{font-size:15px;font-weight:900;color:var(--acc)}
+.dstake small{font-size:10px;font-weight:400;color:var(--txt3)}
+.dfooter{display:flex;align-items:center;justify-content:space-between;margin-top:8px;padding-top:8px;border-top:1px solid var(--b);gap:6px}
+
+/* ACCEPT */
+.ap-row{display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:1px solid var(--b);font-size:12px}
+.ap-row:last-child{border:none}
+.ap-row .lbl{color:var(--txt2)}
+.ap-row .val{font-weight:700}
+
+/* STATS */
+.sg{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:14px}
+.sc2{background:var(--l2);border:1px solid var(--b);border-radius:var(--r);padding:12px;text-align:center}
+.scv{font-size:18px;font-weight:900;margin-bottom:2px}
+.scl{font-size:10px;color:var(--txt2)}
+
+/* SECTION TITLE */
+.stitle{font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:var(--txt3);margin-bottom:10px}
+
+/* EMPTY */
+.empty{text-align:center;padding:32px 16px;color:var(--txt3)}
+.empty h3{font-size:13px;color:var(--txt2);margin-bottom:6px}
+.empty p{font-size:11px;line-height:1.6}
+
+/* TOAST */
+.tw{position:fixed;bottom:12px;right:12px;display:flex;flex-direction:column;gap:6px;z-index:999;pointer-events:none;max-width:220px}
+.toast{padding:8px 12px;border-radius:6px;font-size:11px;font-weight:600;animation:sIn .2s var(--ease);border:1px solid transparent}
+.toast.success{background:var(--l2);border-color:var(--acc);color:var(--acc)}
+.toast.error{background:var(--l2);border-color:var(--red);color:var(--red)}
+.toast.info{background:var(--l2);border-color:var(--blue);color:var(--blue)}
+@keyframes sIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+
+/* RESULT PICKER */
+.ro{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:10px 0}
+.ropt{border:2px solid var(--b);border-radius:var(--r);padding:12px 8px;text-align:center;cursor:pointer;transition:all .15s}
+.ropt:hover{border-color:var(--bh)}
+.ropt.sel-win{border-color:var(--acc);background:var(--acc-lo)}
+.ropt.sel-loss{border-color:var(--red);background:var(--red-lo)}
+.ropt-icon{font-size:20px;margin-bottom:6px}
+.ropt-lbl{font-size:11px;font-weight:700}
+
+/* PROOF UPLOAD */
+.proof-drop{border:2px dashed var(--b);border-radius:var(--r);padding:16px;text-align:center;cursor:pointer;position:relative;margin:8px 0;transition:border-color .15s}
+.proof-drop:hover{border-color:var(--acc)}
+.proof-drop input{position:absolute;inset:0;opacity:0;cursor:pointer;width:100%;height:100%}
+.proof-drop p{font-size:11px;color:var(--txt3)}
+
+/* DISPUTE */
+.disp-note{background:var(--red-lo);border:1px solid var(--red);border-radius:var(--r);padding:10px;font-size:11px;color:var(--red);margin-top:8px}
+
+/* VERIFY */
+.av{background:var(--blue-lo);border:1px solid var(--blue);border-radius:var(--r);padding:10px;margin-top:8px}
+.av-title{font-size:11px;font-weight:700;color:var(--blue);margin-bottom:6px}
+.av-row{display:flex;gap:6px}
+.av-row input{flex:1;background:var(--l2);border:1px solid var(--b);border-radius:5px;padding:6px 10px;font-size:11px;color:var(--txt)}
+
+/* HIDDEN PANELS */
+.panel{display:none}.panel.active{display:block}
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="hdr">
+  <div class="logo">
+    <div class="logo-dot">
+      <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
+        <path d="M6.5 1l1.8 3.7H12L8.9 7.4l1.2 3.9-3.6-2.2-3.6 2.2 1.2-3.9L1 4.7h3.7z" fill="#000"/>
+      </svg>
+    </div>
+    <span class="logo-name"><em>CLUTCH</em></span>
+  </div>
+  <div class="wallet-chip" id="wallet-chip" onclick="toggleWallet()">
+    <span class="w-dot" id="w-dot"></span>
+    <span id="w-label">Connect</span>
+  </div>
+</div>
+
+<!-- NAV -->
+<div class="nav">
+  <div class="nt active" data-t="home" onclick="show('home')">Duels</div>
+  <div class="nt" data-t="create" onclick="show('create')">+ New</div>
+  <div class="nt" data-t="accept" onclick="show('accept')">Accept</div>
+  <div class="nt" data-t="history" onclick="show('history')">History</div>
+</div>
+
+<!-- TOAST -->
+<div class="tw" id="tw"></div>
+
+<!-- HOME -->
+<div class="scr active" id="scr-home">
+  <div class="stitle">Active Duels</div>
+  <div id="home-list"></div>
+</div>
+
+<!-- CREATE -->
+<div class="scr" id="scr-create">
+  <!-- Step 1: Game -->
+  <div class="stitle">Pick Game</div>
+  <div class="gg" id="game-grid"></div>
+
+  <!-- Step 2: Bet type -->
+  <div class="stitle">Bet Type</div>
+  <div class="btg">
+    <div class="bto sel" data-bt="outcome" onclick="selBetType(this,'outcome')">
+      <div class="bt">Outcome</div>
+      <div class="bd">I win vs you</div>
+    </div>
+    <div class="bto" data-bt="target" onclick="selBetType(this,'target')">
+      <div class="bt">Target</div>
+      <div class="bd">Hit a stat goal</div>
+    </div>
+    <div class="bto" data-bt="custom" onclick="selBetType(this,'custom')">
+      <div class="bt">Custom</div>
+      <div class="bd">Any condition</div>
+    </div>
+  </div>
+
+  <!-- Step 3: Condition -->
+  <div id="cond-area"></div>
+
+  <!-- Step 4: Stake -->
+  <div class="stitle">Your Stake</div>
+  <div class="stake-wrap">
+    <input class="stake-input" type="number" id="stake" min="0.001" step="0.001" placeholder="0.01" oninput="updUSD()"/>
+    <span class="stake-cur">ETH</span>
+  </div>
+  <div class="stake-usd" id="usd-lbl">≈ $0.00 · Pot: 0.00 ETH</div>
+  <div class="presets">
+    <span class="preset" onclick="setSt(0.005)">0.005</span>
+    <span class="preset" onclick="setSt(0.01)">0.01</span>
+    <span class="preset" onclick="setSt(0.05)">0.05</span>
+    <span class="preset" onclick="setSt(0.1)">0.1</span>
+  </div>
+
+  <!-- Step 5: Expiry -->
+  <div class="fl">
+    <label>Expires after</label>
+    <select class="fs" id="expiry">
+      <option value="3600000">1 hour</option>
+      <option value="86400000" selected>24 hours</option>
+      <option value="172800000">48 hours</option>
+      <option value="604800000">7 days</option>
+    </select>
+  </div>
+
+  <button class="btn btn-p btn-full" onclick="createDuel()">Generate Challenge Code</button>
+
+  <!-- Code output -->
+  <div id="code-out" style="display:none">
+    <div class="code-box">
+      <div style="font-size:12px;font-weight:700">Challenge Code</div>
+      <div style="font-size:10px;color:var(--txt2);margin-top:2px">Send this to your friend</div>
+      <div class="code-val" id="code-val"></div>
+      <div class="code-row">
+        <button class="btn btn-o btn-sm" onclick="copyCode()">Copy</button>
+        <button class="btn btn-s btn-sm" onclick="show('home')">View Duels</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ACCEPT -->
+<div class="scr" id="scr-accept">
+  <div class="fl">
+    <label>Paste Challenge Code</label>
+    <textarea class="ft" id="accept-input" placeholder="Paste code from your friend…" rows="4"></textarea>
+  </div>
+  <button class="btn btn-p btn-full" onclick="previewDuel()">Preview Challenge</button>
+
+  <!-- Preview panel -->
+  <div id="accept-preview" style="display:none;margin-top:12px">
+    <div class="stitle">Challenge Details</div>
+    <div id="ap-content"></div>
+    <div style="display:flex;gap:8px;margin-top:12px">
+      <button class="btn btn-d btn-sm" onclick="document.getElementById('accept-preview').style.display='none'">Cancel</button>
+      <button class="btn btn-p" style="flex:1" onclick="confirmAccept()">Lock Stake &amp; Accept</button>
+    </div>
+  </div>
+</div>
+
+<!-- HISTORY -->
+<div class="scr" id="scr-history">
+  <div class="sg" id="stat-cards"></div>
+  <div class="stitle">All Duels</div>
+  <div id="hist-list"></div>
+</div>
+
+<!-- RESULT PANEL (inline in home duel cards) -->
+
+<script>
+// ═══════════════════════════════════════════════════
+//  CLUTCH Extension — Popup Script
+// ═══════════════════════════════════════════════════
+
+var ETH_USD = 3200;
+var FEE = 0.025;
+
+var GAMES = [
+  {id:'lol',     name:'LoL',       full:'League of Legends', color:'#c89b3c', api:true},
+  {id:'valorant',name:'VAL',       full:'Valorant',          color:'#ff4655', api:true},
+  {id:'eafc',    name:'FC25',      full:'EA FC 25',          color:'#00a651', api:false},
+  {id:'fortnite',name:'FN',        full:'Fortnite',          color:'#6eccff', api:false},
+  {id:'cs2',     name:'CS2',       full:'CS2',               color:'#f8a93c', api:false},
+  {id:'custom',  name:'OTHER',     full:'Custom',            color:'#8a95b3', api:false},
+];
+
+var C = {game:null, betType:'outcome', stake:0};
+var PENDING = null;
+var _res = null;
+
+// ── WALLET ──────────────────────────────────────────
+var W = {addr:null};
+
+async function connectWallet() {
+  if (!window.ethereum) { toast('MetaMask not found. Install it first.','error'); return; }
+  try {
+    var accs = await window.ethereum.request({method:'eth_requestAccounts'});
+    W.addr = accs[0];
+    updateWalletUI();
+    fetchPrice();
+    toast('Connected: '+short(W.addr),'success');
+    renderHome();
+  } catch(e) { toast('Rejected','error'); }
+}
+
+function disconnectWallet() {
+  W.addr = null;
+  updateWalletUI();
+  toast('Disconnected','info');
+}
+
+function toggleWallet() {
+  if (W.addr) disconnectWallet(); else connectWallet();
+}
+
+function updateWalletUI() {
+  var chip = document.getElementById('wallet-chip');
+  var dot = document.getElementById('w-dot');
+  var lbl = document.getElementById('w-label');
+  if (W.addr) {
+    chip.classList.add('on'); dot.classList.add('live');
+    lbl.textContent = short(W.addr);
+  } else {
+    chip.classList.remove('on'); dot.classList.remove('live');
+    lbl.textContent = 'Connect';
+  }
+}
+
+function short(a){ return a ? a.slice(0,5)+'…'+a.slice(-3) : '—'; }
+
+async function fetchPrice() {
+  try {
+    var r = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=ethereum&vs_currencies=usd');
+    var d = await r.json();
+    ETH_USD = d.ethereum.usd;
+    updUSD();
+  } catch(e){}
+}
+
+// ── SCREEN ROUTING ──────────────────────────────────
+function show(id) {
+  document.querySelectorAll('.scr').forEach(function(s){ s.classList.remove('active'); });
+  document.querySelectorAll('.nt').forEach(function(t){ t.classList.remove('active'); });
+  document.getElementById('scr-'+id).classList.add('active');
+  var t = document.querySelector('[data-t="'+id+'"]');
+  if (t) t.classList.add('active');
+  if (id==='home') renderHome();
+  if (id==='history') renderHistory();
+}
+
+// ── GAME GRID ───────────────────────────────────────
+function buildGameGrid() {
+  document.getElementById('game-grid').innerHTML = GAMES.map(function(g) {
+    return '<div class="go'+(C.game===g.id?' sel':'')+'" onclick="selGame(\''+g.id+'\')">'
+      +'<div class="gi" style="background:'+g.color+'22;border:1px solid '+g.color+'44;color:'+g.color+'">'+gIcon(g.id)+'</div>'
+      +'<div class="gn">'+g.name+'</div>'
+      +'<div class="gv '+(g.api?'auto':'manual')+'">'+(g.api?'✓ API':'Screenshot')+'</div>'
+      +'</div>';
+  }).join('');
+}
+
+function selGame(id) { C.game=id; buildGameGrid(); buildCondArea(); }
+
+function selBetType(el, t) {
+  document.querySelectorAll('.bto').forEach(function(o){ o.classList.remove('sel'); });
+  el.classList.add('sel'); C.betType=t; buildCondArea();
+}
+
+function buildCondArea() {
+  var g = GAMES.find(function(x){ return x.id===C.game; })||{};
+  var h='';
+  if (C.betType==='outcome') {
+    h='<div class="fl"><label>Win condition</label><input class="fi" id="c-out" placeholder="e.g. I win our 1v1 match"/></div>';
+    if (g.api) h+='<div class="fl"><label>Your '+g.full+' username (for auto-verify)</label><input class="fi" id="c-user" placeholder="username#tag"/></div>';
+  } else if (C.betType==='target') {
+    h='<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">'
+     +'<div class="fl"><label>Stat</label><select class="fs" id="c-stat"><option value="kills">Kills</option><option value="kda">KDA</option><option value="damage">Damage</option><option value="rank">Rank</option><option value="score">Score</option><option value="other">Other</option></select></div>'
+     +'<div class="fl"><label>Target</label><input class="fi" id="c-tval" placeholder="e.g. 20, 3.5…"/></div>'
+     +'</div>';
+  } else {
+    h='<div class="fl"><label>Condition (plain text)</label><textarea class="ft" id="c-cust" placeholder="e.g. First to reach Gold rank wins…" rows="3"></textarea></div>';
+  }
+  document.getElementById('cond-area').innerHTML = h;
+}
+
+// ── STAKE ───────────────────────────────────────────
+function setSt(v){ document.getElementById('stake').value=v; updUSD(); }
+function updUSD(){
+  var v=parseFloat(document.getElementById('stake').value)||0;
+  document.getElementById('usd-lbl').textContent='≈ $'+(v*ETH_USD).toFixed(0)+' · Pot: '+(v*2).toFixed(4)+' ETH ($'+(v*2*ETH_USD).toFixed(0)+')';
+}
+
+// ── CREATE ──────────────────────────────────────────
+function createDuel() {
+  if (!W.addr) { toast('Connect wallet first','error'); return; }
+  if (!C.game) { toast('Pick a game','error'); return; }
+  var stake = parseFloat(document.getElementById('stake').value);
+  if (!stake||stake<=0) { toast('Enter a stake','error'); return; }
+  var cond = getCond(); if (!cond) return;
+  var expiry = parseInt(document.getElementById('expiry').value);
+
+  var duel = {
+    id:'D'+Date.now(),
+    creator:W.addr,
+    opponent:null,
+    game:C.game,
+    betType:C.betType,
+    condition:cond,
+    stake:stake,
+    totalPot:stake*2,
+    expiry:Date.now()+expiry,
+    createdAt:Date.now(),
+    status:'pending',
+    creatorResult:null,
+    opponentResult:null,
+    winner:null,
+  };
+
+  var duels = loadDuels();
+  duels.push(duel);
+  saveDuels(duels);
+
+  var code = btoa(JSON.stringify({id:duel.id,creator:duel.creator,game:duel.game,betType:duel.betType,condition:duel.condition,stake:duel.stake,expiry:duel.expiry,createdAt:duel.createdAt}));
+  document.getElementById('code-val').textContent = code;
+  document.getElementById('code-out').style.display = 'block';
+  toast('Duel created — share the code!','success');
+}
+
+function getCond() {
+  var t=C.betType;
+  if (t==='outcome'){
+    var v=(document.getElementById('c-out')||{}).value||'';
+    if (!v.trim()){toast('Enter win condition','error');return null;}
+    var u=(document.getElementById('c-user')||{}).value||'';
+    return {text:v.trim(),username:u};
+  }
+  if (t==='target'){
+    var stat=(document.getElementById('c-stat')||{}).value||'';
+    var tv=(document.getElementById('c-tval')||{}).value||'';
+    if (!tv.trim()){toast('Enter target value','error');return null;}
+    return {stat:stat,value:tv.trim()};
+  }
+  var txt=(document.getElementById('c-cust')||{}).value||'';
+  if (!txt.trim()){toast('Describe the condition','error');return null;}
+  return {text:txt.trim()};
+}
+
+function condLabel(d) {
+  var t=d.betType,c=d.condition;
+  if (t==='outcome') return c.text||'Win the match';
+  if (t==='target') return 'Hit '+c.value+' '+c.stat;
+  return c.text||'Custom condition';
+}
+
+function copyCode(){
+  var code=document.getElementById('code-val').textContent;
+  navigator.clipboard.writeText(code).then(function(){ toast('Copied!','success'); });
+}
+
+// ── ACCEPT ──────────────────────────────────────────
+function previewDuel() {
+  var raw = document.getElementById('accept-input').value.trim();
+  if (!raw) { toast('Paste a code first','error'); return; }
+  var data; try { data=JSON.parse(atob(raw)); } catch(e){ toast('Invalid code','error'); return; }
+  if (Date.now()>data.expiry) { toast('Challenge expired','error'); return; }
+  if (W.addr && data.creator.toLowerCase()===W.addr.toLowerCase()) { toast("That's your own challenge!",'error'); return; }
+  PENDING = data;
+  var g=GAMES.find(function(x){return x.id===data.game;})||{full:data.game};
+  var html='<div>'
+    +apRow('Game',g.full)
+    +apRow('Bet Type',data.betType)
+    +apRow('Condition',condLabel(data))
+    +apRow('Challenger',data.creator.slice(0,8)+'…')
+    +apRow('Your Stake',data.stake+' ETH (≈$'+(data.stake*ETH_USD).toFixed(0)+')')
+    +apRow('Total Pot',(data.stake*2).toFixed(4)+' ETH')
+    +'</div>';
+  document.getElementById('ap-content').innerHTML=html;
+  document.getElementById('accept-preview').style.display='block';
+}
+
+function apRow(l,v){ return '<div class="ap-row"><span class="lbl">'+l+'</span><span class="val">'+v+'</span></div>'; }
+
+function confirmAccept() {
+  if (!W.addr) { toast('Connect wallet first','error'); return; }
+  var d=PENDING; if (!d) return;
+  var duels=loadDuels();
+  var ex=duels.find(function(x){return x.id===d.id;});
+  if (ex) { ex.opponent=W.addr; ex.status='active'; ex.acceptedAt=Date.now(); }
+  else {
+    duels.push({id:d.id,creator:d.creator,opponent:W.addr,game:d.game,betType:d.betType,condition:d.condition,stake:d.stake,totalPot:d.stake*2,expiry:d.expiry,createdAt:d.createdAt,acceptedAt:Date.now(),status:'active',creatorResult:null,opponentResult:null,winner:null});
+  }
+  saveDuels(duels);
+  PENDING=null;
+  document.getElementById('accept-input').value='';
+  document.getElementById('accept-preview').style.display='none';
+  toast('Accepted! Stake locked. Go play!','success');
+  show('home');
+}
+
+// ── RESULT SUBMIT ───────────────────────────────────
+function openResult(id) {
+  var duels=loadDuels();
+  var d=duels.find(function(x){return x.id===id;});
+  if (!d) return;
+  var role=W.addr&&d.creator.toLowerCase()===W.addr.toLowerCase()?'creator':'opponent';
+  var already=role==='creator'?d.creatorResult:d.opponentResult;
+  if (already) { toast('Already submitted','info'); return; }
+
+  var g=GAMES.find(function(x){return x.id===d.game;})||{};
+  var html='<div style="font-size:11px;color:var(--txt2);margin-bottom:10px">Select outcome from your perspective:</div>'
+    +'<div class="ro">'
+    +'<div class="ropt" id="rw" onclick="selR(\'win\')">'
+    +'<div class="ropt-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="11" stroke="var(--acc)" stroke-width="1.5"/><path d="M7 12l3 3 7-7" stroke="var(--acc)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></div>'
+    +'<div class="ropt-lbl">I Won</div></div>'
+    +'<div class="ropt" id="rl" onclick="selR(\'loss\')">'
+    +'<div class="ropt-icon"><svg width="24" height="24" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="11" stroke="var(--red)" stroke-width="1.5"/><path d="M8 8l8 8M16 8l-8 8" stroke="var(--red)" stroke-width="2" stroke-linecap="round"/></svg></div>'
+    +'<div class="ropt-lbl">I Lost</div></div>'
+    +'</div>';
+
+  if (g.api && d.condition && d.condition.username) {
+    html+='<div class="av"><div class="av-title">Auto-verify via Riot API</div>'
+      +'<div class="av-row"><input id="av-user" placeholder="username#tag" value="'+(d.condition.username||'')+'"/>'
+      +'<button class="btn btn-o btn-sm" onclick="apiVerify(\''+id+'\')">Verify</button></div>'
+      +'<div id="av-res" style="font-size:10px;margin-top:6px"></div>'
+      +'</div>';
+  } else {
+    html+='<div class="proof-drop"><input type="file" accept="image/*" onchange="previewProof(event)"/>'
+      +'<p>&#8679; Upload screenshot as proof (optional)</p></div>'
+      +'<div id="proof-img"></div>';
+  }
+
+  html+='<div style="display:flex;gap:6px;margin-top:10px">'
+    +'<button class="btn btn-d btn-sm" onclick="cancelResult(\''+id+'\')">Cancel</button>'
+    +'<button class="btn btn-p" style="flex:1" onclick="submitResult(\''+id+'\')">Submit</button>'
+    +'</div>';
+
+  var card=document.getElementById('res-panel-'+id);
+  if (card) { card.innerHTML=html; card.style.display='block'; }
+  _res=null;
+}
+
+function cancelResult(id){
+  var p=document.getElementById('res-panel-'+id);
+  if(p){p.style.display='none';p.innerHTML='';}
+  _res=null;
+}
+
+function selR(r) {
+  _res=r;
+  document.getElementById('rw').className='ropt'+(r==='win'?' sel-win':'');
+  document.getElementById('rl').className='ropt'+(r==='loss'?' sel-loss':'');
+}
+
+function previewProof(e){
+  var f=e.target.files[0]; if(!f) return;
+  var rd=new FileReader();
+  rd.onload=function(ev){
+    var el=document.getElementById('proof-img');
+    if(el) el.innerHTML='<img src="'+ev.target.result+'" style="max-width:100%;max-height:100px;border-radius:4px;margin-top:6px"/>';
+  };
+  rd.readAsDataURL(f);
+}
+
+async function apiVerify(id) {
+  var uEl=document.getElementById('av-user');
+  var rEl=document.getElementById('av-res');
+  if (!uEl||!uEl.value.trim()) { toast('Enter username','error'); return; }
+  rEl.textContent='Looking up match…';
+  // Demo: simulate Riot API call
+  await new Promise(function(r){setTimeout(r,1200);});
+  var won=Math.random()>0.4;
+  rEl.innerHTML='<span style="color:'+(won?'var(--acc)':'var(--red)')+'">'+
+    '&#9679; '+(won?'WIN — Victory found in latest match':'LOSS — Defeat found in latest match')+'</span>';
+  selR(won?'win':'loss');
+  toast('Demo result — add RIOT_KEY to config.js for live data','info');
+}
+
+function submitResult(id) {
+  if (!_res) { toast('Select win or loss first','error'); return; }
+  var duels=loadDuels();
+  var d=duels.find(function(x){return x.id===id;});
+  if (!d) return;
+  var role=W.addr&&d.creator.toLowerCase()===W.addr.toLowerCase()?'creator':'opponent';
+  if (role==='creator') d.creatorResult=_res; else d.opponentResult=_res;
+
+  if (d.creatorResult&&d.opponentResult) {
+    if (d.creatorResult==='win'&&d.opponentResult==='loss') settle(d,d.creator);
+    else if (d.creatorResult==='loss'&&d.opponentResult==='win') settle(d,d.opponent);
+    else { d.status='disputed'; toast('Results conflict — dispute opened','error'); }
+  } else {
+    d.status='awaiting_result';
+    toast('Result submitted. Waiting for opponent.','success');
+  }
+  _res=null;
+  saveDuels(duels);
+  renderHome();
+}
+
+function settle(d,w) {
+  d.status='settled'; d.winner=w; d.settledAt=Date.now();
+  var net=(d.totalPot*(1-FEE)).toFixed(4);
+  var iWon=W.addr&&w.toLowerCase()===W.addr.toLowerCase();
+  toast(iWon?'&#127942; You won! '+net+' ETH released (demo)':'Duel settled — opponent won', iWon?'success':'info');
+}
+
+function disputeDuel(id) {
+  var duels=loadDuels();
+  var d=duels.find(function(x){return x.id===id;});
+  if (!d) return;
+  d.status='disputed';
+  saveDuels(duels);
+  renderHome();
+  toast('Dispute filed — awaiting arbitration','info');
+}
+
+// ── RENDER HOME ─────────────────────────────────────
+function renderHome() {
+  var duels=loadDuels();
+  var el=document.getElementById('home-list');
+  if (!duels.length) {
+    el.innerHTML='<div class="empty"><h3>No duels yet</h3><p>Create a duel or paste a friend\'s code.</p></div>';
+    return;
+  }
+  el.innerHTML=duels.slice().sort(function(a,b){return (b.createdAt||0)-(a.createdAt||0);}).map(function(d){
+    var g=GAMES.find(function(x){return x.id===d.game;})||{full:d.game,color:'#8a95b3'};
+    var role=W.addr&&d.creator.toLowerCase()===W.addr.toLowerCase()?'creator':(W.addr&&(d.opponent||'').toLowerCase()===W.addr.toLowerCase()?'opponent':null);
+    var slbl={pending:'Awaiting Opponent',active:'In Progress',awaiting_result:'Awaiting Results',disputed:'Disputed',settled:'Settled'}[d.status]||d.status;
+    var myRes=role==='creator'?d.creatorResult:d.opponentResult;
+    var iWon=d.status==='settled'&&W.addr&&(d.winner||'').toLowerCase()===W.addr.toLowerCase();
+    var net=(d.totalPot*(1-FEE)).toFixed(4);
+
+    var footer='';
+    if (role&&(d.status==='active'||d.status==='awaiting_result')) {
+      if (!myRes) footer='<button class="btn btn-p btn-sm" onclick="openResult(\''+d.id+'\')">Submit Result</button>';
+      else footer='<span style="font-size:10px;color:var(--txt3)">Submitted ✓</span>';
+      footer+=' <button class="btn btn-d btn-sm" onclick="disputeDuel(\''+d.id+'\')">Dispute</button>';
+    }
+    if (d.status==='settled') footer='<span style="font-size:12px;font-weight:700;color:'+(iWon?'var(--acc)':'var(--red)')+'">'+( iWon?'&#127942; +'+net+' ETH':'Lost')+'</span>';
+
+    return '<div class="dc '+d.status+'">'
+      +'<span class="ds '+d.status+'">'+slbl+'</span>'
+      +'<div class="dvs"><div><div style="font-size:11px;font-weight:700">'+(role==='creator'?'You':'Creator')+'</div><div class="daddr">'+short(d.creator)+'</div></div><div class="dvs-sep">VS</div><div style="text-align:right"><div style="font-size:11px;font-weight:700">'+(role==='opponent'?'You':'Opponent')+'</div><div class="daddr">'+(d.opponent?short(d.opponent):'Pending…')+'</div></div></div>'
+      +'<div style="font-size:10px;font-weight:700;color:'+g.color+';margin-bottom:4px">'+g.full+'</div>'
+      +'<div class="dcond">"'+condLabel(d)+'"</div>'
+      +'<div style="display:flex;align-items:baseline;gap:8px">'
+      +'<span class="dstake">'+d.stake.toFixed(4)+' ETH <small>each</small></span>'
+      +'<span style="font-size:10px;color:var(--gold)">Pot '+(d.totalPot||d.stake*2).toFixed(4)+' ETH</span>'
+      +'</div>'
+      +(footer?'<div class="dfooter">'+footer+'</div>':'')
+      +'<div id="res-panel-'+d.id+'" style="display:none;margin-top:10px;padding-top:10px;border-top:1px solid var(--b)"></div>'
+      +'</div>';
+  }).join('');
+}
+
+// ── RENDER HISTORY ───────────────────────────────────
+function renderHistory() {
+  var duels=loadDuels();
+  var settled=duels.filter(function(d){return d.status==='settled';});
+  var won=settled.filter(function(d){return W.addr&&(d.winner||'').toLowerCase()===W.addr.toLowerCase();});
+  var lost=settled.filter(function(d){return d.status==='settled'&&(!W.addr||(d.winner||'').toLowerCase()!==W.addr.toLowerCase());});
+  var earned=won.reduce(function(a,d){return a+d.totalPot*(1-FEE);},0);
+
+  document.getElementById('stat-cards').innerHTML=[
+    sc2(duels.length,'Total','purple'),
+    sc2(won.length,'Won','acc'),
+    sc2(lost.length,'Lost','red'),
+    sc2(earned.toFixed(3)+' ETH','Earned','gold'),
+  ].join('');
+
+  var el=document.getElementById('hist-list');
+  if (!duels.length) { el.innerHTML='<div class="empty"><h3>No history</h3></div>'; return; }
+  el.innerHTML=duels.slice().sort(function(a,b){return (b.createdAt||0)-(a.createdAt||0);}).map(function(d){
+    var g=GAMES.find(function(x){return x.id===d.game;})||{full:d.game};
+    var iWon=d.status==='settled'&&W.addr&&(d.winner||'').toLowerCase()===W.addr.toLowerCase();
+    var cls=d.status==='settled'?(iWon?'won':'lost'):(d.status==='disputed'?'disputed':'');
+    var amt=d.status==='settled'?(iWon?'+':'-')+(d.stake*(iWon?2*(1-FEE):1)).toFixed(4)+' ETH':'—';
+    return '<div style="display:flex;align-items:center;gap:8px;padding:8px 10px;background:var(--l2);border-radius:var(--r);margin-bottom:6px;border-left:2px solid '+(cls==='won'?'var(--acc)':cls==='lost'?'var(--red)':'var(--b)')+';">'
+      +'<div style="font-size:10px;font-weight:700;width:44px;flex-shrink:0">'+g.full+'</div>'
+      +'<div style="flex:1;font-size:10px;color:var(--txt2)">'+condLabel(d)+'</div>'
+      +'<div style="font-size:11px;font-weight:700;color:'+(cls==='won'?'var(--acc)':cls==='lost'?'var(--red)':'var(--txt3)')+'">'+amt+'</div>'
+      +'</div>';
+  }).join('');
+}
+
+function sc2(v,l,c){
+  var col=c==='acc'?'var(--acc)':c==='red'?'var(--red)':c==='gold'?'var(--gold)':c==='purple'?'var(--purple)':'var(--txt)';
+  return '<div class="sc2"><div class="scv" style="color:'+col+'">'+v+'</div><div class="scl">'+l+'</div></div>';
+}
+
+// ── STORAGE ──────────────────────────────────────────
+function saveDuels(d){ try{localStorage.setItem('clutch_duels',JSON.stringify(d));}catch(e){} }
+function loadDuels(){ try{var r=localStorage.getItem('clutch_duels');return r?JSON.parse(r):[];}catch(e){return[];} }
+
+// ── GAME ICONS ───────────────────────────────────────
+function gIcon(id){
+  var m={lol:'<svg width="14" height="14" viewBox="0 0 14 14"><path d="M7 1l1.5 3.5H12L9.3 7 10.5 11 7 8.9 3.5 11l1.2-4L2 4.5h3.5z" fill="currentColor"/></svg>',valorant:'<svg width="14" height="14" viewBox="0 0 14 14"><path d="M3 3l8 4.5-4 3.5V3z" fill="currentColor"/></svg>',eafc:'<svg width="14" height="14" viewBox="0 0 14 14"><circle cx="7" cy="7" r="5.5" stroke="currentColor" stroke-width="1.2" fill="none"/><path d="M5 7h4M7 5v4" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>',fortnite:'<svg width="14" height="14" viewBox="0 0 14 14"><path d="M3 2h8v3H3zM3 5h3v7H3zM6 5h5v4H6z" fill="currentColor"/></svg>',cs2:'<svg width="14" height="14" viewBox="0 0 14 14"><path d="M2 10V5.5l3-3.5h4l3 3.5V10l-2.5 2.5H4.5z" stroke="currentColor" stroke-width="1.1" fill="none"/><circle cx="7" cy="7" r="1.5" fill="currentColor"/></svg>',custom:'<svg width="14" height="14" viewBox="0 0 14 14"><circle cx="7" cy="7" r="5" stroke="currentColor" stroke-width="1.2" stroke-dasharray="2.5 1.5" fill="none"/></svg>'};
+  return m[id]||m.custom;
+}
+
+// ── TOAST ────────────────────────────────────────────
+function toast(msg,type){
+  var el=document.createElement('div');
+  el.className='toast '+(type||'info');
+  el.innerHTML=msg;
+  document.getElementById('tw').appendChild(el);
+  setTimeout(function(){el.style.opacity='0';el.style.transform='translateY(8px)';el.style.transition='all .25s';setTimeout(function(){el.remove();},250);},3000);
+}
+
+// ── INIT ─────────────────────────────────────────────
+(function(){
+  buildGameGrid();
+  buildCondArea();
+  renderHome();
+  if (typeof window.ethereum!=='undefined') {
+    window.ethereum.request({method:'eth_accounts'}).then(function(a){
+      if(a.length){W.addr=a[0];updateWalletUI();fetchPrice();renderHome();}
+    }).catch(function(){});
+    window.ethereum.on('accountsChanged',function(a){
+      W.addr=a[0]||null;updateWalletUI();renderHome();
+    });
+  }
+  fetchPrice();
+})();
+</script>
+</body>
+</html>

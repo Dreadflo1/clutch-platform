@@ -1,0 +1,33 @@
+CLUTCH — Chrome Extension
+=========================
+
+HOW TO INSTALL (takes 30 seconds)
+-----------------------------------
+1. Open Chrome and go to: chrome://extensions
+2. Toggle ON "Developer mode" (top-right corner)
+3. Click "Load unpacked"
+4. Select THIS FOLDER (the one containing this file)
+5. CLUTCH icon appears in your toolbar — click it to open
+
+WORKS ON: Chrome, Edge, Brave, Arc (any Chromium browser)
+
+METAMASK REQUIRED
+-----------------
+Install MetaMask from https://metamask.io if you haven't already.
+CLUTCH uses MetaMask to connect your wallet and sign transactions.
+
+LIVE API KEYS (optional)
+------------------------
+To auto-verify LoL / Valorant results via Riot API:
+  1. Get a key at https://developer.riotgames.com
+  2. Add it to ../config.js as RIOT_KEY
+
+To go live with on-chain escrow:
+  Deploy the Solidity escrow contract (coming soon) and
+  set the contract address in popup.js → CONTRACT_ADDR
+
+NOTES
+-----
+- Stakes are simulated in demo mode (no real ETH moves)
+- Connect to Sepolia testnet to test with fake ETH
+- Duels are stored in browser localStorage per-device

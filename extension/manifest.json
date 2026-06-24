@@ -1,0 +1,29 @@
+{
+  "manifest_version": 3,
+  "name": "CLUTCH — Friend Betting Arena",
+  "short_name": "CLUTCH",
+  "version": "1.0.0",
+  "description": "Bet on your own gaming sessions with friends. Crypto-native P2P escrow, API-verified results.",
+  "action": {
+    "default_popup": "popup.html",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    },
+    "default_title": "CLUTCH — Friend Betting Arena"
+  },
+  "icons": {
+    "16": "icons/icon16.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  },
+  "permissions": [
+    "storage",
+    "clipboardWrite"
+  ],
+  "host_permissions": [
+    "https://api.coingecko.com/*",
+    "https://*.api.riotgames.com/*"
+  ]
+}
