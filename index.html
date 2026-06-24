@@ -177,7 +177,8 @@ a{color:inherit;text-decoration:none}
 .steps-row{display:grid;grid-template-columns:repeat(4,1fr);gap:16px}
 .step-card{background:rgba(12,16,32,.6);border:1px solid var(--b);border-radius:16px;padding:28px;transition:all .25s;overflow:hidden;backdrop-filter:blur(8px)}
 .step-card:hover{border-color:rgba(0,212,110,.3);transform:translateY(-4px);box-shadow:0 12px 40px rgba(0,0,0,.3)}
-.step-body{}
+.step-illust{padding:16px 12px 8px;display:flex;align-items:center;justify-content:center}
+.step-body{padding:0 24px 24px}
 .step-num{width:40px;height:40px;border-radius:12px;background:var(--acc-lo);color:var(--acc);font-size:18px;font-weight:900;display:flex;align-items:center;justify-content:center;margin-bottom:16px;border:1px solid rgba(0,212,110,.2)}
 .step-card h3{font-size:15px;font-weight:800;margin-bottom:8px}
 .step-card p{font-size:12px;color:var(--txt2);line-height:1.8}
@@ -1396,6 +1397,15 @@ a{color:inherit;text-decoration:none}
     <div class="section-sub">Winner takes 97.5% of contract value. Gas is covered. Loser sends that "gg wp" message. Everyone goes again.</div>
     <div class="steps-row">
       <div class="step-card">
+        <div class="step-illust" style="background:linear-gradient(135deg,rgba(0,212,110,.08),rgba(0,212,110,.02))">
+          <svg width="100%" height="100" viewBox="0 0 200 100" fill="none">
+            <rect x="50" y="15" width="100" height="70" rx="12" stroke="var(--acc)" stroke-width="1.5" fill="rgba(0,212,110,.06)"/>
+            <circle cx="100" cy="40" r="14" fill="rgba(0,212,110,.15)" stroke="var(--acc)" stroke-width="1.5"/>
+            <path d="M94 40l4 4 8-8" stroke="var(--acc)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+            <rect x="75" y="62" width="50" height="8" rx="4" fill="var(--acc)" opacity=".3"/>
+            <text x="100" y="78" text-anchor="middle" fill="var(--txt3)" font-size="7" font-weight="600">CONNECTED</text>
+          </svg>
+        </div>
         <div class="step-body">
           <div class="step-num">1</div>
           <h3>Connect &amp; Load Up</h3>
@@ -1403,24 +1413,59 @@ a{color:inherit;text-decoration:none}
         </div>
       </div>
       <div class="step-card">
+        <div class="step-illust" style="background:linear-gradient(135deg,rgba(232,160,32,.08),rgba(232,160,32,.02))">
+          <svg width="100%" height="100" viewBox="0 0 200 100" fill="none">
+            <circle cx="70" cy="45" r="20" fill="rgba(0,212,110,.1)" stroke="var(--acc)" stroke-width="1.5"/>
+            <text x="70" y="49" text-anchor="middle" fill="var(--acc)" font-size="16" font-weight="900">A</text>
+            <path d="M95 45h15" stroke="var(--gold)" stroke-width="2" stroke-dasharray="4 3"/>
+            <rect x="115" y="25" width="55" height="40" rx="8" fill="rgba(232,160,32,.08)" stroke="var(--gold)" stroke-width="1.5"/>
+            <text x="142" y="42" text-anchor="middle" fill="var(--gold)" font-size="7" font-weight="700">500 CLU</text>
+            <text x="142" y="53" text-anchor="middle" fill="var(--txt3)" font-size="6">1v1 VAL</text>
+            <circle cx="130" cy="80" r="8" fill="rgba(155,92,246,.1)" stroke="var(--purple)" stroke-width="1"/>
+            <rect x="142" y="75" width="30" height="10" rx="3" fill="rgba(155,92,246,.06)" stroke="var(--purple)" stroke-width="1"/>
+          </svg>
+        </div>
         <div class="step-body">
           <div class="step-num">2</div>
           <h3>Call Them Out</h3>
-          <p>Talk smack in the group chat, then back it up. Pick game, set the dare, lock your entry. Get a QR code in seconds.</p>
+          <p>Pick your game, set the stake, lock your entry. Get a QR code to share in seconds.</p>
         </div>
       </div>
       <div class="step-card">
+        <div class="step-illust" style="background:linear-gradient(135deg,rgba(155,92,246,.08),rgba(155,92,246,.02))">
+          <svg width="100%" height="100" viewBox="0 0 200 100" fill="none">
+            <circle cx="60" cy="45" r="18" fill="rgba(0,212,110,.1)" stroke="var(--acc)" stroke-width="1.5"/>
+            <text x="60" y="49" text-anchor="middle" fill="var(--acc)" font-size="14" font-weight="900">A</text>
+            <rect x="85" y="30" width="30" height="30" rx="4" fill="rgba(155,92,246,.1)" stroke="var(--purple)" stroke-width="1.5"/>
+            <rect x="91" y="36" width="18" height="18" rx="2" fill="rgba(155,92,246,.15)"/>
+            <circle cx="140" cy="45" r="18" fill="rgba(232,52,74,.1)" stroke="var(--red)" stroke-width="1.5"/>
+            <text x="140" y="49" text-anchor="middle" fill="var(--red)" font-size="14" font-weight="900">B</text>
+            <path d="M80 75h40" stroke="var(--acc)" stroke-width="2"/>
+            <rect x="70" y="70" width="10" height="10" rx="2" fill="var(--acc)" opacity=".3"/>
+            <rect x="120" y="70" width="10" height="10" rx="2" fill="var(--acc)" opacity=".3"/>
+            <text x="100" y="78" text-anchor="middle" fill="var(--txt3)" font-size="6" font-weight="600">ESCROW LOCKED</text>
+          </svg>
+        </div>
         <div class="step-body">
           <div class="step-num">3</div>
           <h3>They Accept</h3>
-          <p>Friend scans your QR code, sees the terms, locks their entry. Both sides in escrow — no backing out now.</p>
+          <p>Friend scans your QR, sees the terms, locks their entry. Both sides in escrow — no backing out.</p>
         </div>
       </div>
       <div class="step-card">
+        <div class="step-illust" style="background:linear-gradient(135deg,rgba(0,212,110,.1),rgba(232,160,32,.05))">
+          <svg width="100%" height="100" viewBox="0 0 200 100" fill="none">
+            <circle cx="100" cy="35" r="22" fill="rgba(0,212,110,.1)" stroke="var(--acc)" stroke-width="2"/>
+            <path d="M91 35l6 6 12-12" stroke="var(--acc)" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+            <rect x="55" y="65" width="90" height="20" rx="6" fill="rgba(232,160,32,.1)" stroke="var(--gold)" stroke-width="1.5"/>
+            <text x="100" y="78" text-anchor="middle" fill="var(--gold)" font-size="9" font-weight="900">+950 CLU</text>
+            <text x="100" y="95" text-anchor="middle" fill="var(--txt3)" font-size="6" font-weight="600">WINNER COLLECTS</text>
+          </svg>
+        </div>
         <div class="step-body">
           <div class="step-num">4</div>
           <h3>Play &amp; Collect</h3>
-          <p>Go play. LoL/Valorant results auto-verify via Riot API. Other games: screenshot proof.</p>
+          <p>Go play. LoL/Valorant auto-verify via Riot API. Other games: screenshot proof. Winner takes 97.5%.</p>
         </div>
       </div>
     </div>
