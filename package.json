@@ -5,5 +5,8 @@
   "scripts": {
     "dev": "vercel dev",
     "deploy": "vercel --prod"
+  },
+  "dependencies": {
+    "ethers": "^6.17.0"
   }
 }
