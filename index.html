@@ -70,6 +70,12 @@ a{color:inherit;text-decoration:none}
 .hero-cta-secondary{display:inline-flex;align-items:center;gap:8px;padding:14px 28px;border-radius:14px;font-size:15px;font-weight:700;background:transparent;color:var(--txt);cursor:pointer;transition:all .2s;border:1px solid var(--b)}
 .hero-cta-secondary:hover{border-color:var(--bh);background:rgba(17,24,39,.4)}
 
+/* ── CONDITION PRESET BUTTONS ─────────────────────── */
+.cond-presets{display:flex;flex-wrap:wrap;gap:6px}
+.cond-preset-btn{padding:8px 14px;border-radius:10px;border:1px solid var(--b);background:rgba(12,16,32,.5);color:var(--txt2);font-size:12px;font-weight:600;cursor:pointer;transition:all .15s;text-align:left}
+.cond-preset-btn:hover{border-color:var(--bh);color:var(--txt);background:rgba(25,32,53,.6)}
+.cond-preset-btn.sel{border-color:var(--acc);color:var(--acc);background:rgba(0,212,110,.06)}
+
 /* ── CHALLENGE BOARD CARDS ────────────────────────── */
 .board-card{background:rgba(12,16,32,.6);border:1px solid var(--b);border-radius:14px;padding:16px 18px;backdrop-filter:blur(8px);transition:all .2s}
 .board-card:hover{border-color:var(--bh);transform:translateY(-2px);box-shadow:0 6px 24px rgba(0,0,0,.3)}
@@ -3131,17 +3137,47 @@ function selBT(el, t) {
   buildCondFields();
 }
 
+var COMMON_CONDITIONS = {
+  valorant: ['I win our 1v1 deathmatch','I get more kills this match','I win the ranked game','I ace at least once','First to 13 rounds'],
+  lol: ['I win the ranked game','I get more kills than you','First blood goes to me','I get 200+ CS by 20min','I carry with most damage'],
+  dota2: ['I win the match','I get more last hits','I win mid lane','My team wins under 40min','I get a rampage'],
+  cs2: ['I win the competitive match','I top frag','I get an ace','I clutch a 1vX round','I get 25+ kills'],
+  fortnite: ['I get the Victory Royale','I get more eliminations','I outlive you','I get 10+ kills','First to win a match'],
+  clashroyale: ['I win the ladder match','I 3-crown you','I win with less elixir spent','Best of 3 ladder games','I win using off-meta deck'],
+  brawlstars: ['I win the 3v3 match','I deal more damage','I become star player','I win showdown','Best of 5 matches'],
+  apex: ['I get more damage this game','I get the most kills','I win the BR match','I survive longer than you','I get 2000+ damage'],
+  _default: ['I win the match','Best of 3 — first to 2 wins','I outperform you in stats','I hit a specific goal','Custom condition'],
+};
+
 function buildCondFields() {
   var wrap = document.getElementById('cond-fields');
   if (!wrap) return;
   var bt = CREATE.betType || 'outcome';
+  var game = CREATE.game || '';
+  var presets = COMMON_CONDITIONS[game] || COMMON_CONDITIONS._default;
+
+  var presetsHtml = '<div class="field"><label>Quick pick</label>'
+    + '<div class="cond-presets">'
+    + presets.map(function(p) {
+      return '<button class="cond-preset-btn" onclick="pickCondPreset(this,\'' + bt + '\')" data-val="' + p + '">' + p + '</button>';
+    }).join('')
+    + '</div></div>';
+
   if (bt === 'outcome') {
-    wrap.innerHTML = '<div class="field"><label>Win condition</label><input class="fi" id="c-out" placeholder="e.g. I win our 1v1 match" oninput="updPreview()"/></div>';
+    wrap.innerHTML = presetsHtml + '<div class="field"><label>Or write your own</label><input class="fi" id="c-out" placeholder="e.g. I win our 1v1 match" oninput="updPreview()"/></div>';
   } else if (bt === 'target') {
-    wrap.innerHTML = '<div class="field"><label>Stat target</label><input class="fi" id="c-tval" placeholder="e.g. 20 kills" oninput="updPreview()"/></div>';
+    wrap.innerHTML = presetsHtml + '<div class="field"><label>Or write your own</label><input class="fi" id="c-tval" placeholder="e.g. 20 kills this game" oninput="updPreview()"/></div>';
   } else {
-    wrap.innerHTML = '<div class="field"><label>Condition</label><textarea class="ft" id="c-cust" placeholder="e.g. First to reach Gold rank." oninput="updPreview()"></textarea></div>';
+    wrap.innerHTML = presetsHtml + '<div class="field"><label>Or write your own</label><textarea class="ft" id="c-cust" placeholder="e.g. First to reach Gold rank." oninput="updPreview()"></textarea></div>';
   }
+}
+
+function pickCondPreset(btn, bt) {
+  document.querySelectorAll('.cond-preset-btn').forEach(function(b) { b.classList.remove('sel'); });
+  btn.classList.add('sel');
+  var val = btn.getAttribute('data-val');
+  var input = document.getElementById('c-out') || document.getElementById('c-tval') || document.getElementById('c-cust');
+  if (input) { input.value = val; updPreview(); }
 }
 
 function buildGamesRow() {
@@ -4372,7 +4408,6 @@ function wizSetStake(val,el){
   var inp=document.getElementById('stake-input'); if(inp) inp.value=val;
   wizUpdatePotCalc(val); setSt(val);
   var nb=document.getElementById('wiz-next-2'); if(nb) nb.disabled=false;
-  setTimeout(function(){ wizGoTo(3); },600);
 }
 function wizCustomStake(val){
   document.querySelectorAll('.wiz-sk').forEach(function(b){ b.classList.remove('sel'); });
