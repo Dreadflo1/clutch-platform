@@ -1011,6 +1011,11 @@ a{color:inherit;text-decoration:none}
 .hub-live-count{display:inline-flex;align-items:center;gap:6px;padding:4px 12px;border-radius:20px;background:rgba(239,68,68,.1);border:1px solid rgba(239,68,68,.2);font-size:11px;font-weight:700;color:#ef4444;margin-top:12px}
 .hub-live-count .hlc-dot{width:6px;height:6px;border-radius:50%;background:#ef4444;animation:livePulse 2s ease-in-out infinite}
 
+/* ── CLIP EMBEDS ─────────────────────────────────── */
+.clip-embed{position:relative;aspect-ratio:16/9;border-radius:14px 14px 0 0;overflow:hidden;background:#0a0a14}
+.clip-embed iframe{position:absolute;inset:0;width:100%;height:100%;border:none}
+.clip-src-tag{font-size:10px;font-weight:700;padding:2px 8px;border-radius:4px;background:rgba(255,255,255,.06);color:var(--txt3)}
+
 /* ── IMPROVED CLIP CARDS (Twitch-style) ──────────── */
 .clip-card{border-radius:14px;border:1px solid rgba(31,45,74,.4)}
 .clip-card:hover{border-color:rgba(0,212,110,.3)}
@@ -1466,51 +1471,37 @@ a{color:inherit;text-decoration:none}
       <div id="hub-clips">
         <div class="clip-section-hdr"><span class="gi gi-sm gi-purple"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="20" rx="2.18"/><line x1="7" y1="2" x2="7" y2="22"/><line x1="17" y1="2" x2="17" y2="22"/></svg></span> Viral Clips</div>
 
-        <div class="clip-card" onclick="toast('Opening on Twitch...','info')">
-          <div class="clip-thumb" style="background:#0d0d1a">
-            <img src="Photos_Gamers/pexels-yankrukov-9072275.jpg" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:.7">
-            <div class="clip-thumb-overlay"></div>
-            <span class="clip-live-badge"><span style="display:inline-block;width:5px;height:5px;border-radius:50%;background:#fff;margin-right:4px"></span>CLIP</span>
-            <span class="clip-src-badge">Twitch</span>
-            <div class="clip-play"><svg width="14" height="16" viewBox="0 0 14 16" fill="white"><path d="M2 1l11 7-11 7z"/></svg></div>
-            <div class="clip-views-overlay"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:inline;vertical-align:-1px"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg> 2.4M</div>
+        <!-- Embedded clips — streamed directly from YouTube/Twitch, no hosting needed -->
+        <div class="clip-card">
+          <div class="clip-embed">
+            <iframe src="https://www.youtube.com/embed/ZLHkFjjVBLY?rel=0&modestbranding=1" frameborder="0" allow="accelerometer;autoplay;encrypted-media;gyroscope;picture-in-picture" allowfullscreen loading="lazy"></iframe>
           </div>
           <div class="clip-meta">
             <div class="clip-game-tag" style="background:#ff465520;color:#ff4655">VALORANT</div>
-            <div class="clip-title">1v5 clutch — 0.2 HP remaining. Chat completely loses it.</div>
-            <div class="clip-stats"><span>3h ago</span><span style="margin-left:auto;color:#ff4655;font-weight:700">Watch →</span></div>
+            <div class="clip-title">Insane 1v5 Ace Clutch — pro-level crosshair placement</div>
+            <div class="clip-stats"><span class="clip-src-tag">YouTube</span></div>
           </div>
         </div>
 
-        <div class="clip-card" onclick="toast('Opening on YouTube...','info')" style="margin-top:12px">
-          <div class="clip-thumb" style="background:#0a0a14">
-            <img src="Photos_Gamers/pexels-a-darmel-7862609.jpg" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:.65">
-            <div class="clip-thumb-overlay"></div>
-            <span class="clip-live-badge"><span style="display:inline-block;width:5px;height:5px;border-radius:50%;background:#fff;margin-right:4px"></span>CLIP</span>
-            <span class="clip-src-badge">YouTube</span>
-            <div class="clip-play"><svg width="14" height="16" viewBox="0 0 14 16" fill="white"><path d="M2 1l11 7-11 7z"/></svg></div>
-            <div class="clip-views-overlay"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:inline;vertical-align:-1px"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg> 5.1M</div>
+        <div class="clip-card" style="margin-top:12px">
+          <div class="clip-embed">
+            <iframe src="https://www.youtube.com/embed/DX3rFjVxWmA?rel=0&modestbranding=1" frameborder="0" allow="accelerometer;autoplay;encrypted-media;gyroscope;picture-in-picture" allowfullscreen loading="lazy"></iframe>
           </div>
           <div class="clip-meta">
             <div class="clip-game-tag" style="background:#c89b3c20;color:#c89b3c">LEAGUE OF LEGENDS</div>
-            <div class="clip-title">Faker plays a champ no pro touched in 4 years — and wins anyway</div>
-            <div class="clip-stats"><span>6h ago</span><span style="margin-left:auto;color:#c89b3c;font-weight:700">Watch →</span></div>
+            <div class="clip-title">Faker's greatest outplays — the GOAT compilation</div>
+            <div class="clip-stats"><span class="clip-src-tag">YouTube</span></div>
           </div>
         </div>
 
-        <div class="clip-card" onclick="toast('Opening on TikTok...','info')" style="margin-top:12px">
-          <div class="clip-thumb" style="background:#0d0a1a">
-            <img src="Photos_Gamers/pexels-yankrukov-9072278.jpg" style="position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:.65">
-            <div class="clip-thumb-overlay"></div>
-            <span class="clip-live-badge"><span style="display:inline-block;width:5px;height:5px;border-radius:50%;background:#fff;margin-right:4px"></span>CLIP</span>
-            <span class="clip-src-badge">TikTok</span>
-            <div class="clip-play"><svg width="14" height="16" viewBox="0 0 14 16" fill="white"><path d="M2 1l11 7-11 7z"/></svg></div>
-            <div class="clip-views-overlay"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:inline;vertical-align:-1px"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg> 3.2M</div>
+        <div class="clip-card" style="margin-top:12px">
+          <div class="clip-embed">
+            <iframe src="https://www.youtube.com/embed/Q_-yyMPiXCQ?rel=0&modestbranding=1" frameborder="0" allow="accelerometer;autoplay;encrypted-media;gyroscope;picture-in-picture" allowfullscreen loading="lazy"></iframe>
           </div>
           <div class="clip-meta">
-            <div class="clip-game-tag" style="background:#9d4dff20;color:#9d4dff">FORTNITE</div>
-            <div class="clip-title">200 IQ build fight ending. Opponent rage quits mid-build.</div>
-            <div class="clip-stats"><span>1d ago</span><span style="margin-left:auto;color:#9d4dff;font-weight:700">Watch →</span></div>
+            <div class="clip-game-tag" style="background:#de9b3520;color:#de9b35">CS2</div>
+            <div class="clip-title">s1mple doing s1mple things — unreal AWP plays</div>
+            <div class="clip-stats"><span class="clip-src-tag">YouTube</span></div>
           </div>
         </div>
       </div>
