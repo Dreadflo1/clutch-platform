@@ -59,9 +59,15 @@ export async function creditDeposit({ userId, provider, ref, clu, meta = {} }) {
   try {
     bal = await mutateBalance(userId, { dAvailable: clu });
   } catch (e) {
-    // Marked-but-not-credited: safer than risking a double credit. Surface it
-    // for reconciliation rather than silently retrying (which could double).
+    // Marked-but-not-credited: safer than risking a double credit. Queue it for
+    // human reconciliation rather than silently retrying (a lost KV response
+    // could otherwise double-credit).
     console.error(`[creditDeposit] RECONCILE ${payKey}: claimed but credit failed (${e.code || e.message})`);
+    const list = (await kvGet('deposits:reconcile')) || [];
+    if (!list.includes(payKey)) {
+      list.unshift(payKey);
+      await kvSet('deposits:reconcile', list.slice(0, 1000));
+    }
     throw e;
   }
 
@@ -107,6 +113,108 @@ export async function createPayoutRequest({ userId, clu, rail, destination, meta
   });
 
   return { payoutId, clu, available: bal.available };
+}
+
+// ── payout fulfilment lifecycle (used by the payout worker) ─────
+export async function getPendingPayoutIds(limit = 50) {
+  const q = (await kvGet('payouts:pending')) || [];
+  return q.slice(0, limit);
+}
+export async function getPayout(id) {
+  return kvGet(`payout:${id}`);
+}
+async function dequeuePending(id) {
+  const q = (await kvGet('payouts:pending')) || [];
+  const n = q.filter(x => x !== id);
+  if (n.length !== q.length) await kvSet('payouts:pending', n);
+}
+
+/** Claim a pending payout for processing. Returns true if this call claimed it. */
+export async function claimPayout(payout) {
+  if (payout.status !== 'pending') return false;
+  payout.status = 'processing';
+  payout.processingAt = Date.now();
+  await kvSet(`payout:${payout.id}`, payout, 7776000);
+  return true;
+}
+
+/** Mark a payout as broadcast/sent (records the outbound tx hash). */
+export async function markPayoutSent(payout, txHash) {
+  payout.status = 'sent';
+  payout.txHash = txHash || null;
+  payout.sentAt = Date.now();
+  await kvSet(`payout:${payout.id}`, payout, 7776000);
+  await dequeuePending(payout.id);
+}
+
+/** Park a payout for manual/off-platform fulfilment (e.g. Stripe Connect). */
+export async function markPayoutManual(payout, note) {
+  payout.status = 'manual_required';
+  payout.note = note || null;
+  payout.updatedAt = Date.now();
+  await kvSet(`payout:${payout.id}`, payout, 7776000);
+  await dequeuePending(payout.id);
+}
+
+/**
+ * Fail a payout and REFUND the debited CLU back to the user's available balance,
+ * exactly once (guarded by status). Use when the outbound transfer cannot be
+ * made — the user must not lose funds that never left the platform.
+ */
+export async function failPayoutAndRefund(payout, reason) {
+  if (payout.status === 'failed' || payout.status === 'sent') return; // already terminal
+  const bal = await mutateBalance(payout.userId, { dAvailable: payout.clu });
+  const txId = `tx_${Date.now()}_${crypto.randomBytes(4).toString('hex')}`;
+  await appendTx(payout.userId, {
+    id: txId, userId: payout.userId, type: 'refund', amount: payout.clu,
+    reason: `payout_failed:${reason || 'unknown'}`, ref: payout.id,
+    balAfter: bal.available, ts: Date.now(),
+  });
+  payout.status = 'failed';
+  payout.failReason = reason || 'unknown';
+  payout.failedAt = Date.now();
+  await kvSet(`payout:${payout.id}`, payout, 7776000);
+  await dequeuePending(payout.id);
+}
+
+// ── deposit reconciliation (claimed but not credited) ───────────
+export async function getReconcileList() {
+  return (await kvGet('deposits:reconcile')) || [];
+}
+async function removeReconcile(payKey) {
+  const list = (await kvGet('deposits:reconcile')) || [];
+  const n = list.filter(k => k !== payKey);
+  if (n.length !== list.length) await kvSet('deposits:reconcile', n);
+}
+/**
+ * Resolve a stuck deposit. 'credit' completes the credit (only if the record is
+ * still 'crediting'); 'abandon' writes it off. Human-gated on purpose — a stuck
+ * record means we don't know if the ledger mutation landed, so a person decides.
+ * @returns {Promise<'credited'|'abandoned'|'already_credited'|'not_found'>}
+ */
+export async function resolveReconcile(payKey, action) {
+  const rec = await kvGet(payKey);
+  if (!rec) return 'not_found';
+  if (rec.status === 'credited') { await removeReconcile(payKey); return 'already_credited'; }
+
+  if (action === 'credit') {
+    const bal = await mutateBalance(rec.userId, { dAvailable: rec.clu });
+    const txId = `tx_${Date.now()}_${crypto.randomBytes(4).toString('hex')}`;
+    await appendTx(rec.userId, {
+      id: txId, userId: rec.userId, type: 'deposit', provider: rec.provider,
+      ref: rec.ref, amount: rec.clu, balAfter: bal.available, ts: Date.now(),
+      reconciled: true,
+    });
+    rec.status = 'credited';
+    rec.txId = txId;
+    await kvSet(payKey, rec);
+    await removeReconcile(payKey);
+    return 'credited';
+  }
+  rec.status = 'abandoned';
+  await kvSet(payKey, rec);
+  await removeReconcile(payKey);
+  return 'abandoned';
 }
 
 export { BalanceError };

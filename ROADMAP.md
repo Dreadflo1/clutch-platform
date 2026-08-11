@@ -94,12 +94,20 @@ Décision : CLU = **crédits internes** (registre `bal:<user>`), taux `CLU_USD_R
   atomique anti-overdraft + file `payouts:pending`, rail `onchain`|`stripe`,
   destination validée). Deposit démo (`wallet/deposit.js`) **désactivé en prod**
   (410) pour ne plus minter de CLU gratuit. _(2026-08-11)_
-- [ ] **Exécution du payout** (le transfert sortant réel) : worker/étape contrôlée
-  qui vide `payouts:pending` — envoi on-chain (hot wallet + signature) / Stripe
-  payout. **Non fait** (sensible : clé de hot wallet) — les retraits sont pour
-  l'instant débités + mis en file, à fulfiller.
-- [ ] Réconciliation des dépôts `status:'crediting'` restés bloqués (crash entre
-  claim et crédit) + tests live (RPC réel, webhook Stripe réel).
+- [x] **Exécution du payout** `wallet/payouts-process.js` : worker secret-gaté
+  (`PAYOUT_SECRET`, refuse en prod sinon) qui vide `payouts:pending` — signe &
+  diffuse le transfert on-chain depuis le hot wallet (`PAYOUT_PRIVATE_KEY`, natif
+  + ERC-20), marque `sent`+txHash ; **refund auto de la mise en CLU si l'envoi
+  échoue** (idempotent) ; cap `PAYOUT_MAX_CLU` (au-delà → `manual_required`) ;
+  Stripe → `manual_required` (payout fiat = Connect, hors scope auto). Pas de cron
+  auto (déclenchement délibéré). Test 23/23. _(2026-08-11)_
+- [x] **Réconciliation dépôts** `wallet/deposits-reconcile.js` (admin) : liste les
+  dépôts `status:'crediting'` bloqués (claim ok, crédit KO) ; action `credit`/
+  `abandon` humaine (pas d'auto-retry → pas de risque de double-crédit). _(2026-08-11)_
+- [ ] **Payout Stripe (fiat off-ramp)** réel via Stripe Connect (comptes connectés
+  KYC) — aujourd'hui parqué `manual_required`.
+- [ ] **Tests live** : RPC réel (dépôt + envoi), webhook Stripe réel, Lua vs vrai Upstash.
+- [ ] Confirmation on-chain des payouts `sent` (vérifier le receipt a posteriori).
 
 ## Phase 4 — Conformité & confiance
 
