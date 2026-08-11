@@ -1,9 +1,9 @@
 {
   "manifest_version": 3,
-  "name": "CLUTCH — Friend Betting Arena",
+  "name": "CLUTCH — Friend Skill Arena",
   "short_name": "CLUTCH",
   "version": "1.0.0",
-  "description": "Bet on your own gaming sessions with friends. Crypto-native P2P escrow, API-verified results.",
+  "description": "Challenge friends on your own gaming skill. Crypto-native P2P escrow, API-verified results — outcomes decided by skill, not chance.",
   "action": {
     "default_popup": "popup.html",
     "default_icon": {
@@ -11,7 +11,7 @@
       "48": "icons/icon48.png",
       "128": "icons/icon128.png"
     },
-    "default_title": "CLUTCH — Friend Betting Arena"
+    "default_title": "CLUTCH — Friend Skill Arena"
   },
   "icons": {
     "16": "icons/icon16.png",

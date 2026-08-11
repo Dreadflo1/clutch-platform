@@ -1,5 +1,5 @@
 /**
- * ARENA BET — P2P Escrow Engine
+ * CLUTCH — P2P Escrow Engine
  * ─────────────────────────────────────────────────────────────────
  *
  * HOW IT WORKS
@@ -357,7 +357,7 @@ function startAntiCheat() {
         recordFleeAttempt(bet.id, 'my');
       });
       // Warn the player
-      var msg = 'You have ' + P2P.escrow + ' TKN locked in active escrow bets. Closing will not cancel them — results are verified automatically.';
+      var msg = 'You have ' + P2P.escrow + ' TKN locked in active escrow challenges. Closing will not cancel them — results are verified automatically.';
       e.preventDefault();
       e.returnValue = msg;
       return msg;
@@ -415,7 +415,7 @@ function renderCreateForm() {
   var sel = document.getElementById('p2p-match-select');
   if (!sel) return;
   var current = sel.value;
-  sel.innerHTML = '<option value="">Select a match to bet on</option>'
+  sel.innerHTML = '<option value="">Select a match to challenge on</option>'
     + MATCHES.concat(LOL_MATCHES || []).map(function(m) {
         var label = m.game === 'lol' || m.t1
           ? (m.t1.name + ' vs ' + m.t2.name + ' [LoL]')
@@ -546,7 +546,7 @@ function renderActiveBets() {
   var c = document.getElementById('p2p-active-list');
   if (!c) return;
   if (!P2P.active.length) {
-    c.innerHTML = '<div class="p2p-empty">No active escrow bets</div>';
+    c.innerHTML = '<div class="p2p-empty">No active escrow challenges</div>';
     return;
   }
   c.innerHTML = P2P.active.map(function(bet) {
@@ -584,7 +584,7 @@ function renderResolvedBets() {
   var c = document.getElementById('p2p-resolved-list');
   if (!c) return;
   if (!P2P.resolved.length) {
-    c.innerHTML = '<div class="p2p-empty">No resolved bets yet</div>';
+    c.innerHTML = '<div class="p2p-empty">No resolved challenges yet</div>';
     return;
   }
   c.innerHTML = P2P.resolved.slice(0, 8).map(function(bet) {

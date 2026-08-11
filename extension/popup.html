@@ -217,7 +217,7 @@ select{appearance:none}
   <div class="gg" id="game-grid"></div>
 
   <!-- Step 2: Bet type -->
-  <div class="stitle">Bet Type</div>
+  <div class="stitle">Challenge Type</div>
   <div class="btg">
     <div class="bto sel" data-bt="outcome" onclick="selBetType(this,'outcome')">
       <div class="bt">Outcome</div>
@@ -506,7 +506,7 @@ function previewDuel() {
   var g=GAMES.find(function(x){return x.id===data.game;})||{full:data.game};
   var html='<div>'
     +apRow('Game',g.full)
-    +apRow('Bet Type',data.betType)
+    +apRow('Challenge Type',data.betType)
     +apRow('Condition',condLabel(data))
     +apRow('Challenger',data.creator.slice(0,8)+'…')
     +apRow('Your Stake',data.stake+' ETH (≈$'+(data.stake*ETH_USD).toFixed(0)+')')

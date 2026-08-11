@@ -1,5 +1,5 @@
 /**
- * ARENA BET — API Configuration
+ * CLUTCH — API Configuration
  * ─────────────────────────────────────────────────────────────
  * Drop your API keys here. The app falls back to mock data
  * automatically if a key is missing or the quota is exceeded.

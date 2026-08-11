@@ -1,5 +1,5 @@
 /**
- * ARENA BET — API Client
+ * CLUTCH — API Client
  * ─────────────────────────────────────────────────────────────
  * Proxy-ready API layer. Each function tries the real API first,
  * falls back to mock data if the key is missing or the call fails.
