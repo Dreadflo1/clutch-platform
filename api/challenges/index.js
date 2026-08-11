@@ -82,7 +82,12 @@ export default async function handler(req, res) {
       txlog.unshift(txId);
       await kvSet(`txlog:${user.userId}`, txlog.slice(0, 200));
 
-      return res.status(200).json({ status: 'cancelled', challenge: ch, message: 'Challenge cancelled — stake refunded' });
+      return res.status(200).json({
+        status: 'cancelled',
+        challenge: ch,
+        message: 'Challenge cancelled — stake refunded',
+        warning: 'Cancelled before acceptance: full refund, no commission.',
+      });
     } finally {
       await kvUnlock(lockKey);
     }

@@ -128,6 +128,7 @@ export async function cancelOpen(ch, reason = 'cancelled') {
   ch.cancelledAt = Date.now();
   await removeOpen(ch.id);
   await archive(ch);
+  console.warn(`[cancelOpen] ${ch.id} cancelled (${reason}): stake refunded in full, no commission`);
   return 'cancelled';
 }
 
@@ -139,28 +140,30 @@ async function logTx(userId, tx) {
 }
 
 /**
- * Unwind an accepted-but-unsettled challenge as a draw: release BOTH escrows,
- * drop it from the active list, and archive it. Idempotent.
+ * Unwind an ACCEPTED challenge (both stakes locked) as a draw: release both
+ * escrows, drop it from the active list, and archive it. Idempotent.
  *
- * If the challenge was DISPUTED, the platform commission is still levied on the
- * refund (each side gets stake minus its half of the fee) — a dispute must not
- * be a way to dodge the fee. A plain timeout on a never-disputed match is
- * refunded in full.
+ * The platform commission is ALWAYS levied here — each side gets its stake minus
+ * its half of the fee — because a game was expected: this covers both a dispute
+ * resolved as a draw and a no-show timeout, and neither may be a way to lock a
+ * match then walk away fee-free. (Refunding a NEVER-accepted challenge in full is
+ * a different path — see cancelOpen.)
  * @returns {'refunded'|'noop'}
  */
 export async function refundDraw(ch, reason = 'timeout') {
   if (ch.status !== 'active' && ch.status !== 'awaiting_result' && ch.status !== 'disputed') {
     return 'noop';
   }
-  const wasDisputed = ch.status === 'disputed';
-  const feeEach = wasDisputed ? Math.floor(ch.stake * PLATFORM_FEE) : 0;
+  const feeEach = Math.floor(ch.stake * PLATFORM_FEE);
   const credit = ch.stake - feeEach;
 
   // Refund each side independently; minEscrow guard makes a double-refund a noop.
+  let refundedCount = 0;
   for (const userId of [ch.creatorUserId, ch.opponentUserId]) {
     if (!userId) continue;
     try {
       const bal = await refundEscrow(userId, ch.stake, credit);
+      refundedCount++;
       const txId = `tx_${Date.now()}_${crypto.randomBytes(4).toString('hex')}`;
       await logTx(userId, {
         id: txId, userId, type: 'refund', amount: credit, fee: feeEach,
@@ -169,9 +172,14 @@ export async function refundDraw(ch, reason = 'timeout') {
     } catch (e) { if (!(e instanceof BalanceError)) throw e; } // already unwound
   }
 
+  if (reason === 'timeout') {
+    // A no-show is an abnormal end — surface it for anti-abuse monitoring.
+    console.warn(`[refundDraw] no-show timeout on ${ch.id}: refunded minus commission (fee ${feeEach}/side)`);
+  }
+
   ch.status = 'refunded';
   ch.refundReason = reason;
-  ch.feeCharged = wasDisputed ? feeEach * 2 : 0;
+  ch.feeCharged = feeEach * refundedCount;
   ch.refundedAt = Date.now();
   await removeActive(ch.id);
   await archive(ch);

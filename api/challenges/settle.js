@@ -93,7 +93,12 @@ export default async function handler(req, res) {
     // rather than let a no-show / stalling player trap the escrow forever.
     if (ch.settleDeadline && Date.now() > ch.settleDeadline) {
       await refundDraw(ch, 'timeout');
-      return res.status(200).json({ status: ch.status, reason: 'timeout', challenge: challengeView(ch) });
+      return res.status(200).json({
+        status: ch.status,
+        reason: 'timeout',
+        warning: 'No-show: match not settled by the deadline. Refunded minus the platform commission.',
+        challenge: challengeView(ch),
+      });
     }
 
     // ── Auto-verified path ──────────────────────────────────────
