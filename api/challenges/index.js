@@ -6,8 +6,9 @@
  * POST /api/challenges?accept  — accept (auth required, locks escrow server-side)
  */
 import crypto from 'crypto';
-import { kvGet, kvSet } from '../_kv.js';
+import { kvGet, kvSet, kvLock, kvUnlock } from '../_kv.js';
 import { authenticate, requireAuth } from '../_auth.js';
+import { mutateBalance, BalanceError } from '../_balance.js';
 
 const CHALLENGE_SECRET = process.env.CHALLENGE_SECRET || 'dev-challenge-secret-change-me';
 const VALID_GAMES = ['valorant','lol','dota2','clashroyale','brawlstars','cs2','fortnite','apex','ow2','rl','fifa','cod'];
@@ -67,47 +68,59 @@ export default async function handler(req, res) {
 
     const ch = challenges[idx];
 
-    // Prevent double-accept with lock
-    const lockKey = `lock:${ch.id}`;
-    const locked = await kvGet(lockKey);
-    if (locked) return res.status(409).json({ error: 'Challenge is being accepted by another player' });
-    await kvSet(lockKey, true, 10);
-
     if (ch.creatorUserId === user.userId) {
       return res.status(400).json({ error: 'Cannot accept your own challenge' });
     }
-
-    // Check acceptor balance
-    const bal = await kvGet(`bal:${user.userId}`);
-    if (!bal || bal.available < ch.stake) {
-      return res.status(400).json({ error: `Insufficient balance. Need ${ch.stake} CLU, have ${bal?.available || 0}` });
+    if (ch.status !== 'open') {
+      return res.status(409).json({ error: 'Challenge is no longer open' });
     }
 
-    // Lock acceptor's escrow
-    bal.available -= ch.stake;
-    bal.escrow += ch.stake;
-    bal.version++;
-    await kvSet(`bal:${user.userId}`, bal);
+    // Prevent double-accept with an atomic lock (SET NX) — two concurrent
+    // acceptors can never both pass this gate.
+    const lockKey = `lock:accept:${ch.id}`;
+    const gotLock = await kvLock(lockKey, 10);
+    if (!gotLock) return res.status(409).json({ error: 'Challenge is being accepted by another player' });
 
-    // Update challenge
-    ch.status = 'active';
-    ch.opponentUserId = user.userId;
-    ch.opponentName = user.addr ? (user.addr.slice(0, 6) + '...' + user.addr.slice(-4)) : 'Player';
-    ch.acceptedAt = Date.now();
-    challenges[idx] = ch;
-    await saveChallenges(challenges);
+    try {
+      // Lock acceptor's escrow atomically: available -> escrow, only if funded.
+      let bal;
+      try {
+        bal = await mutateBalance(user.userId, {
+          dAvailable: -ch.stake,
+          dEscrow: ch.stake,
+          minAvailable: ch.stake,
+        });
+      } catch (e) {
+        if (e instanceof BalanceError) {
+          if (e.code === 'NO_ACCOUNT' || e.code === 'INSUFFICIENT_AVAILABLE') {
+            return res.status(400).json({ error: `Insufficient balance. Need ${ch.stake} CLU` });
+          }
+        }
+        throw e;
+      }
 
-    // Store full challenge for settlement
-    await kvSet(`ch:${ch.id}`, ch, 172800);
+      // Update challenge
+      ch.status = 'active';
+      ch.opponentUserId = user.userId;
+      ch.opponentName = user.addr ? (user.addr.slice(0, 6) + '...' + user.addr.slice(-4)) : 'Player';
+      ch.acceptedAt = Date.now();
+      challenges[idx] = ch;
+      await saveChallenges(challenges);
 
-    // Log transaction
-    const txId = `tx_${Date.now()}_${crypto.randomBytes(4).toString('hex')}`;
-    await kvSet(`tx:${txId}`, { id: txId, userId: user.userId, type: 'escrow_lock', amount: -ch.stake, ref: ch.id, ts: Date.now(), balAfter: bal.available }, 7776000);
-    const txlog = (await kvGet(`txlog:${user.userId}`)) || [];
-    txlog.unshift(txId);
-    await kvSet(`txlog:${user.userId}`, txlog.slice(0, 200));
+      // Store full challenge for settlement
+      await kvSet(`ch:${ch.id}`, ch, 172800);
 
-    return res.status(200).json({ challenge: ch, message: 'Challenge accepted — escrow locked' });
+      // Log transaction
+      const txId = `tx_${Date.now()}_${crypto.randomBytes(4).toString('hex')}`;
+      await kvSet(`tx:${txId}`, { id: txId, userId: user.userId, type: 'escrow_lock', amount: -ch.stake, ref: ch.id, ts: Date.now(), balAfter: bal.available }, 7776000);
+      const txlog = (await kvGet(`txlog:${user.userId}`)) || [];
+      txlog.unshift(txId);
+      await kvSet(`txlog:${user.userId}`, txlog.slice(0, 200));
+
+      return res.status(200).json({ challenge: ch, message: 'Challenge accepted — escrow locked' });
+    } finally {
+      await kvUnlock(lockKey);
+    }
   }
 
   // ── CREATE FLOW ──
@@ -115,12 +128,6 @@ export default async function handler(req, res) {
   if (errors.length) return res.status(400).json({ errors });
 
   const stake = parseInt(body.stake);
-
-  // Check creator balance
-  const bal = await kvGet(`bal:${user.userId}`);
-  if (!bal || bal.available < stake) {
-    return res.status(400).json({ error: `Insufficient balance. Need ${stake} CLU, have ${bal?.available || 0}` });
-  }
 
   const challenge = {
     id: 'CH_' + Date.now() + '_' + crypto.randomBytes(4).toString('hex'),
@@ -144,11 +151,22 @@ export default async function handler(req, res) {
   // Sign the challenge
   challenge.sig = signChallenge(challenge);
 
-  // Lock creator's escrow
-  bal.available -= stake;
-  bal.escrow += stake;
-  bal.version++;
-  await kvSet(`bal:${user.userId}`, bal);
+  // Lock creator's escrow atomically — fails if underfunded, no race.
+  let bal;
+  try {
+    bal = await mutateBalance(user.userId, {
+      dAvailable: -stake,
+      dEscrow: stake,
+      minAvailable: stake,
+    });
+  } catch (e) {
+    if (e instanceof BalanceError) {
+      if (e.code === 'NO_ACCOUNT' || e.code === 'INSUFFICIENT_AVAILABLE') {
+        return res.status(400).json({ error: `Insufficient balance. Need ${stake} CLU` });
+      }
+    }
+    throw e;
+  }
 
   // Store challenge
   await kvSet(`ch:${challenge.id}`, challenge, 172800);
