@@ -16,9 +16,12 @@ const IS_PROD =
   process.env.VERCEL_ENV === 'production' || process.env.NODE_ENV === 'production';
 
 function creds() {
+  // Accept either naming convention: Vercel KV (KV_REST_API_*) or the Upstash
+  // Marketplace integration (UPSTASH_REDIS_REST_*). Both speak the same REST API,
+  // so whichever the connected store injects, we pick it up.
   return {
-    url: process.env.KV_REST_API_URL,
-    token: process.env.KV_REST_API_TOKEN,
+    url: process.env.KV_REST_API_URL || process.env.UPSTASH_REDIS_REST_URL,
+    token: process.env.KV_REST_API_TOKEN || process.env.UPSTASH_REDIS_REST_TOKEN,
   };
 }
 
@@ -31,8 +34,8 @@ export function kvActive() {
 function assertConfigured() {
   if (!kvActive() && IS_PROD) {
     throw new Error(
-      'KV_MISCONFIGURED: KV_REST_API_URL / KV_REST_API_TOKEN are not set in production. ' +
-        'Provision Vercel KV and add its env vars before serving traffic.'
+      'KV_MISCONFIGURED: no KV credentials in production. Connect an Upstash Redis / ' +
+        'Vercel KV store so KV_REST_API_URL/TOKEN (or UPSTASH_REDIS_REST_URL/TOKEN) are set.'
     );
   }
 }
