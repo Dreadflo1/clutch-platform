@@ -1,20 +1,21 @@
 /**
  * POST /api/wallet/withdraw
- * Body: { amount }
- * Debits CLU from available balance and logs the withdrawal.
+ * Body: { amount (CLU), rail: 'onchain' | 'stripe', destination? }
  *
- * In production: this must trigger a real off-ramp payout (on-chain transfer or
- * fiat) AFTER the debit succeeds. Currently demo mode — it only debits the
- * internal balance so the escrow/ledger flow can be exercised end to end.
+ * Debits the user's CLU atomically (no overdraft, no race) and enqueues a
+ * PENDING payout for the chosen rail. The actual outbound transfer (an on-chain
+ * send or a Stripe payout) is executed by a controlled fulfilment step, never
+ * inline here — so funds leave the ledger exactly once and are queued for payout.
  */
-import crypto from 'crypto';
+import { ethers } from 'ethers';
 import { requireAuth } from '../_auth.js';
 import { kvGet, kvSet } from '../_kv.js';
-import { mutateBalance, BalanceError } from '../_balance.js';
+import { createPayoutRequest, BalanceError } from '../_payments.js';
 
 const DAILY_WITHDRAW_CAP = 10000;
 const MIN_WITHDRAW = 10;
 const MAX_WITHDRAW = 5000;
+const RAILS = ['onchain', 'stripe'];
 
 export default async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(200).end();
@@ -25,54 +26,53 @@ export default async function handler(req, res) {
 
   const body = typeof req.body === 'string' ? JSON.parse(req.body) : req.body;
   const amount = parseInt(body.amount);
+  const rail = body.rail;
 
   if (isNaN(amount) || amount < MIN_WITHDRAW || amount > MAX_WITHDRAW) {
     return res.status(400).json({ error: `Amount must be ${MIN_WITHDRAW}-${MAX_WITHDRAW} CLU` });
   }
+  if (!RAILS.includes(rail)) {
+    return res.status(400).json({ error: `rail must be one of: ${RAILS.join(', ')}` });
+  }
 
-  // Daily cap check
+  // Resolve destination per rail.
+  let destination = null;
+  if (rail === 'onchain') {
+    destination = (body.destination || user.addr || '').trim();
+    if (!ethers.isAddress(destination)) {
+      return res.status(400).json({ error: 'A valid destination wallet address is required for on-chain withdrawals' });
+    }
+    destination = ethers.getAddress(destination);
+  }
+  // For 'stripe', the payout target is resolved from the user's Stripe account
+  // at fulfilment time; no destination needed here.
+
+  // Daily cap (advisory — small races here are not fund-critical).
   const todayKey = `withdrawals:${user.userId}:${new Date().toISOString().slice(0, 10)}`;
   const todayTotal = (await kvGet(todayKey)) || 0;
   if (todayTotal + amount > DAILY_WITHDRAW_CAP) {
-    return res.status(400).json({ error: `Daily withdrawal cap: ${DAILY_WITHDRAW_CAP} CLU. Already withdrawn: ${todayTotal}` });
+    return res.status(400).json({ error: `Daily withdrawal cap: ${DAILY_WITHDRAW_CAP} CLU. Already: ${todayTotal}` });
   }
 
-  // Debit balance atomically — fails if available < amount (no overdraft, no race)
-  let bal;
+  let result;
   try {
-    bal = await mutateBalance(user.userId, { dAvailable: -amount, minAvailable: amount });
+    result = await createPayoutRequest({ userId: user.userId, clu: amount, rail, destination });
   } catch (e) {
     if (e instanceof BalanceError) {
       if (e.code === 'NO_ACCOUNT') return res.status(404).json({ error: 'Account not found' });
-      if (e.code === 'INSUFFICIENT_AVAILABLE') {
-        return res.status(400).json({ error: 'Insufficient available balance' });
-      }
+      if (e.code === 'INSUFFICIENT_AVAILABLE') return res.status(400).json({ error: 'Insufficient available balance' });
     }
     throw e;
   }
 
-  // Update daily tracker
   await kvSet(todayKey, todayTotal + amount, 86400);
 
-  // Log transaction
-  const txId = `tx_${Date.now()}_${crypto.randomBytes(4).toString('hex')}`;
-  const tx = {
-    id: txId,
-    userId: user.userId,
-    type: 'withdraw',
-    amount: -amount,
-    balAfter: bal.available,
-    ts: Date.now(),
-  };
-  await kvSet(`tx:${txId}`, tx, 7776000); // 90 days
-
-  const txlog = (await kvGet(`txlog:${user.userId}`)) || [];
-  txlog.unshift(txId);
-  await kvSet(`txlog:${user.userId}`, txlog.slice(0, 200));
-
-  return res.status(200).json({
-    available: bal.available,
-    escrow: bal.escrow,
-    transaction: tx,
+  return res.status(202).json({
+    status: 'pending',
+    payoutId: result.payoutId,
+    debited: amount,
+    available: result.available,
+    rail,
+    message: 'Withdrawal requested — payout is queued for processing',
   });
 }

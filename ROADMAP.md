@@ -72,11 +72,42 @@ _Dernière éval : 2026-08-11 · v1.0.0 · déployé sur Vercel (`clutch-wine.ve
 - [ ] **Ownership du compte de jeu** : aujourd'hui on fait confiance au handle saisi. Prouver la propriété (lier handle ↔ compte Clutch de façon vérifiée) pour fermer la triche résiduelle.
 - [ ] **Test live** des chemins réseau (Riot/Steam) — seuls les extracteurs purs + la logique de décision sont testés (13/13).
 
-## Phase 3 — Paiements réels (on/off-ramp)
+## Phase 3 — Paiements réels (on/off-ramp) — **hybride on-chain + Stripe**
 
-- [ ] Deposit réel : soit **on-chain** (vérifier la tx avant de créditer), soit **Stripe** — remplacer le mode démo.
-- [ ] Off-ramp / retrait réel relié à la Phase 1.
-- [ ] Définir clairement le statut de **CLU** (jetons internes vs stablecoin) et le taux.
+Décision : CLU = **crédits internes** (registre `bal:<user>`), taux `CLU_USD_RATE`
+(défaut 0,10 → 1 USD = 10 CLU), alimentés par deux rails vérifiés.
+
+- [x] **Socle commun idempotent** `api/_payments.js` : conversion CLU↔USD,
+  `creditDeposit` (exactement-une-fois via marqueur `pay:<provider>:<ref>` en
+  `SET NX` permanent → les retries webhook / double-submit ne re-créditent jamais),
+  `createPayoutRequest` (débit atomique + file `payouts:pending`). Primitive KV
+  `kvSetNx` ajoutée. Test 15/15. _(2026-08-11)_
+- [x] **Rail 1 — on-chain** `api/wallet/deposit-onchain.js` : le serveur relit la
+  tx via RPC (ethers, zéro dépendance ajoutée), vérifie transfert confirmé du
+  token configuré **depuis le wallet du user** (JWT `addr`) **vers** `DEPOSIT_ADDRESS`,
+  puis crédite. Idempotent par txHash. Natif + ERC-20 (event Transfer). _(2026-08-11)_
+- [x] **Rail 2 — Stripe** : `stripe-checkout.js` (crée une session Checkout via
+  l'API REST, aucun crédit ici) + `stripe-webhook.js` (seul endroit qui crédite,
+  **après vérif de signature HMAC** contre `STRIPE_WEBHOOK_SECRET`, idempotent par
+  session id, raw-body). Zéro SDK. Test signature 11/11. _(2026-08-11)_
+- [x] **Withdraw réel** : `wallet/withdraw.js` → **demande de payout** (débit CLU
+  atomique anti-overdraft + file `payouts:pending`, rail `onchain`|`stripe`,
+  destination validée). Deposit démo (`wallet/deposit.js`) **désactivé en prod**
+  (410) pour ne plus minter de CLU gratuit. _(2026-08-11)_
+- [x] **Exécution du payout** `wallet/payouts-process.js` : worker secret-gaté
+  (`PAYOUT_SECRET`, refuse en prod sinon) qui vide `payouts:pending` — signe &
+  diffuse le transfert on-chain depuis le hot wallet (`PAYOUT_PRIVATE_KEY`, natif
+  + ERC-20), marque `sent`+txHash ; **refund auto de la mise en CLU si l'envoi
+  échoue** (idempotent) ; cap `PAYOUT_MAX_CLU` (au-delà → `manual_required`) ;
+  Stripe → `manual_required` (payout fiat = Connect, hors scope auto). Pas de cron
+  auto (déclenchement délibéré). Test 23/23. _(2026-08-11)_
+- [x] **Réconciliation dépôts** `wallet/deposits-reconcile.js` (admin) : liste les
+  dépôts `status:'crediting'` bloqués (claim ok, crédit KO) ; action `credit`/
+  `abandon` humaine (pas d'auto-retry → pas de risque de double-crédit). _(2026-08-11)_
+- [ ] **Payout Stripe (fiat off-ramp)** réel via Stripe Connect (comptes connectés
+  KYC) — aujourd'hui parqué `manual_required`.
+- [ ] **Tests live** : RPC réel (dépôt + envoi), webhook Stripe réel, Lua vs vrai Upstash.
+- [ ] Confirmation on-chain des payouts `sent` (vérifier le receipt a posteriori).
 
 ## Phase 4 — Conformité & confiance
 
