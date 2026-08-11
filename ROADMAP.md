@@ -1,8 +1,10 @@
 # Clutch — Roadmap
 
-Plateforme de paris **peer-to-peer skill-gaming** : deux joueurs se défient sur un
-vrai match (LoL/Valorant, Dota 2, Clash Royale/Brawl Stars), misent des jetons
-**CLU**, le gagnant empoche la cagnotte (fee plateforme 2,5 %).
+Plateforme de **défis skill-based peer-to-peer** (compétition e-sport, **pas** un
+jeu de hasard) : deux joueurs se défient sur un vrai match (LoL/Valorant, Dota 2,
+Clash Royale/Brawl Stars), engagent des jetons **CLU**, et le **plus performant**
+remporte la cagnotte (frais plateforme 2,5 %). L'issue dépend de la maîtrise du
+jeu — aucun RNG, aucun aléa ne décide du résultat.
 
 _Dernière éval : 2026-08-11 · v1.0.0 · déployé sur Vercel (`clutch-wine.vercel.app`)_
 
@@ -33,7 +35,7 @@ _Dernière éval : 2026-08-11 · v1.0.0 · déployé sur Vercel (`clutch-wine.ve
 | 6 | KV **fallback silencieux en mémoire** si env vars absentes → soldes perdus au cold start | `api/_kv.js` | 🔴 |
 | 7 | Secrets par défaut (`CHALLENGE_SECRET='dev-...-change-me'`, JWT) à durcir en prod | `api/challenges/index.js`, `_jwt.js` | 🟠 |
 | 8 | Code **démo legacy** (pool virtuel, timer fake, feed/poll fictifs) | `p2p.js`, `hub.js` | 🟠 |
-| 9 | Aucun cadre **légal** (gambling, KYC/AML, âge, geo-blocage) | — | 🔴 (légal) |
+| 9 | Aucun cadre **légal** de concours skill-based (âge, geo-blocage, KYC/AML off-ramp) | — | 🔴 (légal) |
 | 10 | Aucun **test**, aucune **CI** | — | 🟠 |
 | 11 | `index.html` monolithe 316 Ko (maintenabilité) | `index.html` | 🟡 |
 | 12 | Dossier parasite `C:Usersf_chuDocumentstrae_projectscivio` à supprimer | racine | 🟡 |
@@ -109,11 +111,19 @@ Décision : CLU = **crédits internes** (registre `bal:<user>`), taux `CLU_USD_R
 - [ ] **Tests live** : RPC réel (dépôt + envoi), webhook Stripe réel, Lua vs vrai Upstash.
 - [ ] Confirmation on-chain des payouts `sent` (vérifier le receipt a posteriori).
 
-## Phase 4 — Conformité & confiance
+## Phase 4 — Conformité & confiance _(cadre concours skill-based, PAS gambling)_
 
-- [ ] Cadrage **légal** du wagering skill-based selon juridictions cibles (⚠️ à trancher tôt, ça conditionne tout).
-- [ ] **KYC/AML**, vérification d'âge, **geo-blocage** des zones interdites.
-- [ ] ToS, politique de jeu responsable, limites de dépôt (le cap journalier existe déjà côté deposit).
+Positionnement : **compétition de compétence** (skill-based contest / e-sport),
+pas un jeu de hasard. L'argument central = **résultat déterminé par la performance
+du joueur, sans élément matériel de hasard** (test « skill dominant »). La
+conformité vise donc le régime des **concours à prix / compétitions**, pas la loi
+des casinos — mais engager de l'argent réel sur du skill reste encadré selon les
+juridictions, donc à cadrer explicitement.
+
+- [ ] Cadrage **légal** en tant que **concours skill-based** selon juridictions cibles : documenter l'absence d'aléa, exclure les États/pays qui assimilent quand même skill-money-contest à du gambling (⚠️ à trancher tôt).
+- [ ] **Preuve d'absence de hasard** : s'appuyer sur la vérification on-chain/API du résultat réel (déjà en place) comme garantie que c'est la performance, pas le hasard, qui décide.
+- [ ] Vérification d'**âge**, **geo-blocage** des zones interdites, et **KYC/AML** proportionné aux seuils de retrait (obligation off-ramp, pas « pari »).
+- [ ] ToS de **compétition**, intégrité anti-triche, limites de dépôt (le cap journalier existe déjà côté deposit).
 
 ## Phase 5 — Qualité & scale
 
