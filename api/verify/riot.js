@@ -14,6 +14,7 @@
  *   3. Fetch match details
  *   4. Return structured win/loss data
  */
+import { extractRiotResult } from '../_verify.js';
 
 const RIOT_REGIONS = {
   americas: 'americas.api.riotgames.com',
@@ -70,31 +71,6 @@ async function getMatchDetail(matchId, region, apiKey) {
   const host = RIOT_REGIONS[region] || RIOT_REGIONS.europe;
   const url = `https://${host}/lol/match/v5/matches/${matchId}`;
   return riotFetch(url, apiKey);
-}
-
-function extractPlayerResult(matchData, puuid) {
-  const info = matchData.info;
-  const participant = info.participants.find(p => p.puuid === puuid);
-  if (!participant) return null;
-
-  return {
-    win: participant.win,
-    kills: participant.kills,
-    deaths: participant.deaths,
-    assists: participant.assists,
-    champion: participant.championName,
-    role: participant.teamPosition,
-    cs: participant.totalMinionsKilled + participant.neutralMinionsKilled,
-    damage: participant.totalDamageDealtToChampions,
-    gold: participant.goldEarned,
-    duration: Math.round(info.gameDuration / 60),
-    gameMode: info.gameMode,
-    gameType: info.gameType,
-    queueId: info.queueId,
-    matchId: matchData.metadata.matchId,
-    timestamp: info.gameStartTimestamp,
-    gameVersion: info.gameVersion,
-  };
 }
 
 export default async function handler(req, res) {
@@ -161,7 +137,7 @@ export default async function handler(req, res) {
 
   const matches = details
     .filter(d => d.data)
-    .map(d => extractPlayerResult(d.data, puuid))
+    .map(d => extractRiotResult(d.data, puuid))
     .filter(Boolean);
 
   return res.status(200).json({

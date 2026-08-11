@@ -60,9 +60,12 @@ _Dernière éval : 2026-08-11 · v1.0.0 · déployé sur Vercel (`clutch-wine.ve
 
 ## Phase 2 — Settlement de confiance _(le cœur du produit)_
 
-- [ ] **Câbler `verify/*` dans `settle.js`** : au lieu de croire les 2 joueurs, résoudre le résultat via l'API de jeu (matchId → win/loss).
-- [ ] Flux de **dispute** réel : si désaccord, tenter l'auto-verify ; sinon file d'attente + résolution admin.
-- [ ] Anti-triche minimal : lier le compte de jeu vérifié au user, fenêtre temporelle du match, anti-rejeu de matchId.
+- [x] **`verify/*` câblé dans `settle.js`** via `api/_verify.js` (source unique, endpoints riot/dota2 factorisés dessus) : voie auto-vérifiée `{ challengeId, matchId, handle, region? }` — les 2 joueurs soumettent le matchId + leur handle, le serveur exige le **même matchId**, lit le **vrai résultat** (Riot match-v5 / Steam GetMatchDetails) et paie le vainqueur réel. Fallback honor-system conservé pour les jeux non vérifiables. _(2026-08-11)_
+- [x] **Anti-triche de base** : fenêtre de fraîcheur du match (≥ `acceptedAt − 6h`, sinon `disputed:stale_match`), consensus matchId (`disputed:match_id_mismatch`), cohérence 1v1 un seul gagnant (`disputed:inconsistent_outcome`). Échec d'API → 502 sans finaliser (retry possible). _(2026-08-11)_
+- [ ] **Dispute** : les statuts `disputed` sont désormais typés (`disputeReason`) mais il manque encore la **résolution** (file admin / re-verify manuel).
+- [ ] Étendre l'auto-verify à **Valorant** (Riot val-match-v1, API différente) et **Supercell** (battlelog sans matchId → matcher par timestamp/adversaire).
+- [ ] **Ownership du compte de jeu** : aujourd'hui on fait confiance au handle saisi. Prouver la propriété (lier handle ↔ compte Clutch de façon vérifiée) pour fermer la triche résiduelle.
+- [ ] **Test live** des chemins réseau (Riot/Steam) — seuls les extracteurs purs + la logique de décision sont testés (13/13).
 
 ## Phase 3 — Paiements réels (on/off-ramp)
 
