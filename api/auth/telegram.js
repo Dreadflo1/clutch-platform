@@ -38,6 +38,17 @@ function verifyTelegramAuth(data) {
 
 export default async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(200).end();
+
+  // Probe: GET to check if Telegram is configured and get bot username
+  if (req.method === 'GET') {
+    const botToken = process.env.TELEGRAM_BOT_TOKEN;
+    const botUsername = process.env.TELEGRAM_BOT_USERNAME;
+    if (!botToken || !botUsername) {
+      return res.status(200).json({ configured: false });
+    }
+    return res.status(200).json({ configured: true, bot_username: botUsername });
+  }
+
   if (req.method !== 'POST') return res.status(405).json({ error: 'POST only' });
 
   const body = typeof req.body === 'string' ? JSON.parse(req.body) : req.body;
