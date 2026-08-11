@@ -7,11 +7,13 @@
  * once a challenge reaches a terminal state (settled / cancelled / refunded) is
  * an archival TTL applied.
  */
+import crypto from 'crypto';
 import { kvGet, kvSet } from './_kv.js';
-import { refundEscrow, BalanceError } from './_balance.js';
+import { refundEscrow, settleEscrow, BalanceError } from './_balance.js';
 
 const OPEN_KEY = 'challenges:open';
 const ACTIVE_KEY = 'challenges:active';
+const PLATFORM_FEE = 0.025;
 
 // Open-list TTL must exceed the maximum challenge lifetime (168h) so an open
 // challenge can never vanish from the board while its escrow is still locked.
@@ -58,6 +60,53 @@ export async function persist(ch) {
 /** Persist a terminal challenge with an archival TTL. */
 export async function archive(ch) {
   await kvSet(`ch:${ch.id}`, ch, ARCHIVE_TTL);
+}
+
+/**
+ * Persist after a state change: archive + drop from the active list once
+ * terminal; otherwise keep it live with no TTL so its escrow reference can
+ * never expire out from under the funds it guards.
+ */
+export async function saveChallenge(ch) {
+  if (ch.status === 'settled' || ch.status === 'cancelled' || ch.status === 'refunded') {
+    await removeActive(ch.id);
+    await archive(ch);
+  } else {
+    await persist(ch);
+  }
+}
+
+// ── settlement to a winner (shared by settle + admin resolve) ───
+/**
+ * Release both escrows, credit the winner (stake*2 minus platform fee), log the
+ * transactions, and stamp the challenge as settled. Mutates `ch` in place; the
+ * caller persists it via saveChallenge(). Throws BalanceError if escrow is not
+ * as expected (which makes a double-settle a safe no-op).
+ * @returns {Promise<number>} payout credited to the winner
+ */
+export async function settleToWinner(ch, winnerId, loserId) {
+  const payout = Math.floor(ch.stake * 2 * (1 - PLATFORM_FEE));
+  await settleEscrow(winnerId, loserId, ch.stake, payout);
+
+  const balWin = await kvGet(`bal:${winnerId}`);
+  const balLose = await kvGet(`bal:${loserId}`);
+  const txWin = `tx_${Date.now()}_${crypto.randomBytes(4).toString('hex')}`;
+  const txLose = `tx_${Date.now()}_${crypto.randomBytes(4).toString('hex')}`;
+  await kvSet(`tx:${txWin}`, { id: txWin, userId: winnerId, type: 'win', amount: payout, ref: ch.id, ts: Date.now(), balAfter: balWin?.available }, 7776000);
+  await kvSet(`tx:${txLose}`, { id: txLose, userId: loserId, type: 'loss', amount: -ch.stake, ref: ch.id, ts: Date.now(), balAfter: balLose?.available }, 7776000);
+
+  const winLog = (await kvGet(`txlog:${winnerId}`)) || [];
+  winLog.unshift(txWin);
+  await kvSet(`txlog:${winnerId}`, winLog.slice(0, 200));
+  const loseLog = (await kvGet(`txlog:${loserId}`)) || [];
+  loseLog.unshift(txLose);
+  await kvSet(`txlog:${loserId}`, loseLog.slice(0, 200));
+
+  ch.status = 'settled';
+  ch.winner = winnerId;
+  ch.payout = payout;
+  ch.settledAt = Date.now();
+  return payout;
 }
 
 // ── refund resolvers (callers must hold the appropriate lock) ────

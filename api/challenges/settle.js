@@ -14,60 +14,16 @@
  *     Body: { challengeId, result: 'win' | 'loss' }
  *     Both submit; agreement settles, conflict disputes.
  */
-import crypto from 'crypto';
 import { requireAuth } from '../_auth.js';
-import { kvGet, kvSet, kvLock, kvUnlock } from '../_kv.js';
-import { settleEscrow, BalanceError } from '../_balance.js';
+import { kvGet, kvLock, kvUnlock } from '../_kv.js';
+import { BalanceError } from '../_balance.js';
 import { isVerifiable, resolveOutcome } from '../_verify.js';
-import { persist, archive, removeActive, refundDraw } from '../_challenges.js';
+import { persist, saveChallenge, settleToWinner, refundDraw } from '../_challenges.js';
 
-const PLATFORM_FEE = 0.025;
 // The verifying match must have STARTED after acceptance (small negative slack
 // only for clock skew), so a player cannot point at a game they pre-played and
 // already won before committing to the challenge.
 const MATCH_RECENCY_SLACK_MS = 5 * 60 * 1000; // 5 min clock-skew tolerance
-
-/**
- * Persist the challenge after a state change: archive (with TTL) and drop from
- * the active list once terminal; otherwise keep it live with no TTL so its
- * escrow reference can never expire.
- */
-async function saveCh(ch) {
-  if (ch.status === 'settled' || ch.status === 'cancelled' || ch.status === 'refunded') {
-    await removeActive(ch.id);
-    await archive(ch);
-  } else {
-    await persist(ch);
-  }
-}
-
-/**
- * Release both escrows, credit the winner, log transactions, and stamp the
- * challenge as settled. Throws BalanceError if escrow is not as expected.
- */
-async function finalizeSettlement(ch, challengeId, winnerId, loserId) {
-  const payout = Math.floor(ch.stake * 2 * (1 - PLATFORM_FEE));
-  await settleEscrow(winnerId, loserId, ch.stake, payout);
-
-  const balWin = await kvGet(`bal:${winnerId}`);
-  const balLose = await kvGet(`bal:${loserId}`);
-  const txWin = `tx_${Date.now()}_${crypto.randomBytes(4).toString('hex')}`;
-  const txLose = `tx_${Date.now()}_${crypto.randomBytes(4).toString('hex')}`;
-  await kvSet(`tx:${txWin}`, { id: txWin, userId: winnerId, type: 'win', amount: payout, ref: challengeId, ts: Date.now(), balAfter: balWin?.available }, 7776000);
-  await kvSet(`tx:${txLose}`, { id: txLose, userId: loserId, type: 'loss', amount: -ch.stake, ref: challengeId, ts: Date.now(), balAfter: balLose?.available }, 7776000);
-
-  const winLog = (await kvGet(`txlog:${winnerId}`)) || [];
-  winLog.unshift(txWin);
-  await kvSet(`txlog:${winnerId}`, winLog.slice(0, 200));
-  const loseLog = (await kvGet(`txlog:${loserId}`)) || [];
-  loseLog.unshift(txLose);
-  await kvSet(`txlog:${loserId}`, loseLog.slice(0, 200));
-
-  ch.status = 'settled';
-  ch.winner = winnerId;
-  ch.payout = payout;
-  ch.settledAt = Date.now();
-}
 
 function challengeView(ch) {
   return {
@@ -80,6 +36,21 @@ function challengeView(ch) {
     verified: Boolean(ch.verified),
   };
 }
+
+/**
+ * Pure verdict from two verified match outcomes (no I/O — unit-testable).
+ * @returns {{action:'dispute',reason:string} | {action:'settle',winnerId,loserId,matchId}}
+ */
+function evaluateVerification(ch, cRes, oRes) {
+  const minTs = (ch.acceptedAt || 0) - MATCH_RECENCY_SLACK_MS;
+  if (cRes.timestamp < minTs || oRes.timestamp < minTs) return { action: 'dispute', reason: 'stale_match' };
+  if (cRes.win === oRes.win) return { action: 'dispute', reason: 'inconsistent_outcome' };
+  const winnerId = cRes.win ? ch.creatorUserId : ch.opponentUserId;
+  const loserId = cRes.win ? ch.opponentUserId : ch.creatorUserId;
+  return { action: 'settle', winnerId, loserId, matchId: cRes.matchId };
+}
+
+const TERMINAL = new Set(['settled', 'refunded', 'cancelled', 'disputed']);
 
 export default async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(200).end();
@@ -98,14 +69,15 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: 'Provide either { matchId, handle } (auto-verify) or { result: win|loss }' });
   }
 
-  // Serialize the whole read-modify-write so two simultaneous submissions can
-  // never both reach the payout branch (which would double-pay the winner).
+  // Per-challenge lock. Held only for read-modify-write of state — NEVER across
+  // the game-API calls, which are done unlocked between two short locked phases.
   const lockKey = `lock:settle:${challengeId}`;
-  const gotLock = await kvLock(lockKey, 15);
-  if (!gotLock) return res.status(409).json({ error: 'Settlement in progress — retry shortly' });
+  let holding = await kvLock(lockKey, 15);
+  if (!holding) return res.status(409).json({ error: 'Settlement in progress — retry shortly' });
+  const release = async () => { if (holding) { holding = false; await kvUnlock(lockKey); } };
 
   try {
-    const ch = await kvGet(`ch:${challengeId}`);
+    let ch = await kvGet(`ch:${challengeId}`);
     if (!ch) return res.status(404).json({ error: 'Challenge not found' });
     if (ch.status !== 'active' && ch.status !== 'awaiting_result') {
       return res.status(400).json({ error: `Challenge cannot be settled (status: ${ch.status})` });
@@ -132,78 +104,90 @@ export default async function handler(req, res) {
       if (!handle) return res.status(400).json({ error: 'handle required for auto-verification' });
 
       const submission = { matchId: String(matchId), handle: String(handle), region: region || null };
+      // Record the submission. A resubmission with the SAME match id is allowed
+      // (it re-triggers finalization after a transient verify failure); changing
+      // your answer is not.
       if (isCreator) {
-        if (ch.creatorVerify) return res.status(400).json({ error: 'Already submitted' });
-        ch.creatorVerify = submission;
+        if (ch.creatorVerify && ch.creatorVerify.matchId !== submission.matchId) {
+          return res.status(400).json({ error: 'Already submitted a different match id' });
+        }
+        if (!ch.creatorVerify) ch.creatorVerify = submission;
       } else {
-        if (ch.opponentVerify) return res.status(400).json({ error: 'Already submitted' });
-        ch.opponentVerify = submission;
+        if (ch.opponentVerify && ch.opponentVerify.matchId !== submission.matchId) {
+          return res.status(400).json({ error: 'Already submitted a different match id' });
+        }
+        if (!ch.opponentVerify) ch.opponentVerify = submission;
       }
 
-      if (ch.creatorVerify && ch.opponentVerify) {
-        // Both players must reference the same match.
-        if (ch.creatorVerify.matchId !== ch.opponentVerify.matchId) {
-          ch.status = 'disputed';
-          ch.disputeReason = 'match_id_mismatch';
-          ch.disputedAt = Date.now();
-          await saveCh(ch);
-          return res.status(200).json({ status: ch.status, reason: ch.disputeReason, challenge: challengeView(ch) });
-        }
-
-        // Pull the real result for each player from the game API.
-        const [cRes, oRes] = await Promise.all([
-          resolveOutcome({ game: ch.game, region: ch.creatorVerify.region, matchId: ch.creatorVerify.matchId, handle: ch.creatorVerify.handle }),
-          resolveOutcome({ game: ch.game, region: ch.opponentVerify.region, matchId: ch.opponentVerify.matchId, handle: ch.opponentVerify.handle }),
-        ]);
-
-        if (!cRes.ok || !oRes.ok) {
-          // Do NOT finalize on a lookup failure — keep submissions so a retry
-          // works once the API/handle issue clears.
-          return res.status(502).json({
-            error: 'Match verification failed',
-            creator: cRes.ok ? 'ok' : cRes.error,
-            opponent: oRes.ok ? 'ok' : oRes.error,
-          });
-        }
-
-        // Match must be recent relative to when the challenge was accepted.
-        const minTs = (ch.acceptedAt || 0) - MATCH_RECENCY_SLACK_MS;
-        if (cRes.timestamp < minTs || oRes.timestamp < minTs) {
-          ch.status = 'disputed';
-          ch.disputeReason = 'stale_match';
-          ch.disputedAt = Date.now();
-          await saveCh(ch);
-          return res.status(200).json({ status: ch.status, reason: ch.disputeReason, challenge: challengeView(ch) });
-        }
-
-        // In a 1v1 exactly one side must have won.
-        if (cRes.win === oRes.win) {
-          ch.status = 'disputed';
-          ch.disputeReason = 'inconsistent_outcome';
-          ch.disputedAt = Date.now();
-          await saveCh(ch);
-          return res.status(200).json({ status: ch.status, reason: ch.disputeReason, challenge: challengeView(ch) });
-        }
-
-        const winnerId = cRes.win ? ch.creatorUserId : ch.opponentUserId;
-        const loserId = cRes.win ? ch.opponentUserId : ch.creatorUserId;
-        ch.verified = true;
-        ch.verifiedMatchId = cRes.matchId;
-        try {
-          await finalizeSettlement(ch, challengeId, winnerId, loserId);
-        } catch (e) {
-          if (e instanceof BalanceError) return res.status(409).json({ error: `Cannot settle escrow (${e.code})` });
-          throw e;
-        }
-      } else {
+      const bothPresent = ch.creatorVerify && ch.opponentVerify;
+      if (!bothPresent) {
         ch.status = 'awaiting_result';
+        await persist(ch);
+        return res.status(200).json({ status: ch.status, challenge: challengeView(ch) });
       }
 
-      await saveCh(ch);
+      // Cheap consensus check (no network) — settle-in-lock is fine here.
+      if (ch.creatorVerify.matchId !== ch.opponentVerify.matchId) {
+        ch.status = 'disputed';
+        ch.disputeReason = 'match_id_mismatch';
+        ch.disputedAt = Date.now();
+        await saveChallenge(ch);
+        return res.status(200).json({ status: ch.status, reason: ch.disputeReason, challenge: challengeView(ch) });
+      }
+
+      // Persist submissions, then DROP the lock for the game-API round-trip so a
+      // slow/rate-limited API can never make the lock expire mid-settlement.
+      await persist(ch);
+      const creatorVerify = ch.creatorVerify;
+      const opponentVerify = ch.opponentVerify;
+      await release();
+
+      const [cRes, oRes] = await Promise.all([
+        resolveOutcome({ game: ch.game, region: creatorVerify.region, matchId: creatorVerify.matchId, handle: creatorVerify.handle }),
+        resolveOutcome({ game: ch.game, region: opponentVerify.region, matchId: opponentVerify.matchId, handle: opponentVerify.handle }),
+      ]);
+      if (!cRes.ok || !oRes.ok) {
+        // Keep submissions persisted so either player can retry once the
+        // API/handle issue clears.
+        return res.status(502).json({
+          error: 'Match verification failed',
+          creator: cRes.ok ? 'ok' : cRes.error,
+          opponent: oRes.ok ? 'ok' : oRes.error,
+        });
+      }
+      const verdict = evaluateVerification(ch, cRes, oRes);
+
+      // Re-acquire the lock to apply the verdict atomically.
+      holding = await kvLock(lockKey, 15);
+      if (!holding) return res.status(409).json({ error: 'Settlement in progress — retry shortly' });
+      ch = await kvGet(`ch:${challengeId}`);
+      if (!ch) return res.status(404).json({ error: 'Challenge not found' });
+      if (TERMINAL.has(ch.status)) {
+        // Already finalized (concurrent call, prior retry, or timeout refund).
+        return res.status(200).json({ status: ch.status, reason: ch.disputeReason || undefined, challenge: challengeView(ch) });
+      }
+
+      if (verdict.action === 'dispute') {
+        ch.status = 'disputed';
+        ch.disputeReason = verdict.reason;
+        ch.disputedAt = Date.now();
+        await saveChallenge(ch);
+        return res.status(200).json({ status: ch.status, reason: verdict.reason, challenge: challengeView(ch) });
+      }
+
+      ch.verified = true;
+      ch.verifiedMatchId = verdict.matchId;
+      try {
+        await settleToWinner(ch, verdict.winnerId, verdict.loserId);
+      } catch (e) {
+        if (e instanceof BalanceError) return res.status(409).json({ error: `Cannot settle escrow (${e.code})` });
+        throw e;
+      }
+      await saveChallenge(ch);
       return res.status(200).json({ status: ch.status, challenge: challengeView(ch) });
     }
 
-    // ── Result-based (honor system) path ────────────────────────
+    // ── Result-based (honor system) path — no network, stays in lock ──
     if (isCreator) {
       if (ch.creatorResult) return res.status(400).json({ error: 'Already submitted' });
       ch.creatorResult = result;
@@ -220,7 +204,7 @@ export default async function handler(req, res) {
         const winnerId = ch.creatorResult === 'win' ? ch.creatorUserId : ch.opponentUserId;
         const loserId = ch.creatorResult === 'win' ? ch.opponentUserId : ch.creatorUserId;
         try {
-          await finalizeSettlement(ch, challengeId, winnerId, loserId);
+          await settleToWinner(ch, winnerId, loserId);
         } catch (e) {
           if (e instanceof BalanceError) return res.status(409).json({ error: `Cannot settle escrow (${e.code})` });
           throw e;
@@ -234,9 +218,9 @@ export default async function handler(req, res) {
       ch.status = 'awaiting_result';
     }
 
-    await saveCh(ch);
+    await saveChallenge(ch);
     return res.status(200).json({ status: ch.status, challenge: challengeView(ch) });
   } finally {
-    await kvUnlock(lockKey);
+    await release();
   }
 }
