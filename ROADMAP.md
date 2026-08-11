@@ -70,46 +70,42 @@ _Dernière éval : 2026-08-11 · v1.0.0 · déployé sur Vercel (`clutch-wine.ve
 - [x] **Vérif réseau sortie du lock** (G) : `settle` prend le lock → enregistre la soumission → **libère** → appelle les APIs de jeu → **re-prend** le lock pour finaliser (re-check statut terminal). Corrige aussi le **bug de retry** (après un échec de vérif, aucun joueur ne pouvait relancer). _(2026-08-11)_
 - [x] **Durcissement** : `maintenance` (cron) et `resolve` (admin) refusent de tourner en prod sans secret (avant : `maintenance` était ouvert à tous si `CRON_SECRET` absent). _(2026-08-11)_
 - [x] **Commission prélevée sur tout défi accepté dénoué** : `refundDraw` prélève toujours la commission (chaque camp = mise − sa moitié du fee, identique au fee d'un règlement gagné) — que ce soit une **dispute** en nul **ou un no-show au timeout** (verrouiller puis abandonner ne doit pas être gratuit). Seule l'**annulation d'un défi jamais accepté** (`cancelOpen`, aucun adversaire) reste remboursée intégralement. Warnings serveur (`console.warn`) + champ `warning` dans la réponse API sur no-show et annulation. Refunds journalisés (tx `refund` + champ `fee`). Tests 10/10 + 19/19. _(2026-08-11)_
-- [ ] Étendre l'auto-verify à **Valorant** (Riot val-match-v1, API différente) et **Supercell** (battlelog sans matchId → matcher par timestamp/adversaire).
+- [x] **Valorant auto-vérifié** (Riot **val-match-v1**) dans `_verify.js` : shard routing (na/eu/ap/kr/latam/br) + résolution puuid via account-v1 continental, `extractValorantResult` (win = `teams[player.teamId].won`). **Lancement trustless = LoL + Dota 2 + Valorant.** _(2026-08-11)_
+- [ ] **Supercell** (Clash Royale) : battlelog sans matchId + whitelist IP → reste honor-system en V1.
 - [ ] **Ownership du compte de jeu** : aujourd'hui on fait confiance au handle saisi. Prouver la propriété (lier handle ↔ compte Clutch de façon vérifiée) pour fermer la triche résiduelle.
-- [ ] **Test live** des chemins réseau (Riot/Steam) — seuls les extracteurs purs + la logique de décision sont testés (13/13).
+- [ ] **Test live** des chemins réseau (Riot/Steam) — seuls les extracteurs purs + la logique de décision sont testés.
 
-## Phase 3 — Paiements réels (on/off-ramp) — **hybride on-chain + Stripe**
+## Phase 3 — Paiements réels (on/off-ramp) — **hybride NOWPayments (crypto) + Stripe (fiat)**
 
 Décision : CLU = **crédits internes** (registre `bal:<user>`), taux `CLU_USD_RATE`
-(défaut 0,10 → 1 USD = 10 CLU), alimentés par deux rails vérifiés.
+(défaut 0,10 → 1 USD = 10 CLU). Deux rails managés vérifiés — **aucune clé de hot
+wallet ni gas géré côté serveur** (on a abandonné l'auto-hébergé on-chain).
 
 - [x] **Socle commun idempotent** `api/_payments.js` : conversion CLU↔USD,
   `creditDeposit` (exactement-une-fois via marqueur `pay:<provider>:<ref>` en
   `SET NX` permanent → les retries webhook / double-submit ne re-créditent jamais),
   `createPayoutRequest` (débit atomique + file `payouts:pending`). Primitive KV
   `kvSetNx` ajoutée. Test 15/15. _(2026-08-11)_
-- [x] **Rail 1 — on-chain** `api/wallet/deposit-onchain.js` : le serveur relit la
-  tx via RPC (ethers, zéro dépendance ajoutée), vérifie transfert confirmé du
-  token configuré **depuis le wallet du user** (JWT `addr`) **vers** `DEPOSIT_ADDRESS`,
-  puis crédite. Idempotent par txHash. Natif + ERC-20 (event Transfer). _(2026-08-11)_
-- [x] **Rail 2 — Stripe** : `stripe-checkout.js` (crée une session Checkout via
-  l'API REST, aucun crédit ici) + `stripe-webhook.js` (seul endroit qui crédite,
-  **après vérif de signature HMAC** contre `STRIPE_WEBHOOK_SECRET`, idempotent par
-  session id, raw-body). Zéro SDK. Test signature 11/11. _(2026-08-11)_
-- [x] **Withdraw réel** : `wallet/withdraw.js` → **demande de payout** (débit CLU
-  atomique anti-overdraft + file `payouts:pending`, rail `onchain`|`stripe`,
-  destination validée). Deposit démo (`wallet/deposit.js`) **désactivé en prod**
-  (410) pour ne plus minter de CLU gratuit. _(2026-08-11)_
-- [x] **Exécution du payout** `wallet/payouts-process.js` : worker secret-gaté
-  (`PAYOUT_SECRET`, refuse en prod sinon) qui vide `payouts:pending` — signe &
-  diffuse le transfert on-chain depuis le hot wallet (`PAYOUT_PRIVATE_KEY`, natif
-  + ERC-20), marque `sent`+txHash ; **refund auto de la mise en CLU si l'envoi
-  échoue** (idempotent) ; cap `PAYOUT_MAX_CLU` (au-delà → `manual_required`) ;
-  Stripe → `manual_required` (payout fiat = Connect, hors scope auto). Pas de cron
-  auto (déclenchement délibéré). Test 23/23. _(2026-08-11)_
-- [x] **Réconciliation dépôts** `wallet/deposits-reconcile.js` (admin) : liste les
-  dépôts `status:'crediting'` bloqués (claim ok, crédit KO) ; action `credit`/
-  `abandon` humaine (pas d'auto-retry → pas de risque de double-crédit). _(2026-08-11)_
-- [ ] **Payout Stripe (fiat off-ramp)** réel via Stripe Connect (comptes connectés
-  KYC) — aujourd'hui parqué `manual_required`.
-- [ ] **Tests live** : RPC réel (dépôt + envoi), webhook Stripe réel, Lua vs vrai Upstash.
-- [ ] Confirmation on-chain des payouts `sent` (vérifier le receipt a posteriori).
+- [x] **Rail 1 — crypto : NOWPayments** (managé, zéro hot wallet). `nowpayments-create.js`
+  (crée une invoice hébergée, aucun crédit ici) + `nowpayments-ipn.js` (seul endroit
+  qui crédite, **après vérif de signature HMAC-SHA512** sur JSON trié contre
+  `NOWPAYMENTS_IPN_SECRET`, crédite sur `finished`, idempotent par `payment_id`,
+  raw-body). Test signature 13/13. _(2026-08-11)_
+- [x] **Rail 2 — fiat : Stripe** : `stripe-checkout.js` + `stripe-webhook.js` (crédit
+  uniquement sur webhook signé HMAC, idempotent par session id). Zéro SDK. Test 11/11. _(2026-08-11)_
+- [x] **Withdraw** : `wallet/withdraw.js` → **demande de payout** (débit CLU atomique
+  anti-overdraft + file `payouts:pending`, rail `crypto`|`stripe`, adresse+devise
+  validées pour crypto). Deposit démo **désactivé en prod** (410). _(2026-08-11)_
+- [x] **Off-ramp ops-fulfilled** `wallet/payouts-admin.js` (gate `ADMIN_SECRET`) :
+  liste la file de retraits ; l'ops envoie via le dashboard NOWPayments/Stripe puis
+  marque `sent` (avec ref tx) ou `failed` (**refund auto de la mise en CLU**, idempotent).
+  Choix V1 assumé : **aucune clé/mot de passe provider sur le serveur** + revue
+  anti-fraude/AML manuelle des retraits. Test 23/23. _(2026-08-11)_
+- [x] **Réconciliation dépôts** `wallet/deposits-reconcile.js` (admin) : dépôts
+  `status:'crediting'` bloqués → `credit`/`abandon` humain. _(2026-08-11)_
+- [ ] **Auto-payout NOWPayments** (Mass Payout API) — nécessite auth JWT + 2FA :
+  follow-up pour automatiser l'off-ramp crypto.
+- [ ] **Tests live** : invoice + IPN NOWPayments réels, webhook Stripe réel, Lua vs vrai Upstash.
 
 ## Phase 4 — Conformité & confiance _(cadre concours skill-based, PAS gambling)_
 

@@ -5,12 +5,13 @@
  *
  * Trustless settlement (see challenges/settle.js) currently supports the games
  * that expose a per-match lookup keyed by a stable match id: League of Legends
- * (Riot match-v5) and Dota 2 (Steam GetMatchDetails). Supercell games use a
- * rolling battlelog with no match id, so they stay on result-based settlement.
+ * (Riot match-v5), Valorant (Riot val-match-v1) and Dota 2 (Steam
+ * GetMatchDetails). Supercell games use a rolling battlelog with no match id, so
+ * they stay on result-based settlement.
  */
 
 // Games whose outcome we can verify from a match id.
-export const VERIFIABLE_GAMES = ['lol', 'dota2'];
+export const VERIFIABLE_GAMES = ['lol', 'valorant', 'dota2'];
 
 export function isVerifiable(game) {
   return VERIFIABLE_GAMES.includes(game);
@@ -65,12 +66,35 @@ export function extractDotaResult(match, steamId32) {
   };
 }
 
+export function extractValorantResult(match, puuid) {
+  const info = match.matchInfo || {};
+  const player = (match.players || []).find(p => p.puuid === puuid);
+  if (!player) return null;
+  const team = (match.teams || []).find(t => t.teamId === player.teamId);
+  if (!team) return null;
+  return {
+    win: Boolean(team.won),
+    teamId: player.teamId,
+    character: player.characterId,
+    matchId: info.matchId,
+    timestamp: info.gameStartMillis,
+    queueId: info.queueId,
+    gameMode: info.gameMode,
+  };
+}
+
 // ── Riot fetch layer ────────────────────────────────────────────
 const RIOT_REGIONS = {
   americas: 'americas.api.riotgames.com',
   europe: 'europe.api.riotgames.com',
   asia: 'asia.api.riotgames.com',
   sea: 'sea.api.riotgames.com',
+};
+
+// Valorant match-v1 shards, and the account-v1 continental host each maps to.
+const VAL_SHARDS = {
+  na: 'americas', br: 'americas', latam: 'americas',
+  eu: 'europe', ap: 'asia', kr: 'asia',
 };
 
 async function riotFetch(url, apiKey) {
@@ -97,6 +121,12 @@ export async function riotGetMatchIds(puuid, region, count, apiKey) {
 export async function riotGetMatchDetail(matchId, region, apiKey) {
   const host = RIOT_REGIONS[region] || RIOT_REGIONS.europe;
   const url = `https://${host}/lol/match/v5/matches/${matchId}`;
+  return riotFetch(url, apiKey);
+}
+
+export async function valGetMatchDetail(matchId, shard, apiKey) {
+  const host = `${shard}.api.riotgames.com`;
+  const url = `https://${host}/val/match/v1/matches/${matchId}`;
   return riotFetch(url, apiKey);
 }
 
@@ -148,6 +178,30 @@ export async function resolveOutcome({ game, region, matchId, handle }) {
     const detail = await riotGetMatchDetail(matchId, routing, apiKey);
     if (detail.error) return { ok: false, error: detail.error, status: detail.status };
     const r = extractRiotResult(detail.data, acct.data.puuid);
+    if (!r) return { ok: false, error: 'Player did not take part in that match', status: 400 };
+    return { ok: true, win: r.win, matchId: r.matchId, timestamp: r.timestamp };
+  }
+
+  if (game === 'valorant') {
+    const apiKey = process.env.RIOT_API_KEY;
+    if (!apiKey) return { ok: false, error: 'RIOT_API_KEY not configured', status: 500 };
+    if (!/^[0-9a-fA-F]{8}(-[0-9a-fA-F]{4}){3}-[0-9a-fA-F]{12}$/.test(String(matchId))) {
+      return { ok: false, error: 'Invalid Valorant match id', status: 400 };
+    }
+    if (typeof handle !== 'string' || !handle.includes('-')) {
+      return { ok: false, error: 'handle must be a Riot ID (Name-Tag)', status: 400 };
+    }
+    const shard = VAL_SHARDS[region] ? region : 'eu';
+    const continental = VAL_SHARDS[shard];
+    const parts = handle.split('-');
+    const gameName = parts.slice(0, -1).join('-');
+    const tagLine = parts[parts.length - 1];
+
+    const acct = await riotResolvePuuid(gameName, tagLine, continental, apiKey);
+    if (acct.error) return { ok: false, error: acct.error, status: acct.status };
+    const detail = await valGetMatchDetail(matchId, shard, apiKey);
+    if (detail.error) return { ok: false, error: detail.error, status: detail.status };
+    const r = extractValorantResult(detail.data, acct.data.puuid);
     if (!r) return { ok: false, error: 'Player did not take part in that match', status: 400 };
     return { ok: true, win: r.win, matchId: r.matchId, timestamp: r.timestamp };
   }

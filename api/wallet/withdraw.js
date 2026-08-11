@@ -7,7 +7,6 @@
  * send or a Stripe payout) is executed by a controlled fulfilment step, never
  * inline here — so funds leave the ledger exactly once and are queued for payout.
  */
-import { ethers } from 'ethers';
 import { requireAuth } from '../_auth.js';
 import { kvGet, kvSet } from '../_kv.js';
 import { createPayoutRequest, BalanceError } from '../_payments.js';
@@ -15,7 +14,7 @@ import { createPayoutRequest, BalanceError } from '../_payments.js';
 const DAILY_WITHDRAW_CAP = 10000;
 const MIN_WITHDRAW = 10;
 const MAX_WITHDRAW = 5000;
-const RAILS = ['onchain', 'stripe'];
+const RAILS = ['crypto', 'stripe'];
 
 export default async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(200).end();
@@ -37,12 +36,17 @@ export default async function handler(req, res) {
 
   // Resolve destination per rail.
   let destination = null;
-  if (rail === 'onchain') {
-    destination = (body.destination || user.addr || '').trim();
-    if (!ethers.isAddress(destination)) {
-      return res.status(400).json({ error: 'A valid destination wallet address is required for on-chain withdrawals' });
+  let payoutMeta = {};
+  if (rail === 'crypto') {
+    destination = (body.destination || '').trim();
+    const currency = (body.currency || '').trim().toLowerCase();
+    if (destination.length < 12 || destination.length > 128) {
+      return res.status(400).json({ error: 'A valid destination crypto address is required' });
     }
-    destination = ethers.getAddress(destination);
+    if (!/^[a-z0-9]{2,20}$/.test(currency)) {
+      return res.status(400).json({ error: 'A payout currency is required (e.g. usdttrc20, usdcmatic)' });
+    }
+    payoutMeta = { currency };
   }
   // For 'stripe', the payout target is resolved from the user's Stripe account
   // at fulfilment time; no destination needed here.
@@ -56,7 +60,7 @@ export default async function handler(req, res) {
 
   let result;
   try {
-    result = await createPayoutRequest({ userId: user.userId, clu: amount, rail, destination });
+    result = await createPayoutRequest({ userId: user.userId, clu: amount, rail, destination, meta: payoutMeta });
   } catch (e) {
     if (e instanceof BalanceError) {
       if (e.code === 'NO_ACCOUNT') return res.status(404).json({ error: 'Account not found' });
