@@ -105,11 +105,13 @@ redis.call('SET', KEYS[2], cjson.encode(lb))
 return cjson.encode({ winner = wb, loser = lb })
 `;
 
-// ── refundEscrow: return a locked stake to its owner ────────────
-// Moves `stake` from escrow back to available. Used to cancel an unaccepted
-// challenge or to unwind a timed-out / drawn one. No platform fee on a refund.
-export async function refundEscrow(userId, stake) {
-  return mutateBalance(userId, { dAvailable: stake, dEscrow: -stake, minEscrow: stake });
+// ── refundEscrow: release a locked stake to its owner ───────────
+// Removes `stake` from escrow and credits `creditAmount` back to available.
+// creditAmount defaults to the full stake (a plain refund); pass a smaller
+// amount to withhold a platform fee (e.g. unwinding a disputed challenge). The
+// withheld remainder is the platform's implicit cut, exactly like settlement.
+export async function refundEscrow(userId, stake, creditAmount = stake) {
+  return mutateBalance(userId, { dAvailable: creditAmount, dEscrow: -stake, minEscrow: stake });
 }
 
 export async function settleEscrow(winnerId, loserId, stake, payout) {

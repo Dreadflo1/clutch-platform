@@ -131,24 +131,47 @@ export async function cancelOpen(ch, reason = 'cancelled') {
   return 'cancelled';
 }
 
+async function logTx(userId, tx) {
+  await kvSet(`tx:${tx.id}`, tx, 7776000); // 90 days
+  const log = (await kvGet(`txlog:${userId}`)) || [];
+  log.unshift(tx.id);
+  await kvSet(`txlog:${userId}`, log.slice(0, 200));
+}
+
 /**
- * Unwind an accepted-but-unsettled challenge as a draw: refund BOTH stakes,
+ * Unwind an accepted-but-unsettled challenge as a draw: release BOTH escrows,
  * drop it from the active list, and archive it. Idempotent.
+ *
+ * If the challenge was DISPUTED, the platform commission is still levied on the
+ * refund (each side gets stake minus its half of the fee) — a dispute must not
+ * be a way to dodge the fee. A plain timeout on a never-disputed match is
+ * refunded in full.
  * @returns {'refunded'|'noop'}
  */
 export async function refundDraw(ch, reason = 'timeout') {
   if (ch.status !== 'active' && ch.status !== 'awaiting_result' && ch.status !== 'disputed') {
     return 'noop';
   }
+  const wasDisputed = ch.status === 'disputed';
+  const feeEach = wasDisputed ? Math.floor(ch.stake * PLATFORM_FEE) : 0;
+  const credit = ch.stake - feeEach;
+
   // Refund each side independently; minEscrow guard makes a double-refund a noop.
-  try {
-    if (ch.creatorUserId) await refundEscrow(ch.creatorUserId, ch.stake);
-  } catch (e) { if (!(e instanceof BalanceError)) throw e; }
-  try {
-    if (ch.opponentUserId) await refundEscrow(ch.opponentUserId, ch.stake);
-  } catch (e) { if (!(e instanceof BalanceError)) throw e; }
+  for (const userId of [ch.creatorUserId, ch.opponentUserId]) {
+    if (!userId) continue;
+    try {
+      const bal = await refundEscrow(userId, ch.stake, credit);
+      const txId = `tx_${Date.now()}_${crypto.randomBytes(4).toString('hex')}`;
+      await logTx(userId, {
+        id: txId, userId, type: 'refund', amount: credit, fee: feeEach,
+        ref: ch.id, reason, ts: Date.now(), balAfter: bal.available,
+      });
+    } catch (e) { if (!(e instanceof BalanceError)) throw e; } // already unwound
+  }
+
   ch.status = 'refunded';
   ch.refundReason = reason;
+  ch.feeCharged = wasDisputed ? feeEach * 2 : 0;
   ch.refundedAt = Date.now();
   await removeActive(ch.id);
   await archive(ch);

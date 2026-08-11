@@ -4,8 +4,9 @@
  *
  * Manually resolves a DISPUTED challenge — the human backstop for the win/win
  * conflicts that verification cannot arbitrate. Awards the pot to one side or
- * refunds both. Gated by ADMIN_SECRET (Bearer); money-moving, so in production
- * it refuses to run unless the secret is configured and matches.
+ * splits it as a draw. Either way the platform commission is still levied (a
+ * dispute is never a way to dodge the fee). Gated by ADMIN_SECRET (Bearer);
+ * money-moving, so in production it refuses to run unless the secret matches.
  */
 import { kvGet, kvLock, kvUnlock } from '../_kv.js';
 import { BalanceError } from '../_balance.js';
