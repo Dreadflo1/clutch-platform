@@ -8,6 +8,7 @@
 import crypto from 'crypto';
 import { requireAuth } from '../_auth.js';
 import { kvGet, kvSet } from '../_kv.js';
+import { mutateBalance, BalanceError } from '../_balance.js';
 
 const DAILY_DEPOSIT_CAP = 10000;
 const MIN_DEPOSIT = 10;
@@ -27,10 +28,6 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: `Amount must be ${MIN_DEPOSIT}-${MAX_DEPOSIT} CLU` });
   }
 
-  // Read current balance
-  const bal = await kvGet(`bal:${user.userId}`);
-  if (!bal) return res.status(404).json({ error: 'Account not found' });
-
   // Daily cap check
   const todayKey = `deposits:${user.userId}:${new Date().toISOString().slice(0, 10)}`;
   const todayTotal = (await kvGet(todayKey)) || 0;
@@ -38,10 +35,16 @@ export default async function handler(req, res) {
     return res.status(400).json({ error: `Daily deposit cap: ${DAILY_DEPOSIT_CAP} CLU. Already deposited: ${todayTotal}` });
   }
 
-  // Credit balance
-  bal.available += amount;
-  bal.version++;
-  await kvSet(`bal:${user.userId}`, bal);
+  // Credit balance atomically
+  let bal;
+  try {
+    bal = await mutateBalance(user.userId, { dAvailable: amount });
+  } catch (e) {
+    if (e instanceof BalanceError && e.code === 'NO_ACCOUNT') {
+      return res.status(404).json({ error: 'Account not found' });
+    }
+    throw e;
+  }
 
   // Update daily tracker
   await kvSet(todayKey, todayTotal + amount, 86400);

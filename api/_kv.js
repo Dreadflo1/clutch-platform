@@ -1,62 +1,155 @@
 /**
- * Vercel KV wrapper — shared across all API endpoints
- * Falls back to in-memory store when KV env vars are missing (dev mode)
+ * Vercel KV (Upstash Redis REST) wrapper — shared across all API endpoints.
+ *
+ * In production KV env vars are REQUIRED: if they are missing we throw instead of
+ * silently falling back to an in-memory store (a silent fallback loses every
+ * balance on the next cold start — real money must never live in process memory).
+ *
+ * In local dev (no VERCEL_ENV / NODE_ENV=production) we fall back to an in-memory
+ * Map so the API can be exercised without provisioning KV.
  */
 
 const memStore = new Map();
+const memExpiry = new Map();
 
-export async function kvGet(key) {
-  const url = process.env.KV_REST_API_URL;
-  const token = process.env.KV_REST_API_TOKEN;
-  if (!url || !token) {
-    const val = memStore.get(key);
-    return val ? JSON.parse(val) : null;
+const IS_PROD =
+  process.env.VERCEL_ENV === 'production' || process.env.NODE_ENV === 'production';
+
+function creds() {
+  return {
+    url: process.env.KV_REST_API_URL,
+    token: process.env.KV_REST_API_TOKEN,
+  };
+}
+
+/** True when a real KV backend is configured. */
+export function kvActive() {
+  const { url, token } = creds();
+  return Boolean(url && token);
+}
+
+function assertConfigured() {
+  if (!kvActive() && IS_PROD) {
+    throw new Error(
+      'KV_MISCONFIGURED: KV_REST_API_URL / KV_REST_API_TOKEN are not set in production. ' +
+        'Provision Vercel KV and add its env vars before serving traffic.'
+    );
   }
+}
+
+/** Low-level: run a single Redis command over the Upstash REST API. */
+async function kvCommand(command) {
+  const { url, token } = creds();
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: {
+      Authorization: `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify(command),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok || data.error) {
+    const err = new Error(data.error || `KV command failed (${res.status})`);
+    err.kvError = data.error || `HTTP ${res.status}`;
+    throw err;
+  }
+  return data.result;
+}
+
+// ── In-memory helpers (dev only) ────────────────────────────────
+function memExpired(key) {
+  const exp = memExpiry.get(key);
+  if (exp && exp < Date.now()) {
+    memStore.delete(key);
+    memExpiry.delete(key);
+    return true;
+  }
+  return false;
+}
+
+/** Synchronous parsed read from the in-memory store (dev fallback only). */
+export function memGetSync(key) {
+  if (memExpired(key)) return null;
+  const val = memStore.get(key);
+  return val ? JSON.parse(val) : null;
+}
+
+/** Synchronous write to the in-memory store (dev fallback only). */
+export function memSetSync(key, value, exSeconds) {
+  memStore.set(key, JSON.stringify(value));
+  if (exSeconds) memExpiry.set(key, Date.now() + exSeconds * 1000);
+  else memExpiry.delete(key);
+  return true;
+}
+
+// ── Public API ──────────────────────────────────────────────────
+export async function kvGet(key) {
+  assertConfigured();
+  if (!kvActive()) return memGetSync(key);
   try {
-    const res = await fetch(`${url}/get/${key}`, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-    if (!res.ok) return null;
-    const data = await res.json();
-    return data.result ? JSON.parse(data.result) : null;
+    const result = await kvCommand(['GET', key]);
+    return result ? JSON.parse(result) : null;
   } catch {
     return null;
   }
 }
 
 export async function kvSet(key, value, exSeconds) {
-  const url = process.env.KV_REST_API_URL;
-  const token = process.env.KV_REST_API_TOKEN;
+  assertConfigured();
   const json = JSON.stringify(value);
-  if (!url || !token) {
-    memStore.set(key, json);
-    if (exSeconds) setTimeout(() => memStore.delete(key), exSeconds * 1000);
-    return true;
-  }
+  if (!kvActive()) return memSetSync(key, value, exSeconds);
   try {
-    const args = exSeconds ? `/EX/${exSeconds}` : '';
-    const res = await fetch(`${url}/set/${key}/${encodeURIComponent(json)}${args}`, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-    return res.ok;
+    const cmd = exSeconds ? ['SET', key, json, 'EX', exSeconds] : ['SET', key, json];
+    const result = await kvCommand(cmd);
+    return result === 'OK';
   } catch {
     return false;
   }
 }
 
 export async function kvDel(key) {
-  const url = process.env.KV_REST_API_URL;
-  const token = process.env.KV_REST_API_TOKEN;
-  if (!url || !token) {
+  assertConfigured();
+  if (!kvActive()) {
     memStore.delete(key);
+    memExpiry.delete(key);
     return true;
   }
   try {
-    const res = await fetch(`${url}/del/${key}`, {
-      headers: { Authorization: `Bearer ${token}` },
-    });
-    return res.ok;
+    await kvCommand(['DEL', key]);
+    return true;
   } catch {
     return false;
   }
+}
+
+/**
+ * Acquire a short-lived lock. Returns true if acquired, false if already held.
+ * Uses atomic SET NX EX so two concurrent callers can never both win.
+ */
+export async function kvLock(key, ttlSeconds = 10) {
+  assertConfigured();
+  if (!kvActive()) {
+    if (memGetSync(key)) return false;
+    memSetSync(key, 1, ttlSeconds);
+    return true;
+  }
+  const result = await kvCommand(['SET', key, '1', 'NX', 'EX', ttlSeconds]);
+  return result === 'OK';
+}
+
+export async function kvUnlock(key) {
+  return kvDel(key);
+}
+
+/**
+ * Run a Lua script atomically. `keys` and `args` are string arrays.
+ * Returns the raw script result. KV backend required (throws in dev if no KV).
+ */
+export async function kvEval(script, keys = [], args = []) {
+  assertConfigured();
+  if (!kvActive()) {
+    throw new Error('kvEval requires a KV backend (no in-memory emulation)');
+  }
+  return kvCommand(['EVAL', script, String(keys.length), ...keys, ...args]);
 }
