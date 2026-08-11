@@ -143,6 +143,24 @@ export async function kvUnlock(key) {
 }
 
 /**
+ * Set a key only if it does not already exist, with NO expiry (permanent).
+ * Returns true if this call created it, false if it was already present.
+ * The durable building block for exactly-once effects (e.g. crediting a
+ * payment): the marker must outlive any TTL so a payment can never re-credit.
+ */
+export async function kvSetNx(key, value) {
+  assertConfigured();
+  const json = JSON.stringify(value);
+  if (!kvActive()) {
+    if (memGetSync(key) !== null) return false;
+    memSetSync(key, value);
+    return true;
+  }
+  const result = await kvCommand(['SET', key, json, 'NX']);
+  return result === 'OK';
+}
+
+/**
  * Run a Lua script atomically. `keys` and `args` are string arrays.
  * Returns the raw script result. KV backend required (throws in dev if no KV).
  */

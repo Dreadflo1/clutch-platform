@@ -1,15 +1,17 @@
 /**
- * POST /api/wallet/deposit
+ * POST /api/wallet/deposit  — DEMO / dev-only faucet
  * Body: { amount }
- * Adds CLU to available balance. Logs transaction.
- * In production: verify payment (Stripe, on-chain tx) before crediting.
- * Currently: demo mode — credits directly with a daily cap.
+ * Credits CLU directly with no real payment. This mints free balance, so it is
+ * DISABLED in production: real deposits must go through a verified rail
+ * (deposit-onchain, or the Stripe webhook). Kept for local testing only.
  */
 import crypto from 'crypto';
 import { requireAuth } from '../_auth.js';
 import { kvGet, kvSet } from '../_kv.js';
 import { mutateBalance, BalanceError } from '../_balance.js';
 
+const IS_PROD =
+  process.env.VERCEL_ENV === 'production' || process.env.NODE_ENV === 'production';
 const DAILY_DEPOSIT_CAP = 10000;
 const MIN_DEPOSIT = 10;
 const MAX_DEPOSIT = 5000;
@@ -17,6 +19,9 @@ const MAX_DEPOSIT = 5000;
 export default async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST') return res.status(405).json({ error: 'POST only' });
+  if (IS_PROD) {
+    return res.status(410).json({ error: 'Direct deposit is disabled — use /api/wallet/deposit-onchain or Stripe' });
+  }
 
   const user = requireAuth(req, res);
   if (!user) return;
