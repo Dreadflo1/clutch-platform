@@ -219,15 +219,15 @@ select{appearance:none}
   <!-- Step 2: Bet type -->
   <div class="stitle">Challenge Type</div>
   <div class="btg">
-    <div class="bto sel" data-bt="outcome" onclick="selBetType(this,'outcome')">
+    <div class="bto sel" data-bt="outcome" onclick="selChallengeType(this,'outcome')">
       <div class="bt">Outcome</div>
       <div class="bd">I win vs you</div>
     </div>
-    <div class="bto" data-bt="target" onclick="selBetType(this,'target')">
+    <div class="bto" data-bt="target" onclick="selChallengeType(this,'target')">
       <div class="bt">Target</div>
       <div class="bd">Hit a stat goal</div>
     </div>
-    <div class="bto" data-bt="custom" onclick="selBetType(this,'custom')">
+    <div class="bto" data-bt="custom" onclick="selChallengeType(this,'custom')">
       <div class="bt">Custom</div>
       <div class="bd">Any condition</div>
     </div>
@@ -322,7 +322,7 @@ var GAMES = [
   {id:'custom',  name:'OTHER',     full:'Custom',            color:'#8a95b3', api:false},
 ];
 
-var C = {game:null, betType:'outcome', stake:0};
+var C = {game:null, challengeType:'outcome', stake:0};
 var PENDING = null;
 var _res = null;
 
@@ -399,18 +399,18 @@ function buildGameGrid() {
 
 function selGame(id) { C.game=id; buildGameGrid(); buildCondArea(); }
 
-function selBetType(el, t) {
+function selChallengeType(el, t) {
   document.querySelectorAll('.bto').forEach(function(o){ o.classList.remove('sel'); });
-  el.classList.add('sel'); C.betType=t; buildCondArea();
+  el.classList.add('sel'); C.challengeType=t; buildCondArea();
 }
 
 function buildCondArea() {
   var g = GAMES.find(function(x){ return x.id===C.game; })||{};
   var h='';
-  if (C.betType==='outcome') {
+  if (C.challengeType==='outcome') {
     h='<div class="fl"><label>Win condition</label><input class="fi" id="c-out" placeholder="e.g. I win our 1v1 match"/></div>';
     if (g.api) h+='<div class="fl"><label>Your '+g.full+' username (for auto-verify)</label><input class="fi" id="c-user" placeholder="username#tag"/></div>';
-  } else if (C.betType==='target') {
+  } else if (C.challengeType==='target') {
     h='<div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">'
      +'<div class="fl"><label>Stat</label><select class="fs" id="c-stat"><option value="kills">Kills</option><option value="kda">KDA</option><option value="damage">Damage</option><option value="rank">Rank</option><option value="score">Score</option><option value="other">Other</option></select></div>'
      +'<div class="fl"><label>Target</label><input class="fi" id="c-tval" placeholder="e.g. 20, 3.5…"/></div>'
@@ -442,7 +442,7 @@ function createDuel() {
     creator:W.addr,
     opponent:null,
     game:C.game,
-    betType:C.betType,
+    challengeType:C.challengeType,
     condition:cond,
     stake:stake,
     totalPot:stake*2,
@@ -458,14 +458,14 @@ function createDuel() {
   duels.push(duel);
   saveDuels(duels);
 
-  var code = btoa(JSON.stringify({id:duel.id,creator:duel.creator,game:duel.game,betType:duel.betType,condition:duel.condition,stake:duel.stake,expiry:duel.expiry,createdAt:duel.createdAt}));
+  var code = btoa(JSON.stringify({id:duel.id,creator:duel.creator,game:duel.game,challengeType:duel.challengeType,condition:duel.condition,stake:duel.stake,expiry:duel.expiry,createdAt:duel.createdAt}));
   document.getElementById('code-val').textContent = code;
   document.getElementById('code-out').style.display = 'block';
   toast('Duel created — share the code!','success');
 }
 
 function getCond() {
-  var t=C.betType;
+  var t=C.challengeType;
   if (t==='outcome'){
     var v=(document.getElementById('c-out')||{}).value||'';
     if (!v.trim()){toast('Enter win condition','error');return null;}
@@ -484,7 +484,7 @@ function getCond() {
 }
 
 function condLabel(d) {
-  var t=d.betType,c=d.condition;
+  var t=d.challengeType,c=d.condition;
   if (t==='outcome') return c.text||'Win the match';
   if (t==='target') return 'Hit '+c.value+' '+c.stat;
   return c.text||'Custom condition';
@@ -506,7 +506,7 @@ function previewDuel() {
   var g=GAMES.find(function(x){return x.id===data.game;})||{full:data.game};
   var html='<div>'
     +apRow('Game',g.full)
-    +apRow('Challenge Type',data.betType)
+    +apRow('Challenge Type',data.challengeType)
     +apRow('Condition',condLabel(data))
     +apRow('Challenger',data.creator.slice(0,8)+'…')
     +apRow('Your Stake',data.stake+' ETH (≈$'+(data.stake*ETH_USD).toFixed(0)+')')
@@ -525,7 +525,7 @@ function confirmAccept() {
   var ex=duels.find(function(x){return x.id===d.id;});
   if (ex) { ex.opponent=W.addr; ex.status='active'; ex.acceptedAt=Date.now(); }
   else {
-    duels.push({id:d.id,creator:d.creator,opponent:W.addr,game:d.game,betType:d.betType,condition:d.condition,stake:d.stake,totalPot:d.stake*2,expiry:d.expiry,createdAt:d.createdAt,acceptedAt:Date.now(),status:'active',creatorResult:null,opponentResult:null,winner:null});
+    duels.push({id:d.id,creator:d.creator,opponent:W.addr,game:d.game,challengeType:d.challengeType,condition:d.condition,stake:d.stake,totalPot:d.stake*2,expiry:d.expiry,createdAt:d.createdAt,acceptedAt:Date.now(),status:'active',creatorResult:null,opponentResult:null,winner:null});
   }
   saveDuels(duels);
   PENDING=null;

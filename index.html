@@ -2942,12 +2942,12 @@ var U = {
   avatar:null, streak:0
 };
 
-var CREATE = { game:null, betType:'outcome' };
+var CREATE = { game:null, challengeType:'outcome' };
 var PENDING_ACCEPT = null;
 var _selectedResult = null;
 var _resultDuelId   = null;
 
-function loadDuels(){ try { return JSON.parse(localStorage.getItem('clutch_duels')||'[]'); } catch(e){ return []; } }
+function loadDuels(){ try { var arr = JSON.parse(localStorage.getItem('clutch_duels')||'[]'); return arr.map(function(d){ if(d && !d.challengeType) d.challengeType = d.betType || 'outcome'; return d; }); } catch(e){ return []; } }
 function saveDuels(){ try { localStorage.setItem('clutch_duels', JSON.stringify(DUELS)); } catch(e){} }
 var DUELS = loadDuels();
 
@@ -3079,7 +3079,7 @@ async function executeQuickChallenge(game, mode, stake) {
     try {
       var res = await authFetch('/api/challenges', {
         method:'POST', headers:{'Content-Type':'application/json'},
-        body: JSON.stringify({game:game, mode:mode, stake:stake, betType:'outcome', condition:mode, expiryHours:24, creatorWins:0})
+        body: JSON.stringify({game:game, mode:mode, stake:stake, challengeType:'outcome', condition:mode, expiryHours:24, creatorWins:0})
       });
       var data = await res.json();
       if (data.error || data.errors) { toast(data.error || data.errors.join(', '),'error'); return; }
@@ -3090,10 +3090,10 @@ async function executeQuickChallenge(game, mode, stake) {
     } catch(e) { toast('Server error: '+e.message,'error'); }
   } else {
     // Guest fallback: local only
-    var duel = {id:'D'+Date.now(), creator:U.addr, opponent:null, game:game, betType:'outcome', condition:{type:'outcome',value:mode}, stake:stake, totalPot:stake*2, expiry:Date.now()+86400000, createdAt:Date.now(), status:'pending', creatorResult:null, opponentResult:null, winner:null};
+    var duel = {id:'D'+Date.now(), creator:U.addr, opponent:null, game:game, challengeType:'outcome', condition:{type:'outcome',value:mode}, stake:stake, totalPot:stake*2, expiry:Date.now()+86400000, createdAt:Date.now(), status:'pending', creatorResult:null, opponentResult:null, winner:null};
     DUELS.push(duel); saveDuels();
     U.balance -= stake; U.escrow += stake; saveProfile();
-    var code = btoa(JSON.stringify({id:duel.id,creator:duel.creator,game:duel.game,betType:duel.betType,condition:duel.condition,stake:duel.stake,expiry:duel.expiry,createdAt:duel.createdAt}));
+    var code = btoa(JSON.stringify({id:duel.id,creator:duel.creator,game:duel.game,challengeType:duel.challengeType,condition:duel.condition,stake:duel.stake,expiry:duel.expiry,createdAt:duel.createdAt}));
     refreshAll();
     showQRModal(duel, code);
     toast('Challenge locked (guest mode — local only).','info');
@@ -3311,7 +3311,7 @@ function selGame(id, el) {
 }
 
 function selBT(el, t) {
-  CREATE.betType = t;
+  CREATE.challengeType = t;
   document.querySelectorAll('.wiz-tc').forEach(function(e){ e.classList.remove('sel'); });
   if (el) el.classList.add('sel');
   buildCondFields();
@@ -3332,7 +3332,7 @@ var COMMON_CONDITIONS = {
 function buildCondFields() {
   var wrap = document.getElementById('cond-fields');
   if (!wrap) return;
-  var bt = CREATE.betType || 'outcome';
+  var bt = CREATE.challengeType || 'outcome';
   var game = CREATE.game || '';
   var presets = COMMON_CONDITIONS[game] || COMMON_CONDITIONS._default;
 
@@ -3535,7 +3535,7 @@ function showQRModal(duel, code){
 }
 
 function condLabel(d) {
-  var t=d.betType, c=d.condition||{};
+  var t=d.challengeType, c=d.condition||{};
   if (t==='outcome') return c.text||'Win the match';
   if (t==='target')  return 'Hit '+c.value+' '+c.stat+(c.context?' ('+c.context+')':'');
   return c.text||'Custom condition';
@@ -3547,7 +3547,7 @@ function updPreview() {
   function setText(id, val) { var el=document.getElementById(id); if(el) el.textContent=val; }
   var g = GAMES.find(function(x){ return x.id===CREATE.game; });
   setText('prev-game',  g ? g.name : '—');
-  setText('prev-type',  {outcome:'Match Outcome',target:'Performance Target',custom:'Custom'}[CREATE.betType]||'—');
+  setText('prev-type',  {outcome:'Match Outcome',target:'Performance Target',custom:'Custom'}[CREATE.challengeType]||'—');
   setText('prev-verify', g ? (g.api ? '✓ '+g.apiName : 'Screenshot proof') : '—');
   var condEl = document.getElementById('c-out')||document.getElementById('c-tval')||document.getElementById('c-cust');
   setText('prev-cond', (condEl&&condEl.value) ? condEl.value : '—');
@@ -3562,7 +3562,7 @@ function setSt(v){ document.getElementById('stake-input').value=v; updPreview();
 
 // ── CREATE DUEL ───────────────────────────────────────
 function gatherCond() {
-  var t = CREATE.betType;
+  var t = CREATE.challengeType;
   if (t==='outcome') {
     var chips = window._condChips || [];
     if (chips.length === 0) { toast('Pick at least one win condition','error'); return null; }
@@ -3595,7 +3595,7 @@ async function createDuel() {
     try {
       var res = await authFetch('/api/challenges', {
         method:'POST', headers:{'Content-Type':'application/json'},
-        body: JSON.stringify({game:CREATE.game, mode:cond.text||cond, stake:stake, betType:CREATE.betType, condition:cond.text||cond, expiryHours:expiryHours, creatorWins:0})
+        body: JSON.stringify({game:CREATE.game, mode:cond.text||cond, stake:stake, challengeType:CREATE.challengeType, condition:cond.text||cond, expiryHours:expiryHours, creatorWins:0})
       });
       var data = await res.json();
       if (data.error || data.errors) { toast(data.error || data.errors.join(', '),'error'); return; }
@@ -3605,10 +3605,10 @@ async function createDuel() {
       toast('Challenge locked on server!','success');
     } catch(e) { toast('Server error','error'); }
   } else {
-    var duel = {id:'D'+Date.now(), creator:U.addr, opponent:null, game:CREATE.game, betType:CREATE.betType, condition:cond, stake:stake, totalPot:stake*2, expiry:Date.now()+expiry, createdAt:Date.now(), status:'pending', creatorResult:null, opponentResult:null, winner:null};
+    var duel = {id:'D'+Date.now(), creator:U.addr, opponent:null, game:CREATE.game, challengeType:CREATE.challengeType, condition:cond, stake:stake, totalPot:stake*2, expiry:Date.now()+expiry, createdAt:Date.now(), status:'pending', creatorResult:null, opponentResult:null, winner:null};
     DUELS.push(duel); saveDuels();
     U.balance -= stake; U.escrow += stake; saveProfile();
-    var code = btoa(JSON.stringify({id:duel.id,creator:duel.creator,game:duel.game,betType:duel.betType,condition:duel.condition,stake:duel.stake,expiry:duel.expiry,createdAt:duel.createdAt}));
+    var code = btoa(JSON.stringify({id:duel.id,creator:duel.creator,game:duel.game,challengeType:duel.challengeType,condition:duel.condition,stake:duel.stake,expiry:duel.expiry,createdAt:duel.createdAt}));
     refreshAll();
     showQRModal(duel, code);
     toast('Challenge locked (local mode).','info');
@@ -3639,7 +3639,7 @@ function previewAccept() {
   var g = GAMES.find(function(x){ return x.id===data.game; })||{name:data.game,api:false};
   var rows = [
     ['Game', g.name + (g.api?' <span style="color:var(--acc);font-size:11px">✓ API verified</span>':'')],
-    ['Challenge type', {outcome:'Match Outcome',target:'Performance Target',custom:'Custom Condition'}[data.betType]||data.betType],
+    ['Challenge type', {outcome:'Match Outcome',target:'Performance Target',custom:'Custom Condition'}[data.challengeType]||data.challengeType],
     ['Condition', condLabel(data)],
     ['Challenger', '<span style="font-family:monospace;font-size:12px">'+data.creator+'</span>'],
     ['Expires', timeUntil(data.expiry)],
@@ -3667,13 +3667,13 @@ async function confirmAccept() {
       var data = await res.json();
       if (data.error) { toast(data.error,'error'); return; }
       await syncBalance();
-      DUELS.push(data.challenge || {id:d.id,creator:d.creator,opponent:U.addr,game:d.game,betType:d.betType,condition:d.condition,stake:d.stake,totalPot:d.stake*2,status:'active',acceptedAt:Date.now()});
+      DUELS.push(data.challenge || {id:d.id,creator:d.creator,opponent:U.addr,game:d.game,challengeType:d.challengeType,condition:d.condition,stake:d.stake,totalPot:d.stake*2,status:'active',acceptedAt:Date.now()});
       saveDuels();
     } catch(e) { toast('Server error','error'); return; }
   } else {
     var ex = DUELS.find(function(x){ return x.id===d.id; });
     if (ex) { ex.opponent=U.addr; ex.status='active'; ex.acceptedAt=Date.now(); }
-    else { DUELS.push({id:d.id,creator:d.creator,opponent:U.addr,game:d.game,betType:d.betType,condition:d.condition,stake:d.stake,totalPot:d.stake*2,expiry:d.expiry,createdAt:d.createdAt,acceptedAt:Date.now(),status:'active',creatorResult:null,opponentResult:null,winner:null}); }
+    else { DUELS.push({id:d.id,creator:d.creator,opponent:U.addr,game:d.game,challengeType:d.challengeType,condition:d.condition,stake:d.stake,totalPot:d.stake*2,expiry:d.expiry,createdAt:d.createdAt,acceptedAt:Date.now(),status:'active',creatorResult:null,opponentResult:null,winner:null}); }
     saveDuels();
     U.balance -= d.stake; U.escrow += d.stake; saveProfile();
   }
@@ -3820,7 +3820,7 @@ async function postChallenge() {
     try {
       var res = await authFetch('/api/challenges', {
         method:'POST', headers:{'Content-Type':'application/json'},
-        body: JSON.stringify({game:game, mode:mode, stake:stake, betType:'outcome', condition:mode, expiryHours:expiry, creatorWins:wins})
+        body: JSON.stringify({game:game, mode:mode, stake:stake, challengeType:'outcome', condition:mode, expiryHours:expiry, creatorWins:wins})
       });
       var data = await res.json();
       if (data.error || data.errors) { toast(data.error || data.errors.join(', '),'error'); return; }
@@ -3830,7 +3830,7 @@ async function postChallenge() {
       toast('Challenge posted — stake locked on server!','success');
     } catch(e) { toast('Server error','error'); return; }
   } else {
-    var challenge = {id:'CB_'+Date.now()+'_'+Math.random().toString(36).slice(2,6), game:game, mode:mode, betType:'outcome', condition:mode, stake:stake, creator:U.addr, creatorName:U.name||'Anonymous', creatorWins:wins, status:'open', createdAt:Date.now(), expiresAt:Date.now()+expiry*3600000};
+    var challenge = {id:'CB_'+Date.now()+'_'+Math.random().toString(36).slice(2,6), game:game, mode:mode, challengeType:'outcome', condition:mode, stake:stake, creator:U.addr, creatorName:U.name||'Anonymous', creatorWins:wins, status:'open', createdAt:Date.now(), expiresAt:Date.now()+expiry*3600000};
     U.balance -= stake; U.escrow += stake; saveProfile();
     _boardCache.unshift(challenge);
     renderBoard(_boardCache);
@@ -3863,7 +3863,7 @@ async function acceptBoardChallenge(challengeId) {
     } catch(e) { toast('Server error','error'); return; }
   } else {
     U.balance -= c.stake; U.escrow += c.stake; saveProfile();
-    var duel = {id:c.id, creator:c.creator, opponent:U.addr, game:c.game, betType:c.betType||'outcome', condition:{type:'outcome',value:c.mode}, stake:c.stake, totalPot:c.stake*2, expiry:c.expiresAt, createdAt:c.createdAt, acceptedAt:Date.now(), status:'active', creatorResult:null, opponentResult:null, winner:null};
+    var duel = {id:c.id, creator:c.creator, opponent:U.addr, game:c.game, challengeType:c.challengeType||'outcome', condition:{type:'outcome',value:c.mode}, stake:c.stake, totalPot:c.stake*2, expiry:c.expiresAt, createdAt:c.createdAt, acceptedAt:Date.now(), status:'active', creatorResult:null, opponentResult:null, winner:null};
     DUELS.push(duel); saveDuels();
   }
 
@@ -4370,7 +4370,7 @@ function duelFullCard(d) {
     +'</div>'
     +'<div class="panel-body">'
     +'<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">'
-    +'<div><div style="font-size:13px;font-weight:800;color:'+g.color+'">'+g.name+'</div><div style="font-size:12px;color:var(--txt2);margin-top:2px">'+{outcome:'Match Outcome',target:'Performance Target',custom:'Custom'}[d.betType]+'</div></div>'
+    +'<div><div style="font-size:13px;font-weight:800;color:'+g.color+'">'+g.name+'</div><div style="font-size:12px;color:var(--txt2);margin-top:2px">'+{outcome:'Match Outcome',target:'Performance Target',custom:'Custom'}[d.challengeType]+'</div></div>'
     +'<div style="text-align:right"><div style="font-size:20px;font-weight:900;color:var(--gold)">'+d.totalPot.toLocaleString()+'<span style="font-size:11px;font-weight:600;color:var(--txt3);margin-left:4px">CLU pot</span></div><div style="font-size:11px;color:var(--txt3)">'+d.stake.toLocaleString()+' each</div></div>'
     +'</div>'
     +'<div style="background:var(--l2);border:1px solid var(--b);border-radius:var(--r);padding:12px;margin-bottom:14px;font-size:13px;font-style:italic;color:var(--txt2)">"'+condLabel(d)+'"</div>'
@@ -4389,7 +4389,7 @@ function duelFullCard(d) {
 function copyDuelCode(duelId) {
   var d=DUELS.find(function(x){return x.id===duelId;});
   if(!d)return;
-  var code=btoa(JSON.stringify({id:d.id,creator:d.creator,game:d.game,betType:d.betType,condition:d.condition,stake:d.stake,expiry:d.expiry,createdAt:d.createdAt}));
+  var code=btoa(JSON.stringify({id:d.id,creator:d.creator,game:d.game,challengeType:d.challengeType,condition:d.condition,stake:d.stake,expiry:d.expiry,createdAt:d.createdAt}));
   navigator.clipboard.writeText(code).then(function(){toast('Challenge code copied!','success');});
 }
 
@@ -4496,21 +4496,21 @@ function saveWizPreset() {
   var stake = parseInt((document.getElementById('stake-input')||{}).value)||0;
   if (!CREATE.game || !stake) return;
   var g = GAMES.find(function(x){ return x.id===CREATE.game; })||{name:'?',color:'#fff'};
-  var typeLabel = {outcome:'Match Outcome',target:'Performance Target',custom:'Custom'}[CREATE.betType]||'Match Outcome';
+  var typeLabel = {outcome:'Match Outcome',target:'Performance Target',custom:'Custom'}[CREATE.challengeType]||'Match Outcome';
   var condEl = document.getElementById('c-out')||document.getElementById('c-tval')||document.getElementById('c-cust');
   var cond = condEl ? condEl.value : '';
   var expSel = document.getElementById('expiry-sel');
   var expiry = expSel ? expSel.value : '24h';
   var preset = {
     game: CREATE.game, gameName: g.name, gameColor: g.color,
-    stake: stake, betType: CREATE.betType||'outcome',
+    stake: stake, challengeType: CREATE.challengeType||'outcome',
     condition: cond, expiry: expiry,
     label: g.name + ' · ' + stake.toLocaleString() + ' CLU · ' + typeLabel,
     savedAt: Date.now()
   };
   var presets = JSON.parse(localStorage.getItem('wiz_presets')||'[]');
   // Remove duplicate same game+stake
-  presets = presets.filter(function(p){ return !(p.game===preset.game && p.stake===preset.stake && p.betType===preset.betType); });
+  presets = presets.filter(function(p){ return !(p.game===preset.game && p.stake===preset.stake && p.challengeType===preset.challengeType); });
   presets.unshift(preset);
   if (presets.length > 3) presets = presets.slice(0,3);
   localStorage.setItem('wiz_presets', JSON.stringify(presets));
@@ -4541,7 +4541,7 @@ function applyPreset(idx) {
   var presets = JSON.parse(localStorage.getItem('wiz_presets')||'[]');
   var p = presets[idx];
   if (!p) return;
-  CREATE.game = p.game; CREATE.stake = p.stake; CREATE.betType = p.betType;
+  CREATE.game = p.game; CREATE.stake = p.stake; CREATE.challengeType = p.challengeType;
   buildGameGrids();
   setTimeout(function(){
     document.querySelectorAll('.wiz-gc').forEach(function(el){ el.classList.toggle('sel', el.dataset.game===p.game); });
@@ -4610,9 +4610,9 @@ function wizPopulateReview(){
   var expLabel=expSel?expSel.options[expSel.selectedIndex].text:'24 hours';
   var condEl=document.getElementById('c-out')||document.getElementById('c-tval')||document.getElementById('c-cust');
   var condText=condEl?condEl.value:'';
-  if(!condText){ if(CREATE.betType==='outcome') condText='Win the match'; else if(CREATE.betType==='target') condText='Hit performance target'; else condText='Custom condition'; }
+  if(!condText){ if(CREATE.challengeType==='outcome') condText='Win the match'; else if(CREATE.challengeType==='target') condText='Hit performance target'; else condText='Custom condition'; }
   function s(id,v){ var el=document.getElementById(id); if(el) el.textContent=v; }
-  s('rev-game',g.name); s('rev-stake',stake.toLocaleString()+' CLU'); s('rev-type',typeMap[CREATE.betType]||'—');
+  s('rev-game',g.name); s('rev-stake',stake.toLocaleString()+' CLU'); s('rev-type',typeMap[CREATE.challengeType]||'—');
   s('rev-pot',win.toLocaleString()+' CLU'); s('rev-expiry',expLabel); s('rev-cond',condText);
 }
 
@@ -4767,13 +4767,13 @@ function saveWizPreset(){
   var stake=parseInt((document.getElementById('stake-input')||{}).value)||0;
   if(!CREATE.game||!stake) return;
   var g=GAMES.find(function(x){ return x.id===CREATE.game; })||{name:'?',color:'#fff'};
-  var typeLabel={outcome:'Match Outcome',target:'Performance Target',custom:'Custom'}[CREATE.betType]||'Match Outcome';
+  var typeLabel={outcome:'Match Outcome',target:'Performance Target',custom:'Custom'}[CREATE.challengeType]||'Match Outcome';
   var condEl=document.getElementById('c-out')||document.getElementById('c-tval')||document.getElementById('c-cust');
   var cond=condEl?condEl.value:'';
   var expSel=document.getElementById('expiry-sel'); var expiry=expSel?expSel.value:'24h';
-  var preset={game:CREATE.game,gameName:g.name,gameColor:g.color,stake:stake,betType:CREATE.betType||'outcome',condition:cond,expiry:expiry,label:g.name+' · '+stake.toLocaleString()+' CLU · '+typeLabel,savedAt:Date.now()};
+  var preset={game:CREATE.game,gameName:g.name,gameColor:g.color,stake:stake,challengeType:CREATE.challengeType||'outcome',condition:cond,expiry:expiry,label:g.name+' · '+stake.toLocaleString()+' CLU · '+typeLabel,savedAt:Date.now()};
   var presets=JSON.parse(localStorage.getItem('wiz_presets')||'[]');
-  presets=presets.filter(function(p){ return !(p.game===preset.game&&p.stake===preset.stake&&p.betType===preset.betType); });
+  presets=presets.filter(function(p){ return !(p.game===preset.game&&p.stake===preset.stake&&p.challengeType===preset.challengeType); });
   presets.unshift(preset); if(presets.length>3) presets=presets.slice(0,3);
   localStorage.setItem('wiz_presets',JSON.stringify(presets));
 }

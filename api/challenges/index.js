@@ -44,7 +44,10 @@ export default async function handler(req, res) {
   // GET — public, no auth needed
   if (req.method === 'GET') {
     const challenges = await getOpenList();
-    const open = challenges.filter(c => c.expiresAt > Date.now() && c.status === 'open');
+    const open = challenges
+      .filter(c => c.expiresAt > Date.now() && c.status === 'open')
+      // Normalize legacy records so the client only ever sees `challengeType`.
+      .map(c => (c.challengeType ? c : { ...c, challengeType: c.betType || 'outcome' }));
     return res.status(200).json({ challenges: open, count: open.length });
   }
 
@@ -169,7 +172,9 @@ export default async function handler(req, res) {
     id: 'CH_' + Date.now() + '_' + crypto.randomBytes(4).toString('hex'),
     game: body.game,
     mode: (body.mode || '').replace(/[<>"']/g, '').slice(0, 200),
-    betType: body.betType || 'outcome',
+    // challengeType: how the outcome is measured (outcome | target | custom).
+    // Accepts the legacy `betType` key on input during the client transition.
+    challengeType: body.challengeType || body.betType || 'outcome',
     condition: (body.condition || body.mode || '').replace(/[<>"']/g, '').slice(0, 200),
     stake,
     creatorUserId: user.userId,
