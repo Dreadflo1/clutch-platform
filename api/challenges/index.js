@@ -2,6 +2,7 @@
  * Challenge Board API — with HMAC signing and server-side escrow
  *
  * GET  /api/challenges         — list open challenges
+ * GET  /api/challenges?mine    — the authed player's own challenges (any status)
  * POST /api/challenges         — create (auth required, locks escrow server-side)
  * POST /api/challenges?accept  — accept (auth required, locks escrow server-side)
  * POST /api/challenges?cancel  — creator cancels an unaccepted challenge (refund)
@@ -12,6 +13,7 @@ import { authenticate, requireAuth } from '../_auth.js';
 import { mutateBalance, BalanceError } from '../_balance.js';
 import {
   getOpenList, saveOpenList, addActive, persist, cancelOpen, SETTLE_WINDOW_MS,
+  addUserChallenge, getUserChallengeIds,
 } from '../_challenges.js';
 
 const CHALLENGE_SECRET = process.env.CHALLENGE_SECRET || 'dev-challenge-secret-change-me';
@@ -41,7 +43,19 @@ function validateChallenge(body) {
 export default async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(200).end();
 
-  // GET — public, no auth needed
+  // GET ?mine — the authenticated player's own challenges (any status)
+  if (req.method === 'GET' && req.query.mine !== undefined) {
+    const user = requireAuth(req, res);
+    if (!user) return;
+    const ids = await getUserChallengeIds(user.userId);
+    const raw = await Promise.all(ids.map(id => kvGet(`ch:${id}`)));
+    const mine = raw
+      .filter(Boolean)
+      .map(c => (c.challengeType ? c : { ...c, challengeType: c.betType || 'outcome' }));
+    return res.status(200).json({ challenges: mine, count: mine.length });
+  }
+
+  // GET — public list of open challenges, no auth needed
   if (req.method === 'GET') {
     const challenges = await getOpenList();
     const open = challenges
@@ -147,6 +161,7 @@ export default async function handler(req, res) {
       challenges.splice(idx, 1);
       await saveOpenList(challenges);
       await addActive(ch.id);
+      await addUserChallenge(user.userId, ch.id); // index the opponent
       await persist(ch);
 
       // Log transaction
@@ -211,6 +226,7 @@ export default async function handler(req, res) {
 
   // Store challenge without TTL (it holds escrow until accepted/cancelled).
   await persist(challenge);
+  await addUserChallenge(user.userId, challenge.id); // index the creator
 
   // Add to open board
   const challenges = await getOpenList();

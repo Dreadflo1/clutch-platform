@@ -52,6 +52,21 @@ async function removeOpen(id) {
   if (n.length !== list.length) await saveOpenList(n);
 }
 
+// Per-user index of every challenge a player is part of (creator or opponent),
+// so the client can list "my challenges" from the server instead of localStorage.
+export async function addUserChallenge(userId, id) {
+  if (!userId) return;
+  const key = `userch:${userId}`;
+  const list = (await kvGet(key)) || [];
+  if (!list.includes(id)) {
+    list.unshift(id);
+    await kvSet(key, list.slice(0, 200)); // no TTL — a player's history persists
+  }
+}
+export async function getUserChallengeIds(userId) {
+  return (await kvGet(`userch:${userId}`)) || [];
+}
+
 // ── persistence ─────────────────────────────────────────────────
 /** Persist a live (escrow-holding) challenge with NO expiry. */
 export async function persist(ch) {
