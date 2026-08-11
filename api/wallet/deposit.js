@@ -20,7 +20,7 @@ export default async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST') return res.status(405).json({ error: 'POST only' });
   if (IS_PROD) {
-    return res.status(410).json({ error: 'Direct deposit is disabled — use /api/wallet/deposit-onchain or Stripe' });
+    return res.status(410).json({ error: 'Direct deposit is disabled — use /api/wallet/nowpayments-create (crypto) or /api/wallet/stripe-checkout (fiat)' });
   }
 
   const user = requireAuth(req, res);
