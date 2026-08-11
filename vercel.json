@@ -6,6 +6,9 @@
     { "source": "/api/:path*", "destination": "/api/:path*" },
     { "source": "/(.*)", "destination": "/$1" }
   ],
+  "crons": [
+    { "path": "/api/challenges/maintenance", "schedule": "0 3 * * *" }
+  ],
   "headers": [
     {
       "source": "/(.*).html",

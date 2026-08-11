@@ -105,6 +105,13 @@ redis.call('SET', KEYS[2], cjson.encode(lb))
 return cjson.encode({ winner = wb, loser = lb })
 `;
 
+// ── refundEscrow: return a locked stake to its owner ────────────
+// Moves `stake` from escrow back to available. Used to cancel an unaccepted
+// challenge or to unwind a timed-out / drawn one. No platform fee on a refund.
+export async function refundEscrow(userId, stake) {
+  return mutateBalance(userId, { dAvailable: stake, dEscrow: -stake, minEscrow: stake });
+}
+
 export async function settleEscrow(winnerId, loserId, stake, payout) {
   const wKey = `bal:${winnerId}`;
   const lKey = `bal:${loserId}`;

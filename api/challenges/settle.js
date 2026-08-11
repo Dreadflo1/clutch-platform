@@ -19,11 +19,27 @@ import { requireAuth } from '../_auth.js';
 import { kvGet, kvSet, kvLock, kvUnlock } from '../_kv.js';
 import { settleEscrow, BalanceError } from '../_balance.js';
 import { isVerifiable, resolveOutcome } from '../_verify.js';
+import { persist, archive, removeActive, refundDraw } from '../_challenges.js';
 
 const PLATFORM_FEE = 0.025;
-// A verifying match must be recent relative to acceptance, so a player cannot
-// point at some old game they happened to win.
-const MATCH_RECENCY_SLACK_MS = 6 * 60 * 60 * 1000; // 6h before acceptedAt
+// The verifying match must have STARTED after acceptance (small negative slack
+// only for clock skew), so a player cannot point at a game they pre-played and
+// already won before committing to the challenge.
+const MATCH_RECENCY_SLACK_MS = 5 * 60 * 1000; // 5 min clock-skew tolerance
+
+/**
+ * Persist the challenge after a state change: archive (with TTL) and drop from
+ * the active list once terminal; otherwise keep it live with no TTL so its
+ * escrow reference can never expire.
+ */
+async function saveCh(ch) {
+  if (ch.status === 'settled' || ch.status === 'cancelled' || ch.status === 'refunded') {
+    await removeActive(ch.id);
+    await archive(ch);
+  } else {
+    await persist(ch);
+  }
+}
 
 /**
  * Release both escrows, credit the winner, log transactions, and stamp the
@@ -101,6 +117,13 @@ export default async function handler(req, res) {
       return res.status(403).json({ error: 'You are not part of this challenge' });
     }
 
+    // Past the settlement deadline → unwind as a draw (both stakes refunded)
+    // rather than let a no-show / stalling player trap the escrow forever.
+    if (ch.settleDeadline && Date.now() > ch.settleDeadline) {
+      await refundDraw(ch, 'timeout');
+      return res.status(200).json({ status: ch.status, reason: 'timeout', challenge: challengeView(ch) });
+    }
+
     // ── Auto-verified path ──────────────────────────────────────
     if (verifiedMode) {
       if (!isVerifiable(ch.game)) {
@@ -123,7 +146,7 @@ export default async function handler(req, res) {
           ch.status = 'disputed';
           ch.disputeReason = 'match_id_mismatch';
           ch.disputedAt = Date.now();
-          await kvSet(`ch:${challengeId}`, ch, 172800);
+          await saveCh(ch);
           return res.status(200).json({ status: ch.status, reason: ch.disputeReason, challenge: challengeView(ch) });
         }
 
@@ -149,7 +172,7 @@ export default async function handler(req, res) {
           ch.status = 'disputed';
           ch.disputeReason = 'stale_match';
           ch.disputedAt = Date.now();
-          await kvSet(`ch:${challengeId}`, ch, 172800);
+          await saveCh(ch);
           return res.status(200).json({ status: ch.status, reason: ch.disputeReason, challenge: challengeView(ch) });
         }
 
@@ -158,7 +181,7 @@ export default async function handler(req, res) {
           ch.status = 'disputed';
           ch.disputeReason = 'inconsistent_outcome';
           ch.disputedAt = Date.now();
-          await kvSet(`ch:${challengeId}`, ch, 172800);
+          await saveCh(ch);
           return res.status(200).json({ status: ch.status, reason: ch.disputeReason, challenge: challengeView(ch) });
         }
 
@@ -176,7 +199,7 @@ export default async function handler(req, res) {
         ch.status = 'awaiting_result';
       }
 
-      await kvSet(`ch:${challengeId}`, ch, 172800);
+      await saveCh(ch);
       return res.status(200).json({ status: ch.status, challenge: challengeView(ch) });
     }
 
@@ -211,7 +234,7 @@ export default async function handler(req, res) {
       ch.status = 'awaiting_result';
     }
 
-    await kvSet(`ch:${challengeId}`, ch, 172800);
+    await saveCh(ch);
     return res.status(200).json({ status: ch.status, challenge: challengeView(ch) });
   } finally {
     await kvUnlock(lockKey);
