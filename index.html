@@ -4242,6 +4242,9 @@ a{color:inherit;text-decoration:none}
         </button>
       </div>
 
+      <!-- GUEST BROWSE — read-only, no wallet -->
+      <button type="button" onclick="closeModal('connect-modal'); connectGuest();" style="width:100%;height:44px;margin-bottom:14px;border-radius:12px;border:1px solid var(--b);background:transparent;color:var(--txt2);font-size:12.5px;font-weight:800;cursor:pointer;transition:all .18s var(--ease)">Browse as guest · read-only</button>
+
       <!-- small footer note -->
       <div style="text-align:center;font-size:10.5px;color:var(--txt3);line-height:1.55;padding-top:4px;border-top:1px dashed rgba(255,255,255,.04)">
         🔒 Your data stays encrypted · No KYC required for basic accounts · 2FA available in settings after signup
@@ -4615,6 +4618,10 @@ function switchAuthTab(which) {
 // Auth form handler — creates fake session for demo then redirects into challenge flow or app
 function submitAuth(e, mode) {
   e.preventDefault();
+  // Email/password auth has no secure backend yet — never fabricate a session.
+  toast('Email accounts are coming soon — use Connect Wallet to play for real, or browse as guest', 'info');
+  return false;
+  // Legacy demo flow below is intentionally unreachable.
   var btn = e.target.querySelector('button[type=submit]');
   var original = btn.innerHTML;
   btn.disabled = true;
@@ -4655,6 +4662,11 @@ function submitAuth(e, mode) {
 
 // Quick social/auth shortcuts (Wallet/Telegram/Discord/Steam — fake session + flow
 function quickAuth(which) {
+  // Only the wallet path is a real, server-verified login (MetaMask signature -> JWT).
+  if (which === 'wallet') { closeModal('connect-modal'); connectMeta(); return; }
+  var _soon = {telegram:'Telegram',discord:'Discord',steam:'Steam'};
+  toast((_soon[which] || which) + ' sign-in is coming soon — use Connect Wallet, or browse as guest', 'info');
+  return;
   var names = {wallet:'Crypto Wallet',telegram:'Telegram',discord:'Discord',steam:'Steam'};
   var icons = {wallet:'var(--purple)',telegram:'#26A5E4',discord:'var(--purple)',steam:'var(--txt)'};
   closeModal('connect-modal');
@@ -4879,7 +4891,7 @@ async function onTelegramAuth(user) {
 function connectGuest() {
   _authToken = null;
   U.addr = 'guest_' + Date.now(); U.name = 'Guest'; U.via = 'guest';
-  U.balance = STARTING_BALANCE; U.escrow = 0;
+  U.balance = 0; U.escrow = 0;
   saveProfile(); enterApp(); toast('Browsing as guest — connect a wallet for real challenges','info');
 }
 
