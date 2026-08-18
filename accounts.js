@@ -95,6 +95,33 @@ window.openAccountUrl = function(platform) {
     toast('Connect this account first', 'info');
   }
 };
+// ── OAuth verified linking ──────────────────────────────────────
+window.connectViaOAuth = function(platform) {
+  var w = 520, h = 700;
+  var left = Math.max(0, (screen.width - w) / 2), top = Math.max(0, (screen.height - h) / 2);
+  var meta = GAMING_ACCOUNTS_META[platform];
+  window.open('/api/oauth/' + encodeURIComponent(platform) + '?mode=authorize',
+    'clutch_oauth', 'width=' + w + ',height=' + h + ',left=' + left + ',top=' + top);
+  toast('Opening ' + (meta ? meta.name : platform) + ' verification…', 'info');
+};
+(function wireOAuthListener(){
+  if (window._oauthListenerWired) return;
+  window._oauthListenerWired = true;
+  window.addEventListener('message', function(e){
+    if (e.origin !== location.origin) return; // only trust our own /authed.html
+    var d = e.data;
+    if (!d || d.__clutchOAuth !== true || !d.payload) return;
+    var p = d.payload;
+    if (p.error || !p.success || !p.name || !p.platform || !GAMING_ACCOUNTS_META[p.platform]) {
+      if (p.error) toast('Verification failed: ' + (p.error_description || p.error), 'error');
+      return;
+    }
+    var obj = loadConnectedAccounts();
+    obj[p.platform] = { name: p.name, url: _accountUrl(p.platform, p.name), status: 'verified', connectedAt: Date.now() };
+    saveConnectedAccounts(obj);
+    toast(GAMING_ACCOUNTS_META[p.platform].name + ' verified ✓', 'success');
+  });
+})();
 window.renderConnectedAccounts = function() {
   var wrap = document.getElementById('prof-connections');
   if (!wrap) return;
@@ -132,7 +159,8 @@ window.renderConnectedAccounts = function() {
       '<div class="account-edit-overlay" style="display:none">' +
         '<div class="aov-left"><div class="aov-label">' + meta.name + ' ' + (connected ? 'username' : 'ID') + '</div>' +
           '<input class="account-input fi" type="text" value="' + (connected ? _escAcc(con.name) : '') + '" placeholder="' + _escAcc(meta.hint) + '" onkeydown="if(event.key===String.fromCharCode(13))saveAccountFromOverlay(\''+platform+'\')"/>' +
-          '<div class="aov-ver" style="color:var(--txt3)">Self-reported — not ownership-verified</div>' +
+          '<div class="aov-ver" style="color:var(--txt3)">Self-reported — or verify ownership securely:</div>' +
+          '<button class="btn btn-sm btn-s" style="margin-top:6px" onclick="connectViaOAuth(\''+platform+'\')" title="Verify ownership via the provider">&#128274; Verify with ' + meta.name + '</button>' +
         '</div>' +
         '<div class="aov-right">' +
           '<button class="btn btn-sm btn-s" onclick="toggleAccountOverlay(\''+platform+'\',false)">Cancel</button>' +

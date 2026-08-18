@@ -37,6 +37,7 @@
 </div>
 <script>
 (function(){
+  function esc(s){ return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];}); }
   var qs = new URLSearchParams(location.hash.substring(1).length ? location.hash.substring(1) : location.search.substring(1));
   try {
     // Allow OAuth providers to send query ?platform=...&name=... (direct URL)
@@ -69,7 +70,7 @@
     if (params.error) {
       document.getElementById('title').textContent = 'Cancelled or denied';
       document.getElementById('sub').textContent = 'You cancelled the sign-in or the request was denied. No account was linked.';
-      document.getElementById('plat').innerHTML = '<span>Platform:</span><span class="platform-pill">'+plat+'</span>';
+      document.getElementById('plat').innerHTML = '<span>Platform:</span><span class="platform-pill">'+esc(plat)+'</span>';
       document.getElementById('warn').style.display = 'block';
       document.getElementById('warn').textContent = 'Reason: ' + (params.error_description || params.error || 'User denied');
       document.getElementById('check').style.background = 'rgba(255,77,94,.12)';
@@ -85,7 +86,7 @@
       // If only code exists at this point, ask opener to exchange (very rare).
       document.getElementById('title').textContent = 'Completing sign-in…';
       document.getElementById('sub').textContent = 'Please wait, verifying with ' + plat + '…';
-      document.getElementById('plat').innerHTML = '<span>Platform:</span><span class="platform-pill">'+plat+'</span>';
+      document.getElementById('plat').innerHTML = '<span>Platform:</span><span class="platform-pill">'+esc(plat)+'</span>';
       broadcast({ platform: plat, code: params.code, state: params.state });
       return closeSoon(6000);
     }
@@ -116,7 +117,7 @@
       google: 'Google account'
     };
     document.getElementById('title').textContent = 'Successfully linked to CLUTCH';
-    document.getElementById('plat').innerHTML = '<span>Platform:</span><span class="platform-pill">'+plat+'</span>';
+    document.getElementById('plat').innerHTML = '<span>Platform:</span><span class="platform-pill">'+esc(plat)+'</span>';
     document.getElementById('row').style.display = 'flex';
     document.getElementById('lbl').textContent = labels[plat] || 'Account ID';
     document.getElementById('val').textContent = String(name);
@@ -131,7 +132,7 @@
 
   function broadcast(msg) {
     try {
-      if (window.opener && window.opener !== window) window.opener.postMessage({ __clutchOAuth: true, payload: msg }, '*');
+      if (window.opener && window.opener !== window) window.opener.postMessage({ __clutchOAuth: true, payload: msg }, location.origin);
     } catch(e) {}
     // Storage fallback for iframes / blocked cross-origin opener
     try { localStorage.setItem('clutch_oauth_result_' + Date.now(), JSON.stringify({payload:msg})); } catch(e){}

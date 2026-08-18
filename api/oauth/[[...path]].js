@@ -96,11 +96,20 @@ function originOf(req) {
 }
 
 function redirectUri(req) {
-  return `${originOf(req)}/authed.html`;
+  // Providers redirect back to the API (which exchanges the code server-side with
+  // the client secret, then forwards to /authed.html). This exact URI must be
+  // registered as the OAuth redirect/callback in each provider's app settings.
+  return `${originOf(req)}/api/oauth/callback`;
 }
 
 function genState() {
   return crypto.randomBytes(18).toString('base64url');
+}
+
+function readCookie(req, name) {
+  const raw = req.headers.cookie || '';
+  const m = raw.match(new RegExp('(?:^|;\\s*)' + name + '=([^;]+)'));
+  return m ? decodeURIComponent(m[1]) : null;
 }
 
 export default async function handler(req, res) {
@@ -113,6 +122,11 @@ export default async function handler(req, res) {
   const tail = (url.pathname || '').replace(/^\/api\/oauth\/?/,'');
   let platform = url.searchParams.get('platform') || (tail && tail !== 'callback' ? tail.split('/')[0] : '');
   const isCallback = tail === 'callback' || url.searchParams.get('code') || url.searchParams.get('openid.ns');
+  // On the OAuth2 callback the provider carries no ?platform= — it's in the state.
+  if (!platform) {
+    const st = url.searchParams.get('state') || '';
+    if (st.includes(':')) platform = st.split(':')[0];
+  }
 
   // ---- PROBE: GET /api/oauth/twitch (no mode) → return configured:true if keys present, else :false
   if (!mode && !isCallback && platform) {
@@ -205,6 +219,17 @@ export default async function handler(req, res) {
   const err = url.searchParams.get('error');
   if (err) return finish(res, platform, null, true, err);
   if (!code) return finish(res, platform, null, true, 'no code in callback');
+
+  // CSRF: the state returned by the provider must match the HttpOnly cookie we
+  // set at the authorize step. Without this an attacker could feed a code.
+  const returnedState = url.searchParams.get('state') || '';
+  const stateToken = returnedState.includes(':') ? returnedState.split(':').slice(1).join(':') : returnedState;
+  const cookieState = readCookie(req, 'clutch_oauth_state');
+  if (!cookieState || !stateToken || stateToken !== cookieState) {
+    return finish(res, platform, null, true, 'state mismatch (possible CSRF)');
+  }
+  // one-time use — clear it
+  try { res.setHeader('Set-Cookie', 'clutch_oauth_state=; Path=/; Max-Age=0; SameSite=Lax'); } catch (e) {}
 
   let data = null;
   try {
