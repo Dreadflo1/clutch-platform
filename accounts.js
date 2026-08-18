@@ -20,6 +20,13 @@ window._accountLogos = {
   discord: '<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M20.3 4.4A19.8 19.8 0 0015.6 3l-.3.6a18.2 18.2 0 00-6.6 0L8.4 3a19.8 19.8 0 00-4.7 1.4C.5 8.8-.3 13 0 17.2a20 20 0 006 3l.5-.7a13.1 13.1 0 01-2-1l.5-.4a13.6 13.6 0 0021.8 0l.5.4c-.6.4-1.3.8-2 1l.5.7a20 20 0 006-3c.4-4.9-.7-9-3.6-12.8zM8.5 14.5c-1.2 0-2.2-1.1-2.2-2.5 0-1.4 1-2.5 2.2-2.5 1.2 0 2.2 1.1 2.2 2.5 0 1.4-1 2.5-2.2 2.5zm7 0c-1.2 0-2.2-1.1-2.2-2.5 0-1.4 1-2.5 2.2-2.5 1.2 0 2.2 1.1 2.2 2.5 0 1.4-1 2.5-2.2 2.5z"/></svg>',
   epic: '<svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0L2.4 5.6v12.8L12 24l9.6-5.6V5.6L12 0zm0 2.3l7.6 4.5v10.4L12 21.7 4.4 17.2V6.8L12 2.3zM8 12l2-3 4 6 2-3"/>'
 };
+// Escape user-controlled strings before they touch innerHTML (prevents stored XSS
+// from a typed username/handle).
+window._escAcc = function(s) {
+  return String(s == null ? '' : s).replace(/[&<>"']/g, function(c) {
+    return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+  });
+};
 window._accountUrl = function(platform, name) {
   if (!name) return '#';
   try {
@@ -69,9 +76,10 @@ window.saveAccountFromOverlay = function(platform) {
   var val = input.value.trim();
   if (!val) { disconnectAccount(platform); return; }
   var obj = loadConnectedAccounts();
-  obj[platform] = { name: val, url: _accountUrl(platform, val), status: 'verified', connectedAt: Date.now() };
+  // Manual entry is self-reported, NOT ownership-verified — never claim "verified".
+  obj[platform] = { name: val, url: _accountUrl(platform, val), status: 'linked', connectedAt: Date.now() };
   saveConnectedAccounts(obj);
-  toast(GAMING_ACCOUNTS_META[platform].name + ' connected!', 'success');
+  toast(GAMING_ACCOUNTS_META[platform].name + ' linked!', 'success');
 };
 window.disconnectAccount = function(platform) {
   var obj = loadConnectedAccounts();
@@ -98,8 +106,8 @@ window.renderConnectedAccounts = function() {
     if (!meta) return;
     var con = data[platform];
     var connected = !!con;
-    var statusColor = connected ? 'var(--acc,#00d46e)' : 'var(--txt3,#8692ad)';
-    var statusText = connected ? 'CONNECTED' : 'NOT LINKED';
+    var statusColor = connected ? 'var(--acc,#00FF87)' : 'var(--txt3,#8692ad)';
+    var statusText = !connected ? 'NOT LINKED' : (con.status === 'verified' ? 'VERIFIED' : 'LINKED');
     var txtCol = (meta.color==='#FF0000' || meta.color==='#ffffff') ? '#fff' : '#000';
     html += '<div class="account-row" data-account-platform="' + platform + '">' +
       '<div class="account-left">' +
@@ -107,7 +115,7 @@ window.renderConnectedAccounts = function() {
         '<div class="account-info">' +
           '<div class="account-name">' + meta.name + '</div>' +
           '<div class="account-sub"><span class="account-status" style="color:' + statusColor + '">● ' + statusText + '</span>';
-    if (connected) html += ' <span class="account-val">' + con.name + '</span>';
+    if (connected) html += ' <span class="account-val">' + _escAcc(con.name) + '</span>';
     else html += ' <span class="account-val" style="color:var(--txt3)">'+meta.hint+'</span>';
     html += '</div></div></div><div class="account-right">';
     if (connected) {
@@ -123,8 +131,8 @@ window.renderConnectedAccounts = function() {
     html += '</div>' +
       '<div class="account-edit-overlay" style="display:none">' +
         '<div class="aov-left"><div class="aov-label">' + meta.name + ' ' + (connected ? 'username' : 'ID') + '</div>' +
-          '<input class="account-input fi" type="text" value="' + (connected ? String(con.name||'').replace(/"/g,'&quot;') : '') + '" placeholder="' + String(meta.hint||'').replace(/"/g,'&quot;') + '" onkeydown="if(event.key===String.fromCharCode(13))saveAccountFromOverlay(\''+platform+'\')"/>' +
-          '<div class="aov-ver" style="color:' + meta.color + '">Verification: ' + meta.ver + '</div>' +
+          '<input class="account-input fi" type="text" value="' + (connected ? _escAcc(con.name) : '') + '" placeholder="' + _escAcc(meta.hint) + '" onkeydown="if(event.key===String.fromCharCode(13))saveAccountFromOverlay(\''+platform+'\')"/>' +
+          '<div class="aov-ver" style="color:var(--txt3)">Self-reported — not ownership-verified</div>' +
         '</div>' +
         '<div class="aov-right">' +
           '<button class="btn btn-sm btn-s" onclick="toggleAccountOverlay(\''+platform+'\',false)">Cancel</button>' +
@@ -135,7 +143,7 @@ window.renderConnectedAccounts = function() {
   var total = Object.keys(data).length;
   html += '<div class="account-footer" style="margin-top:10px;display:flex;align-items:center;justify-content:space-between;padding:10px 12px;border-top:1px dashed var(--b,#262a36);border-radius:8px;background:var(--l2,#131624);font-size:11px;color:var(--txt3,#8692ad)">' +
     '<span>' + total + ' / ' + order.length + ' platforms linked</span>' +
-    '<span>Verified +3% LP boost on leaderboard</span></div>';
+    '<span>Self-reported · OAuth verification coming soon</span></div>';
   wrap.innerHTML = html;
 };
 (function ensureAccountsWired(){
