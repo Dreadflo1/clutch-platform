@@ -4,6 +4,20 @@
  * Falls back to curated content when API keys are missing.
  */
 
+// Escape untrusted external content (Twitch/YouTube/RSS titles, descriptions,
+// sources) before it is inserted via innerHTML — prevents XSS from a malicious
+// clip/video/article title.
+function _esc(s) {
+  return String(s == null ? '' : s).replace(/[&<>"']/g, function(c) {
+    return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+  });
+}
+// Only allow http(s) image URLs into CSS url(...) and strip characters that could
+// break out of the url() / attribute.
+function _safeImg(u) {
+  return /^https?:\/\//i.test(u || '') ? String(u).replace(/["'()<>\\]/g, '') : '';
+}
+
 /* ════════════════════════════════════════════════════════════
    TWITCH — Clips from top gaming categories
    ════════════════════════════════════════════════════════════ */
@@ -241,19 +255,19 @@ function renderClips(clips, containerId) {
     var hidden = idx >= SHOW_LIMIT ? ' style="display:none" data-clips-extra' : '';
     var safeUrl = (clip.url && /^https?:\/\/(www\.)?(twitch\.tv|youtube\.com|youtu\.be|clips\.twitch\.tv|twitter\.com|x\.com)\//i.test(clip.url)) ? clip.url.replace(/'/g,'') : null;
     var clickAttr = safeUrl ? 'onclick="window.open(\'' + safeUrl + '\',\'_blank\',\'noopener,noreferrer\')"' : '';
-    html += '<div class="clip-card"' + clickAttr + hidden + ' title="' + (clip.title||'').replace(/"/g,'&quot;') + '">' +
+    html += '<div class="clip-card"' + clickAttr + hidden + ' title="' + _esc(clip.title) + '">' +
       '<div class="clip-thumb">' +
-        '<div class="clip-thumb-bg" style="background-image:url(' + clip.thumbnail + ')"></div>' +
+        '<div class="clip-thumb-bg" style="background-image:url(' + _safeImg(clip.thumbnail) + ')"></div>' +
         '<div class="clip-thumb-overlay"></div>' +
         (clip.source === 'Twitch' ? '<div class="clip-live-badge">CLIP</div>' : '') +
-        '<div class="clip-src-badge">' + clip.source + '</div>' +
+        '<div class="clip-src-badge">' + _esc(clip.source) + '</div>' +
         '<div class="clip-play"><svg width="20" height="20" fill="white" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg></div>' +
         (clip.views ? '<div class="clip-views-overlay"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="display:inline;vertical-align:-1px"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg> ' + formatViews(clip.views) + '</div>' : '') +
       '</div>' +
       '<div class="clip-meta">' +
-        '<div class="clip-title">' + clip.title + '</div>' +
+        '<div class="clip-title">' + _esc(clip.title) + '</div>' +
         '<div class="clip-stats">' +
-          '<span><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="display:inline;vertical-align:-1px"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg> ' + (clip.creator || clip.channel || 'Unknown') + '</span>' +
+          '<span><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="display:inline;vertical-align:-1px"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg> ' + _esc(clip.creator || clip.channel || 'Unknown') + '</span>' +
           '<span><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="display:inline;vertical-align:-1px"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg> ' + timeAgo(clip.createdAt || clip.publishedAt) + '</span>' +
         '</div>' +
       '</div>' +
@@ -305,13 +319,13 @@ function renderNews(articles, containerId) {
       '<div class="nc-head">' +
         '<div class="nc-icon" style="background:' + color + '22">' + icon + '</div>' +
         '<div class="nc-content">' +
-          '<div class="nc-tag" style="background:' + color + '22;color:' + color + '">' + cat + '</div>' +
-          '<div class="nc-title">' + article.title + '</div>' +
-          (article.description ? '<div class="nc-desc">' + shortDesc + '</div>' : '') +
+          '<div class="nc-tag" style="background:' + color + '22;color:' + color + '">' + _esc(cat) + '</div>' +
+          '<div class="nc-title">' + _esc(article.title) + '</div>' +
+          (article.description ? '<div class="nc-desc">' + _esc(shortDesc) + '</div>' : '') +
         '</div>' +
       '</div>' +
       '<div class="nc-foot">' +
-        '<span class="nc-src">' + (article.source || 'News') + '</span>' +
+        '<span class="nc-src">' + _esc(article.source || 'News') + '</span>' +
         '<span>' + timeAgo(article.date || article.publishedAt || article.createdAt) + '</span>' +
       '</div>' +
     '</div>';
@@ -365,8 +379,8 @@ function renderTicker(articles) {
     var color = CATEGORY_COLORS[cat] || a.accent || '#00d46e';
     html += '<div class="ticker-item">' +
       '<span class="ti-dot" style="background:' + color + '"></span>' +
-      '<span class="ti-tag" style="background:' + color + '22;color:' + color + '">' + cat + '</span> ' +
-      a.title.slice(0, 80) + (a.title.length > 80 ? '…' : '') +
+      '<span class="ti-tag" style="background:' + color + '22;color:' + color + '">' + _esc(cat) + '</span> ' +
+      _esc(a.title.slice(0, 80)) + (a.title.length > 80 ? '…' : '') +
     '</div>';
   });
   track.innerHTML = html + html;
