@@ -1,0 +1,155 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>CLUTCH — Account connected</title>
+<style>
+  :root{--bg:#05070f;--txt:#e6ecff;--acc:#00FF87;--b:#1e2542;--l2:#0d1227}
+  html,body{margin:0;padding:0;background:radial-gradient(1200px 600px at 20% -10%, rgba(0,255,135,.12), transparent), radial-gradient(900px 500px at 80% 10%, rgba(112,0,255,.15), transparent), var(--bg);color:var(--txt);font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,"Helvetica Neue",Arial;display:flex;align-items:center;justify-content:center;min-height:100vh;-webkit-font-smoothing:antialiased}
+  .box{width:min(460px, 92vw);background:rgba(13,18,39,.82);backdrop-filter:blur(14px);border:1px solid var(--b);border-radius:20px;padding:34px 32px 30px;box-shadow:0 30px 80px rgba(0,0,0,.5);animation:in .38s ease both}
+  @keyframes in{from{opacity:0;transform:translateY(8px) scale(.98)}to{opacity:1;transform:none}}
+  .check{width:74px;height:74px;border-radius:22px;background:rgba(0,255,135,.12);border:1px solid rgba(0,255,135,.3);display:flex;align-items:center;justify-content:center;margin:0 auto 20px;color:var(--acc)}
+  .title{font-size:22px;font-weight:800;text-align:center;letter-spacing:-.01em;margin:0 0 6px}
+  .sub{font-size:13px;text-align:center;color:#8692ad;line-height:1.5;margin:0 0 18px}
+  .okey{text-align:center;font-size:13px;color:#5a647c}
+  .row{display:flex;align-items:center;gap:10px;background:var(--l2);border:1px solid var(--b);border-radius:12px;padding:10px 12px;margin-bottom:14px;font-size:13px}
+  .row b{color:#fff;font-weight:700}
+  .err{color:#ff5d6c;text-align:center;font-size:13px;line-height:1.5}
+  .close{display:block;margin:20px auto 0;padding:10px 22px;border-radius:10px;background:var(--acc);color:#00220f;border:none;font-weight:800;font-size:13px;cursor:pointer;box-shadow:0 10px 24px rgba(0,255,135,.2);transition:transform .12s}
+  .close:hover{transform:translateY(-1px)}
+  .warn{background:rgba(232,160,32,.08);border-color:rgba(232,160,32,.3);color:#ffd27a;border-radius:10px;padding:10px 12px;font-size:12px;line-height:1.5;margin-bottom:14px}
+  .platform-line{display:flex;align-items:center;gap:10px;font-size:12px;color:#8692ad;margin-bottom:14px;text-align:center;justify-content:center}
+  .platform-pill{padding:3px 10px;border-radius:999px;background:var(--l2);border:1px solid var(--b);color:#c8d1ee;font-weight:700;font-size:11px;letter-spacing:.06em}
+</style>
+</head>
+<body>
+<div class="box" id="box">
+  <div class="check" id="check"><svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><polyline points="20 6 9 17 4 12"/></svg></div>
+  <h1 class="title" id="title">Account linked</h1>
+  <div class="platform-line" id="plat"></div>
+  <div class="row" id="row" style="display:none;justify-content:space-between"><span id="lbl"></span><b id="val"></b></div>
+  <div class="warn" id="warn" style="display:none"></div>
+  <p class="sub" id="sub">You can close this window and return to CLUTCH.</p>
+  <p class="err" id="err" style="display:none"></p>
+  <button class="close" onclick="window.close()">Close window</button>
+  <p class="okey" style="margin-top:14px" id="okey">Window will close automatically in 3…</p>
+</div>
+<script>
+(function(){
+  var qs = new URLSearchParams(location.hash.substring(1).length ? location.hash.substring(1) : location.search.substring(1));
+  try {
+    // Allow OAuth providers to send query ?platform=...&name=... (direct URL)
+    var params = {};
+    for (var k of qs.keys()) params[k] = qs.get(k);
+
+    // Try localStorage bridge (backend callback stored there)
+    var bridge = null;
+    try { bridge = JSON.parse(sessionStorage.getItem('clutch_oauth_pending')||'null'); } catch(e){ bridge = null; }
+    if (bridge && bridge.platform) {
+      params.platform = params.platform || bridge.platform;
+      params.name = params.name || bridge.name;
+      params.displayName = params.displayName || bridge.displayName;
+      params.error = params.error || bridge.error;
+      sessionStorage.removeItem('clutch_oauth_pending');
+    }
+
+    var plat = params.platform || params.state;
+    if (!plat) {
+      document.getElementById('title').textContent = 'Unknown response';
+      document.getElementById('err').style.display = 'block';
+      document.getElementById('err').textContent = 'No platform was returned. Please try linking again.';
+      document.getElementById('check').style.background = 'rgba(255,77,94,.12)';
+      document.getElementById('check').style.color = '#ff5d6c';
+      document.getElementById('check').innerHTML = '<svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>';
+      document.getElementById('sub').style.display = 'none';
+      return closeSoon(6000);
+    }
+
+    if (params.error) {
+      document.getElementById('title').textContent = 'Cancelled or denied';
+      document.getElementById('sub').textContent = 'You cancelled the sign-in or the request was denied. No account was linked.';
+      document.getElementById('plat').innerHTML = '<span>Platform:</span><span class="platform-pill">'+plat+'</span>';
+      document.getElementById('warn').style.display = 'block';
+      document.getElementById('warn').textContent = 'Reason: ' + (params.error_description || params.error || 'User denied');
+      document.getElementById('check').style.background = 'rgba(255,77,94,.12)';
+      document.getElementById('check').style.color = '#ff5d6c';
+      document.getElementById('check').innerHTML = '<svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>';
+      broadcast({ platform: plat, error: params.error, error_description: params.error_description });
+      return closeSoon(5000);
+    }
+
+    var name = params.displayName || params.username || params.login || params.name || params.screenName || params.user_id || params.gamertag || params.onlineId;
+    if (!name && params.code && !params.name) {
+      // Backend code exchange route stores the resolved username in sessionStorage bridge.
+      // If only code exists at this point, ask opener to exchange (very rare).
+      document.getElementById('title').textContent = 'Completing sign-in…';
+      document.getElementById('sub').textContent = 'Please wait, verifying with ' + plat + '…';
+      document.getElementById('plat').innerHTML = '<span>Platform:</span><span class="platform-pill">'+plat+'</span>';
+      broadcast({ platform: plat, code: params.code, state: params.state });
+      return closeSoon(6000);
+    }
+
+    if (!name) {
+      document.getElementById('title').textContent = 'Unknown error';
+      document.getElementById('err').style.display = 'block';
+      document.getElementById('err').textContent = 'No username was returned by the provider. Please try again.';
+      document.getElementById('check').style.background = 'rgba(255,77,94,.12)';
+      document.getElementById('check').style.color = '#ff5d6c';
+      document.getElementById('check').innerHTML = '<svg width="34" height="34" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>';
+      return closeSoon(5000);
+    }
+
+    // ALL GOOD ✓
+    var labels = {
+      twitch: 'Twitch username',
+      youtube: 'YouTube channel',
+      steam: 'Steam account',
+      riot: 'Riot ID',
+      xbox: 'Xbox Gamertag',
+      psn: 'PSN Online ID',
+      battlenet: 'BattleTag',
+      discord: 'Discord username',
+      epic: 'Epic Games name',
+      playstation: 'PSN Online ID',
+      steam_openid: 'Steam account',
+      google: 'Google account'
+    };
+    document.getElementById('title').textContent = 'Successfully linked to CLUTCH';
+    document.getElementById('plat').innerHTML = '<span>Platform:</span><span class="platform-pill">'+plat+'</span>';
+    document.getElementById('row').style.display = 'flex';
+    document.getElementById('lbl').textContent = labels[plat] || 'Account ID';
+    document.getElementById('val').textContent = String(name);
+    broadcast({ platform: plat, name: String(name), displayName: params.displayName, success: true });
+    closeSoon(3200);
+  } catch(e) {
+    document.getElementById('title').textContent = 'Unexpected error';
+    document.getElementById('err').style.display = 'block';
+    document.getElementById('err').textContent = e.message || String(e);
+    closeSoon(8000);
+  }
+
+  function broadcast(msg) {
+    try {
+      if (window.opener && window.opener !== window) window.opener.postMessage({ __clutchOAuth: true, payload: msg }, '*');
+    } catch(e) {}
+    // Storage fallback for iframes / blocked cross-origin opener
+    try { localStorage.setItem('clutch_oauth_result_' + Date.now(), JSON.stringify({payload:msg})); } catch(e){}
+  }
+  var remaining = 3;
+  function closeSoon(t) {
+    var start = Date.now();
+    var sEl = document.getElementById('okey');
+    if (!sEl) return;
+    remaining = Math.max(2, Math.ceil((t||3000)/1000));
+    sEl.textContent = 'Window will close automatically in ' + remaining + '…';
+    setInterval(function(){
+      var left = Math.max(0, remaining - Math.floor((Date.now()-start)/1000));
+      sEl.textContent = 'Window will close automatically in ' + left + '…';
+    }, 300);
+    setTimeout(function(){ try { window.close(); } catch(e){} }, t||3000);
+  }
+})();
+</script>
+</body>
+</html>
