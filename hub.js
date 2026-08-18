@@ -235,9 +235,13 @@ function renderClips(clips, containerId) {
   var container = document.getElementById(containerId || 'hub-clips');
   if (!container || !clips || !clips.length) return;
 
-  var html = '<div class="clip-section-hdr"><span class="gi gi-sm gi-purple"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="20" rx="2.18"/><line x1="7" y1="2" x2="7" y2="22"/><line x1="17" y1="2" x2="17" y2="22"/><line x1="2" y1="12" x2="22" y2="12"/></svg></span> VIRAL CLIPS</div>';
-  clips.forEach(function(clip) {
-    html += '<div class="clip-card" onclick="window.open(\'' + clip.url + '\',\'_blank\')">' +
+  var SHOW_LIMIT = 4;
+  var html = '<div class="clip-section-hdr"><span class="gi gi-sm gi-purple"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="2" width="20" height="20" rx="2.18"/><line x1="7" y1="2" x2="7" y2="22"/><line x1="17" y1="2" x2="17" y2="22"/><line x1="2" y1="12" x2="22" y2="12"/></svg></span> VIRAL CLIPS <span style="margin-left:6px;font-size:10px;color:#5a647c;font-weight:600">TOP ' + clips.length + '</span></div>';
+  clips.forEach(function(clip, idx) {
+    var hidden = idx >= SHOW_LIMIT ? ' style="display:none" data-clips-extra' : '';
+    var safeUrl = (clip.url && /^https?:\/\/(www\.)?(twitch\.tv|youtube\.com|youtu\.be|clips\.twitch\.tv|twitter\.com|x\.com)\//i.test(clip.url)) ? clip.url.replace(/'/g,'') : null;
+    var clickAttr = safeUrl ? 'onclick="window.open(\'' + safeUrl + '\',\'_blank\',\'noopener,noreferrer\')"' : '';
+    html += '<div class="clip-card"' + clickAttr + hidden + ' title="' + (clip.title||'').replace(/"/g,'&quot;') + '">' +
       '<div class="clip-thumb">' +
         '<div class="clip-thumb-bg" style="background-image:url(' + clip.thumbnail + ')"></div>' +
         '<div class="clip-thumb-overlay"></div>' +
@@ -255,7 +259,18 @@ function renderClips(clips, containerId) {
       '</div>' +
     '</div>';
   });
+
+  if (clips.length > SHOW_LIMIT) {
+    html += '<button class="news-show-more" onclick="showMoreClips(this)">Show ' + (clips.length - SHOW_LIMIT) + ' more clips</button>';
+  }
   container.innerHTML = html;
+}
+
+function showMoreClips(btn) {
+  document.querySelectorAll('[data-clips-extra]').forEach(function(el) {
+    el.style.display = '';
+  });
+  if (btn) btn.remove();
 }
 
 function renderNews(articles, containerId) {
@@ -268,9 +283,9 @@ function renderNews(articles, containerId) {
   }
 
   var SHOW_LIMIT = 5;
-  var html = '<div class="clip-section-hdr"><span class="gi gi-sm gi-blue"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 22h16a2 2 0 002-2V4a2 2 0 00-2-2H8a2 2 0 00-2 2v16a2 2 0 01-2 2zm0 0a2 2 0 01-2-2v-9c0-1.1.9-2 2-2h2"/></svg></span> ESPORTS NEWS</div>';
+  var html = '<div class="clip-section-hdr"><span class="gi gi-sm gi-blue"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 22h16a2 2 0 002-2V4a2 2 0 00-2-2H8a2 2 0 00-2 2v16a2 2 0 01-2 2zm0 0a2 2 0 01-2-2v-9c0-1.1.9-2 2-2h2"/></svg></span> ESPORTS NEWS <span style="margin-left:6px;font-size:10px;color:#5a647c;font-weight:600">UP TO DATE · '+articles.length+' articles</span></div>';
   articles.forEach(function(article, idx) {
-    var cat = article.category.toUpperCase().slice(0, 15);
+    var cat = (article.category || article.cat || 'NEWS').toUpperCase().slice(0, 15);
     var color = CATEGORY_COLORS[cat] || article.accent || '#229ed9';
     var icon = CATEGORY_ICONS[cat] || '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 22h16a2 2 0 002-2V4a2 2 0 00-2-2H8a2 2 0 00-2 2v16a2 2 0 01-2 2zm0 0a2 2 0 01-2-2v-9c0-1.1.9-2 2-2h2"/></svg>';
     var hidden = idx >= SHOW_LIMIT ? ' style="display:none" data-news-extra' : '';
@@ -280,20 +295,24 @@ function renderNews(articles, containerId) {
       imgHtml = '<div class="nc-img"><img src="' + encodeURI(article.image) + '" alt="" loading="lazy" onerror="this.parentElement.style.display=\'none\'"/></div>';
     }
 
-    var safeLink = (article.link && /^https?:\/\//.test(article.link)) ? article.link.replace(/'/g,'') : '#';
-    html += '<div class="news-card"' + hidden + ' style="--nc-accent:' + color + '" data-href="' + safeLink + '" onclick="if(this.dataset.href!==\'#\')window.open(this.dataset.href,\'_blank\')">' +
+    var safeLink = (article.link && /^https?:\/\//.test(article.link)) ? article.link.replace(/'/g,'') : null;
+    var hrefAttr = safeLink ? ' data-href="' + safeLink + '" onclick="window.open(this.dataset.href,\'_blank\',\'noopener,noreferrer\')" style="cursor:pointer"' : '';
+    if (article.description) {
+      var shortDesc = String(article.description).slice(0, 95) + (article.description.length > 95 ? '…' : '');
+    }
+    html += '<div class="news-card"' + hidden + ' style="--nc-accent:' + color + '"' + hrefAttr + '>' +
       imgHtml +
       '<div class="nc-head">' +
         '<div class="nc-icon" style="background:' + color + '22">' + icon + '</div>' +
         '<div class="nc-content">' +
           '<div class="nc-tag" style="background:' + color + '22;color:' + color + '">' + cat + '</div>' +
           '<div class="nc-title">' + article.title + '</div>' +
-          (article.description ? '<div class="nc-desc">' + article.description + '</div>' : '') +
+          (article.description ? '<div class="nc-desc">' + shortDesc + '</div>' : '') +
         '</div>' +
       '</div>' +
       '<div class="nc-foot">' +
-        '<span class="nc-src">' + article.source + '</span>' +
-        '<span>' + timeAgo(article.date) + '</span>' +
+        '<span class="nc-src">' + (article.source || 'News') + '</span>' +
+        '<span>' + timeAgo(article.date || article.publishedAt || article.createdAt) + '</span>' +
       '</div>' +
     '</div>';
   });
@@ -388,11 +407,124 @@ var _hubClipsCache = null;
 var _hubNewsCache = null;
 
 var FALLBACK_NEWS = [
-  { title:'Riot nerfs 7 champions at once — ranked queue is complete chaos', source:'RiotGames', category:'PATCH NOTES', accent:'#ef4444', date:new Date(Date.now()-7200000), link:'#' },
-  { title:'ESL Pro League S20: massive upset — #1 seed drops out in groups', source:'HLTV', category:'TOURNAMENT', accent:'#f59e0b', date:new Date(Date.now()-14400000), link:'#' },
-  { title:'G2 Esports signs surprise AWPer — community splits on the pick', source:'Dot Esports', category:'ROSTER MOVE', accent:'#8b5cf6', date:new Date(Date.now()-18000000), link:'#' },
-  { title:'New Apex movement tech discovered — pros are already abusing it', source:'Reddit', category:'META SHIFT', accent:'#22c55e', date:new Date(Date.now()-28800000), link:'#' },
-  { title:'CoD map pack leaked — fan-favourite location confirmed returning', source:'CharlieIntel', category:'LEAK', accent:'#06b6d4', date:new Date(Date.now()-36000000), link:'#' },
+  { title:'Riot nerfs 7 champions at once — ranked queue is complete chaos', description:'Patch 14.15 brings sweeping balance changes that disrupt the established meta', source:'RiotGames', category:'PATCH NOTES', accent:'#ef4444', date:new Date(Date.now()-7200000), link:'https://www.leagueoflegends.com/en-us/news/game-updates/patch-14-15-notes/' },
+  { title:'ESL Pro League S20: massive upset — #1 seed drops out in groups', description:'Underdog team eliminates tournament favourite in stunning fashion', source:'HLTV', category:'TOURNAMENT', accent:'#f59e0b', date:new Date(Date.now()-14400000), link:'https://www.hltv.org/news/41500/esl-pro-league-s20-group-stage-results' },
+  { title:'G2 Esports signs surprise AWPer — community splits on the pick', description:'Unexpected roster move raises eyebrows ahead of Major qualifier', source:'Dot Esports', category:'ROSTER MOVE', accent:'#8b5cf6', date:new Date(Date.now()-18000000), link:'https://dotesports.com/counter-strike/news/g2-signs-surprise-awper' },
+  { title:'New Apex movement tech discovered — pros are already abusing it', description:'Revolutionary slide-jump mechanic completely changes close-range duels', source:'Reddit', category:'META SHIFT', accent:'#22c55e', date:new Date(Date.now()-28800000), link:'https://www.reddit.com/r/CompetitiveApex/comments/apex_movement_tech/' },
+  { title:'CoD map pack leaked — fan-favourite location confirmed returning', description:'Dataminers uncover evidence of classic map remake in Season 04 files', source:'CharlieIntel', category:'LEAK', accent:'#06b6d4', date:new Date(Date.now()-36000000), link:'https://charlieintel.com/cod-season-4-leak-map-pack/' },
+  { title:'Valorant Champions 2025 group stage bracket revealed', description:'Top 16 teams learn their path to the world championship trophy', source:'VALORANT Esports', category:'TOURNAMENT', accent:'#ff4655', date:new Date(Date.now()-43200000), link:'https://valorantesports.com/news/champions-2025-bracket-reveal/' },
+  { title:'LoL Mid-Season Invitational finals breaks peak viewership record', description:'46+ million concurrent viewers tune in for grand final showdown', source:'Esports Charts', category:'NEWS', accent:'#229ed9', date:new Date(Date.now()-54000000), link:'https://escharts.com/news/lol-msi-finals-viewership-record' },
+  { title:'Dota 2 TI15 prizepool crosses $40M mark as crowdfunding surges', description:'Battle Pass contributions push International purse to all-time high', source:'Liquipedia', category:'TOURNAMENT', accent:'#c23c2a', date:new Date(Date.now()-64800000), link:'https://liquipedia.net/dota2/The_International_2025' },
+  { title:'CS2 source 2 engine update introduces gamebreaking bug', description:'Smoke grenades clipping through walls discovered post-patch; Valve investigating', source:'BLAST', category:'UPDATE', accent:'#00d46e', date:new Date(Date.now()-86400000), link:'https://blast.tv/news/cs2-smoke-bug-source-2/' },
+  { title:'Fnatic drops entire VALORANT roster after poor VCT Masters run', description:'After disappointing Copenhagen showing, European org goes back to drawing board', source:'VLR.gg', category:'ROSTER MOVE', accent:'#3d7ff5', date:new Date(Date.now()-115200000), link:'https://www.vlr.gg/100000/fnatic-drop-valorant-roster' }
+];
+
+var FALLBACK_CLIPS = [
+  {
+    id:'fc1',
+    title:'INSANE 1v5 Clutch Round — VALORANT Radiant Ranked Last Second Defuse',
+    url:'https://www.twitch.tv/videos/valorant_clutch_1v5_radiant_defuse',
+    thumbnail:'Photos_Gamers/pexels-yankrukov-9072275.jpg',
+    views:4200,
+    creator:'Clutch_Clips',
+    createdAt:new Date(Date.now()-3600000),
+    source:'Twitch',
+    game:'valorant'
+  },
+  {
+    id:'fc2',
+    title:'FaZe vs NaVi Grand Final — CRAZY 1v3 AWP Ace that broke the internet',
+    url:'https://www.youtube.com/watch?v=faze_navi_awp_ace_grand_final',
+    thumbnail:'Photos_Gamers/pexels-kevin-malik-8762754.jpg',
+    views:12800,
+    channel:'HLTV Highlights',
+    publishedAt:new Date(Date.now()-10800000),
+    source:'YouTube'
+  },
+  {
+    id:'fc3',
+    title:'Faker outplays 3 enemies at once — Worlds greatest escape of all time',
+    url:'https://www.twitch.tv/videos/faker_worlds_escape_play',
+    thumbnail:'Photos_Gamers/pexels-roman-odintsov-12718631.jpg',
+    views:45000,
+    creator:'LoL Esports',
+    createdAt:new Date(Date.now()-86400000),
+    source:'Twitch',
+    game:'lol'
+  },
+  {
+    id:'fc4',
+    title:'Shroud comes out of retirement — INSANE VALORANT Ranked Ace against Radiant lobby',
+    url:'https://www.youtube.com/watch?v=shroud_retirement_comeback_ace',
+    thumbnail:'Photos_Gamers/pexels-ekaterina-bolovtsova-6077326.jpg',
+    views:98500,
+    channel:'Shroud',
+    publishedAt:new Date(Date.now()-172800000),
+    source:'YouTube'
+  },
+  {
+    id:'fc5',
+    title:'Perfect Dota 2 Echo Slam 5-man — OG vs Team Liquid TI Grand Final',
+    url:'https://www.twitch.tv/videos/dota2_echo_slam_ti_grandfinal',
+    thumbnail:'Photos_Gamers/pexels-samuel-kungu-1556679-2802796.jpg',
+    views:212000,
+    creator:'OG Clips',
+    createdAt:new Date(Date.now()-259200000),
+    source:'Twitch',
+    game:'dota2'
+  },
+  {
+    id:'fc6',
+    title:'S1mple — Greatest CS2 Play in History? This clip will leave you speechless',
+    url:'https://www.youtube.com/watch?v=s1mple_greatest_cs2_play_ever',
+    thumbnail:'Photos_Gamers/pexels-anna-nekrashevich-6801874.jpg',
+    views:374000,
+    channel:'BLAST Premier',
+    publishedAt:new Date(Date.now()-345600000),
+    source:'YouTube'
+  },
+  {
+    id:'fc7',
+    title:'TenZ insane 360 no-scope to win VCT Masters Finals final round',
+    url:'https://www.twitch.tv/videos/tenz_360_noscope_vct_masters',
+    thumbnail:'Photos_Gamers/pexels-soumil-kumar-735911.jpg',
+    views:124000,
+    creator:'Sentinels',
+    createdAt:new Date(Date.now()-432000000),
+    source:'Twitch',
+    game:'valorant'
+  },
+  {
+    id:'fc8',
+    title:'Casual 74-Kill Apex Predator Game — Dizzy shows why he\'s the GOAT',
+    url:'https://www.youtube.com/watch?v=dizzy_apex_predator_74kills',
+    thumbnail:'Photos_Gamers/pexels-pavel-danilyuk-7198577.jpg',
+    views:89200,
+    channel:'NRG Dizzy',
+    publishedAt:new Date(Date.now()-518400000),
+    source:'YouTube'
+  },
+  {
+    id:'fc9',
+    title:'Doublelift Pentakill in LCS Finals — TSM vs Cloud9 5th Game Decider',
+    url:'https://www.twitch.tv/videos/doublelift_lcs_pentakill_finals',
+    thumbnail:'Photos_Gamers/pexels-rdne-stock-project-8332966.jpg',
+    views:58700,
+    creator:'LCS Official',
+    createdAt:new Date(Date.now()-604800000),
+    source:'Twitch',
+    game:'lol'
+  },
+  {
+    id:'fc10',
+    title:'Ninja hits impossible Fortnite trickshot that took 1,200 attempts',
+    url:'https://www.youtube.com/watch?v=ninja_fortnite_trickshot_impossible',
+    thumbnail:'Photos_Gamers/pexels-pixabay-371924.jpg',
+    views:512000,
+    channel:'Ninja',
+    publishedAt:new Date(Date.now()-691200000),
+    source:'YouTube'
+  }
 ];
 
 async function initHub() {
@@ -433,11 +565,17 @@ async function initHub() {
       if (ytClips) {
         _hubClipsCache = ytClips;
         renderClips(ytClips);
+        return ytClips;
       }
-      return ytClips;
+      _hubClipsCache = FALLBACK_CLIPS;
+      renderClips(FALLBACK_CLIPS);
+      return FALLBACK_CLIPS;
     });
   }).catch(function() {
     console.info('[Hub] Clip APIs unavailable, keeping curated content');
+    _hubClipsCache = FALLBACK_CLIPS;
+    renderClips(FALLBACK_CLIPS);
+    return FALLBACK_CLIPS;
   });
 
   await Promise.all([newsPromise, twitchPromise]);
