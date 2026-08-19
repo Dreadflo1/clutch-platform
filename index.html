@@ -4367,7 +4367,11 @@ a{color:inherit;text-decoration:none}
             </div>
             <div class="field">
               <label style="font-size:12px;font-weight:700;color:var(--txt2)">Challenge mode</label>
-              <input class="fi" id="board-mode" placeholder="e.g. 1v1 Ranked, Best of 3..."/>
+              <select class="fs" id="board-mode-select" onchange="boardModeChanged()">
+                <option value="">Pick a game first…</option>
+              </select>
+              <div id="board-mode-rule" style="font-size:11px;color:var(--txt3);margin-top:6px;line-height:1.5"></div>
+              <input class="fi" id="board-mode" placeholder="Describe your custom terms…" style="margin-top:8px;display:none"/>
             </div>
                         <div class="stake-mode-switch" style="margin-bottom:14px">
               <button class="sm-btn active paid" id="pcm-paid" onclick="pcmSetMode('paid',this)">
@@ -7257,7 +7261,9 @@ function renderBoard(challenges) {
       +   '<div class="cb-meta-row">'
       +     '<div class="cb-meta-left">'
       +       stakeBlock
-      +       '<div class="cb-format">'+(c.format || c.modeShort || '')+'</div>'
+      +       '<div class="cb-format">'+((window._escAcc||String)(c.format || c.modeLabel || c.modeShort || c.mode || ''))
+      +         (c.modeVerifiable ? ' <span style="color:var(--acc);font-size:10px;font-weight:800" title="Result auto-verified via game API">✓ VERIFIED</span>' : '')
+      +       '</div>'
       +     '</div>'
       +   '</div>'
       +   '<div class="cb-action-row">'
@@ -7600,6 +7606,7 @@ function boardGameChanged() {
   var sel = document.getElementById('board-game');
   var g = GAMES.find(function(x) { return x.id === sel.value; });
   var verifyEl = document.getElementById('board-post-verify');
+  populateBoardModes(sel.value);
   if (!g || !verifyEl) { if(verifyEl) verifyEl.innerHTML=''; return; }
   if (g.api) {
     verifyEl.innerHTML = '<div style="background:rgba(0,212,110,.05);border:1px solid rgba(0,212,110,.15);border-radius:8px;padding:10px 12px;font-size:11px;color:var(--acc)">'
@@ -7611,6 +7618,51 @@ function boardGameChanged() {
   }
 }
 
+// Populate the structured challenge-mode picker from the catalog (single source
+// of truth = /api/modes). Falls back to a "custom" option if the fetch fails.
+async function populateBoardModes(game) {
+  var sel = document.getElementById('board-mode-select');
+  if (!sel) return;
+  window._boardModes = {};
+  if (!game) {
+    sel.innerHTML = '<option value="">Pick a game first…</option>';
+    boardModeChanged();
+    return;
+  }
+  sel.innerHTML = '<option value="">Loading modes…</option>';
+  try {
+    var res = await fetch('/api/modes?game=' + encodeURIComponent(game));
+    var data = await res.json();
+    var modes = (data && data.modes) || [];
+    if (!modes.length) throw new Error('no modes');
+    modes.forEach(function(m){ window._boardModes[m.id] = m; });
+    sel.innerHTML = modes.map(function(m){
+      return '<option value="' + (window._escAcc||String)(m.id) + '">' + (window._escAcc||String)(m.label) + '</option>';
+    }).join('');
+  } catch(e) {
+    window._boardModes = { custom: { id:'custom', label:'Custom challenge', rule:'Agree your own terms (self-reported).', verifiable:false } };
+    sel.innerHTML = '<option value="custom">Custom challenge</option>';
+  }
+  boardModeChanged();
+}
+
+// Show the selected mode's rule + verifiable/honor badge; reveal the free-text
+// terms box only for the "custom" mode.
+function boardModeChanged() {
+  var sel = document.getElementById('board-mode-select');
+  var ruleEl = document.getElementById('board-mode-rule');
+  var custom = document.getElementById('board-mode');
+  if (!sel) return;
+  var m = (window._boardModes || {})[sel.value];
+  if (custom) custom.style.display = (sel.value === 'custom') ? 'block' : 'none';
+  if (!ruleEl) return;
+  if (!m) { ruleEl.innerHTML = ''; return; }
+  var badge = m.verifiable
+    ? '<span style="color:var(--acc);font-weight:700">✓ Auto-verified</span>'
+    : '<span style="color:var(--gold);font-weight:700">Honor-system</span>';
+  ruleEl.innerHTML = badge + ' · ' + (window._escAcc||String)(m.rule);
+}
+
 function openPostChallengeModal() {
   if (!U.addr || U.via === 'guest') { toast('Connect a wallet to post challenges','error'); return; }
   closeModal('post-challenge-modal');
@@ -7618,18 +7670,25 @@ function openPostChallengeModal() {
   document.getElementById('board-mode').value = '';
   document.getElementById('board-stake').value = '';
   document.getElementById('board-post-verify').innerHTML = '';
+  populateBoardModes('');
   openModal('post-challenge-modal');
 }
 
 async function postChallenge() {
   if (!_authToken) { toast('Connect your wallet to play for real','info'); return; }
   var game = document.getElementById('board-game').value;
-  var mode = document.getElementById('board-mode').value.trim();
+  var modeSel = document.getElementById('board-mode-select');
+  var modeId = modeSel ? modeSel.value : '';
+  var modeObj = (window._boardModes || {})[modeId];
+  var customText = (document.getElementById('board-mode') || {value:''}).value.trim();
+  // Free-text terms only for the "custom" mode; otherwise use the catalog label.
+  var mode = (modeId === 'custom') ? (customText || 'Custom challenge') : (modeObj ? modeObj.label : '');
   var stake = parseInt(document.getElementById('board-stake').value);
   var expiry = parseInt(document.getElementById('board-expiry').value);
 
   if (!game) { toast('Pick a game','error'); return; }
-  if (!mode) { toast('Describe the challenge mode','error'); return; }
+  if (!modeId) { toast('Pick a challenge mode','error'); return; }
+  if (modeId === 'custom' && !customText) { toast('Describe your custom terms','error'); return; }
   if (!stake || stake < 10) { toast('Minimum stake is 10 CLU','error'); return; }
   if (stake > U.balance) { toast('Not enough CLU','error'); return; }
 
@@ -7641,7 +7700,7 @@ async function postChallenge() {
     try {
       var res = await authFetch('/api/challenges', {
         method:'POST', headers:{'Content-Type':'application/json'},
-        body: JSON.stringify({game:game, mode:mode, stake:stake, challengeType:'outcome', condition:mode, expiryHours:expiry, creatorWins:wins})
+        body: JSON.stringify({game:game, modeId:modeId, mode:mode, stake:stake, challengeType:'outcome', condition:mode, expiryHours:expiry, creatorWins:wins})
       });
       var data = await res.json();
       if (data.error || data.errors) { toast(data.error || data.errors.join(', '),'error'); return; }
@@ -7651,7 +7710,7 @@ async function postChallenge() {
       toast('Challenge posted — stake locked on server!','success');
     } catch(e) { toast('Server error','error'); return; }
   } else {
-    var challenge = {id:'CB_'+Date.now()+'_'+Math.random().toString(36).slice(2,6), game:game, mode:mode, challengeType:'outcome', condition:mode, stake:stake, creator:U.addr, creatorName:U.name||'Anonymous', creatorWins:wins, status:'open', createdAt:Date.now(), expiresAt:Date.now()+expiry*3600000};
+    var challenge = {id:'CB_'+Date.now()+'_'+Math.random().toString(36).slice(2,6), game:game, modeId:modeId, modeLabel:(modeObj?modeObj.label:mode), modeVerifiable:!!(modeObj&&modeObj.verifiable), mode:mode, challengeType:'outcome', condition:mode, stake:stake, creator:U.addr, creatorName:U.name||'Anonymous', creatorWins:wins, status:'open', createdAt:Date.now(), expiresAt:Date.now()+expiry*3600000};
     U.balance -= stake; U.escrow += stake; saveProfile();
     _boardCache.unshift(challenge);
     renderBoard(_boardCache);
