@@ -4399,6 +4399,19 @@ a{color:inherit;text-decoration:none}
 
         <!-- LEADERBOARD -->
         <div class="screen" id="scr-leaderboard">
+          <!-- COMPARE 1v1 (real stats, transparent) -->
+          <div class="panel" style="margin-bottom:16px">
+            <div class="panel-hdr"><span class="panel-title">Compare players</span><span style="font-size:11px;color:var(--txt3);font-weight:600">League of Legends</span></div>
+            <div class="panel-body">
+              <div style="display:flex;gap:10px;flex-wrap:wrap;align-items:flex-end;margin-bottom:14px">
+                <div style="flex:1;min-width:150px"><label style="font-size:11px;color:var(--txt2);font-weight:700">You (Riot ID)</label><input class="fi" id="cmp-a" placeholder="Name#TAG"/></div>
+                <div style="flex:1;min-width:150px"><label style="font-size:11px;color:var(--txt2);font-weight:700">Opponent (Riot ID)</label><input class="fi" id="cmp-b" placeholder="Name#TAG"/></div>
+                <select class="fs" id="cmp-region" style="width:auto"><option value="europe">Europe</option><option value="americas">Americas</option><option value="asia">Asia</option></select>
+                <button class="btn btn-p" onclick="runCompare()">Compare</button>
+              </div>
+              <div id="cmp-result"></div>
+            </div>
+          </div>
           <div class="panel">
             <div class="panel-hdr"><span class="panel-title">Top Players</span></div>
             <div class="panel-body"><div id="lb-full-list"></div></div>
@@ -7331,6 +7344,50 @@ function _buildDims(game, prof) {
   return names.map(function(n) { return { k:n, v:_dimVal(game,n.toLowerCase().replace(/[^a-z0-9]/g,''),prof) }; });
 }
 
+async function _fetchLolStats(handle, region) {
+  try {
+    var res = await fetch((ARENA_CONFIG.API_BASE || '') + '/api/stats/lol?handle=' + encodeURIComponent(String(handle).replace('#', '-')) + '&region=' + encodeURIComponent(region));
+    var d = await res.json();
+    return res.ok ? { ok: true, d: d } : { ok: false, error: d.error || 'error' };
+  } catch (e) { return { ok: false, error: 'network' }; }
+}
+async function runCompare() {
+  var out = document.getElementById('cmp-result'); if (!out) return;
+  var esc = (typeof _escAcc === 'function') ? _escAcc : function(s){ return String(s==null?'':s); };
+  var aEl = document.getElementById('cmp-a'), bEl = document.getElementById('cmp-b');
+  var accts = (typeof loadConnectedAccounts === 'function') ? loadConnectedAccounts() : {};
+  if (aEl && !aEl.value.trim() && accts.riot && accts.riot.name) aEl.value = accts.riot.name;
+  var a = (aEl.value || '').trim(), b = (bEl.value || '').trim();
+  var region = (document.getElementById('cmp-region') || {}).value || 'europe';
+  if (!a || !b) { out.innerHTML = '<div style="color:var(--txt3);font-size:12px">Enter two Riot IDs (Name#TAG).</div>'; return; }
+  out.innerHTML = '<div style="color:var(--txt3);font-size:12px">Loading both players…</div>';
+  var ra = await _fetchLolStats(a, region), rb = await _fetchLolStats(b, region);
+  if (!ra.ok || !rb.ok) {
+    out.innerHTML = '<div style="color:var(--red);font-size:12px;line-height:1.6">' +
+      (!ra.ok ? ('Player A: ' + esc(ra.error) + '<br/>') : '') + (!rb.ok ? ('Player B: ' + esc(rb.error)) : '') + '</div>';
+    return;
+  }
+  out.innerHTML = _compareHtml(ra.d, rb.d);
+}
+function _cmpRow(label, av, bv, aWins, bWins) {
+  function col(v, win) { return '<div style="flex:1;text-align:center;font-weight:' + (win ? '900' : '600') + ';color:' + (win ? 'var(--acc)' : 'var(--txt)') + '">' + v + (win ? ' ▲' : '') + '</div>'; }
+  return '<div style="display:flex;align-items:center;padding:9px 0;border-bottom:1px solid var(--b)">' +
+    col(av, aWins) + '<div style="width:104px;text-align:center;font-size:9.5px;color:var(--txt3);text-transform:uppercase;letter-spacing:.05em">' + label + '</div>' + col(bv, bWins) + '</div>';
+}
+function _compareHtml(a, b) {
+  var esc = (typeof _escAcc === 'function') ? _escAcc : function(s){ return String(s==null?'':s); };
+  function cmp(x, y) { return [x > y, y > x]; }
+  var cs = cmp(a.clutchScore, b.clutchScore), wr = cmp(a.winRate, b.winRate), kda = cmp(a.perf.kda, b.perf.kda), csm = cmp(a.perf.avgCs, b.perf.avgCs);
+  return '<div style="display:flex;align-items:center;margin-bottom:6px">' +
+      '<div style="flex:1;text-align:center;font-weight:800;font-size:13px;overflow:hidden;text-overflow:ellipsis">' + esc(a.handle) + '</div>' +
+      '<div style="width:104px;text-align:center;font-size:10px;color:var(--txt3)">vs</div>' +
+      '<div style="flex:1;text-align:center;font-weight:800;font-size:13px;overflow:hidden;text-overflow:ellipsis">' + esc(b.handle) + '</div></div>' +
+    _cmpRow('Clutch Score', a.clutchScore, b.clutchScore, cs[0], cs[1]) +
+    _cmpRow('Win rate', a.winRate + '%', b.winRate + '%', wr[0], wr[1]) +
+    _cmpRow('KDA', a.perf.kda, b.perf.kda, kda[0], kda[1]) +
+    _cmpRow('Avg CS', a.perf.avgCs, b.perf.avgCs, csm[0], csm[1]) +
+    '<div style="font-size:10px;color:var(--txt3);margin-top:10px;text-align:center;line-height:1.5">Last ' + a.gamesPlayed + ' vs ' + b.gamesPlayed + ' games · Clutch Score = ' + esc(a.scoreParts.formula) + '</div>';
+}
 function _statHtml(label, val) {
   return '<div style="text-align:center"><div style="font-size:19px;font-weight:900;color:var(--acc)">' + val + '</div>' +
     '<div style="font-size:9.5px;color:var(--txt3);text-transform:uppercase;letter-spacing:.05em;margin-top:2px">' + label + '</div></div>';
