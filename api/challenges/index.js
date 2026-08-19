@@ -15,6 +15,7 @@ import {
   getOpenList, saveOpenList, addActive, persist, cancelOpen, SETTLE_WINDOW_MS,
   addUserChallenge, getUserChallengeIds,
 } from '../_challenges.js';
+import { findMode } from '../_modes.js';
 
 const CHALLENGE_SECRET = process.env.CHALLENGE_SECRET || 'dev-challenge-secret-change-me';
 const VALID_GAMES = ['valorant','lol','dota2','clashroyale','brawlstars','cs2','fortnite','apex','ow2','rl','fifa','cod'];
@@ -183,10 +184,19 @@ export default async function handler(req, res) {
 
   const stake = parseInt(body.stake);
 
+  // Structured mode: validate the modeId against the catalog for this game.
+  // Unknown/absent modeId falls back to the free-form "custom" mode.
+  const modeDef = findMode(body.game, body.modeId) || findMode(body.game, 'custom');
+  const modeId = modeDef ? modeDef.id : 'custom';
+  const modeVerifiable = !!(modeDef && modeDef.verifiable);
+
   const challenge = {
     id: 'CH_' + Date.now() + '_' + crypto.randomBytes(4).toString('hex'),
     game: body.game,
-    mode: (body.mode || '').replace(/[<>"']/g, '').slice(0, 200),
+    modeId,
+    modeLabel: modeDef ? modeDef.label : 'Custom challenge',
+    modeVerifiable,
+    mode: (body.mode || (modeDef ? modeDef.label : '')).replace(/[<>"']/g, '').slice(0, 200),
     // challengeType: how the outcome is measured (outcome | target | custom).
     // Accepts the legacy `betType` key on input during the client transition.
     challengeType: body.challengeType || body.betType || 'outcome',
