@@ -57,8 +57,9 @@ export default async function handler(req, res) {
   if (game !== 'lol') {
     return res.status(400).json({ error: `Stats not available for "${game}" yet — LoL only in this MVP` });
   }
-  if (!handle || !handle.includes('-') || /[<>"';&]/.test(handle) || handle.length > 60) {
-    return res.status(400).json({ error: 'handle must be a Riot ID (Name-Tag)' });
+  const hasSep = handle.includes('#') || handle.includes('-');
+  if (!handle || !hasSep || /[<>"';&]/.test(handle) || handle.length > 60) {
+    return res.status(400).json({ error: 'handle must be a Riot ID (Name#Tag)' });
   }
 
   const valid = ['americas', 'europe', 'asia', 'sea'];
@@ -71,9 +72,10 @@ export default async function handler(req, res) {
   const apiKey = process.env.RIOT_API_KEY;
   if (!apiKey) return res.status(503).json({ error: 'RIOT_API_KEY not configured' });
 
-  const parts = handle.split('-');
-  const gameName = parts.slice(0, -1).join('-');
-  const tagLine = parts[parts.length - 1];
+  // Accept "Name#Tag" (real Riot ID) or "Name-Tag"; split on the LAST separator.
+  const sepIdx = handle.lastIndexOf('#') >= 0 ? handle.lastIndexOf('#') : handle.lastIndexOf('-');
+  const gameName = handle.slice(0, sepIdx);
+  const tagLine = handle.slice(sepIdx + 1);
 
   const acct = await riotResolvePuuid(gameName, tagLine, routing, apiKey);
   if (acct.error) return res.status(acct.status || 502).json({ error: acct.error });

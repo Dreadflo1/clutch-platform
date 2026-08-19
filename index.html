@@ -4704,6 +4704,22 @@ a{color:inherit;text-decoration:none}
             </div>
           </div>
 
+          <!-- PERFORMANCE / STATS (real, from verified game accounts) -->
+          <div class="form-card" style="margin-bottom:16px">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:10px">
+              <div style="font-size:15px;font-weight:800">Performance <span style="font-size:11px;color:var(--txt3);font-weight:600">· League of Legends</span></div>
+              <div style="display:flex;gap:8px;align-items:center">
+                <select class="fs" id="stats-region" style="width:auto;padding:7px 10px;font-size:12px">
+                  <option value="europe">Europe</option>
+                  <option value="americas">Americas</option>
+                  <option value="asia">Asia (KR/AP)</option>
+                </select>
+                <button class="btn btn-sm btn-p" onclick="renderProfileStats()">Load my stats</button>
+              </div>
+            </div>
+            <div id="prof-stats"><div style="color:var(--txt3);font-size:12px;line-height:1.6">Link your Riot ID in <b>Connected Accounts</b>, pick your region, then hit <b>Load my stats</b> to see your real win rate, K/D/A and Clutch Score — no hidden tiers.</div></div>
+          </div>
+
           <!-- Safe Play -->
           <div class="safe-play-card">
             <div class="sp-hdr">
@@ -7313,6 +7329,55 @@ function _buildDims(game, prof) {
   };
   var names = maps[game] || maps.valorant;
   return names.map(function(n) { return { k:n, v:_dimVal(game,n.toLowerCase().replace(/[^a-z0-9]/g,''),prof) }; });
+}
+
+function _statHtml(label, val) {
+  return '<div style="text-align:center"><div style="font-size:19px;font-weight:900;color:var(--acc)">' + val + '</div>' +
+    '<div style="font-size:9.5px;color:var(--txt3);text-transform:uppercase;letter-spacing:.05em;margin-top:2px">' + label + '</div></div>';
+}
+function _statsCardHtml(d) {
+  var esc = (typeof _escAcc === 'function') ? _escAcc : function(s){ return String(s==null?'':s); };
+  return '<div style="display:flex;align-items:center;gap:16px;margin-bottom:14px">' +
+      '<div style="width:66px;height:66px;flex-shrink:0;border-radius:16px;background:linear-gradient(135deg,rgba(0,255,135,.16),rgba(112,0,255,.16));border:1px solid var(--b);display:flex;flex-direction:column;align-items:center;justify-content:center">' +
+        '<div style="font-size:23px;font-weight:900;color:var(--acc);line-height:1">' + d.clutchScore + '</div>' +
+        '<div style="font-size:8px;color:var(--txt3);letter-spacing:.06em;margin-top:2px">CLUTCH</div></div>' +
+      '<div style="flex:1;min-width:0">' +
+        '<div style="font-weight:800;font-size:14px;overflow:hidden;text-overflow:ellipsis">' + esc(d.handle) +
+          ' <span style="font-size:11px;color:var(--txt3);font-weight:600">· last ' + d.gamesPlayed + ' games</span></div>' +
+        '<div style="font-size:10.5px;color:var(--txt3);margin-top:3px;line-height:1.5">Clutch Score = ' + esc(d.scoreParts.formula) +
+          '<br/>→ ' + d.scoreParts.winRatePct + '% win · ' + d.scoreParts.perfPct + '% perf</div></div>' +
+    '</div>' +
+    '<div style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;padding:13px;background:var(--l2);border:1px solid var(--b);border-radius:12px">' +
+      _statHtml('Win rate', d.winRate + '%') +
+      _statHtml('KDA', d.perf.kda) +
+      _statHtml('K / D / A', d.perf.avgKills + ' / ' + d.perf.avgDeaths + ' / ' + d.perf.avgAssists) +
+      _statHtml('Avg CS', d.perf.avgCs) +
+    '</div>';
+}
+async function renderProfileStats() {
+  var el = document.getElementById('prof-stats');
+  if (!el) return;
+  var esc = (typeof _escAcc === 'function') ? _escAcc : function(s){ return String(s==null?'':s); };
+  var accts = (typeof loadConnectedAccounts === 'function') ? loadConnectedAccounts() : {};
+  var riot = accts.riot;
+  if (!riot || !riot.name) {
+    el.innerHTML = '<div style="color:var(--txt3);font-size:12px;line-height:1.6">No Riot ID linked yet. Add it in <b>Connected Accounts</b> above, then load your stats.</div>';
+    return;
+  }
+  var region = (document.getElementById('stats-region') || {}).value || 'europe';
+  var handle = String(riot.name).replace('#', '-'); // endpoint accepts # or -
+  el.innerHTML = '<div style="color:var(--txt3);font-size:12px">Loading your real match stats…</div>';
+  try {
+    var res = await fetch((ARENA_CONFIG.API_BASE || '') + '/api/stats/lol?handle=' + encodeURIComponent(handle) + '&region=' + encodeURIComponent(region));
+    var d = await res.json();
+    if (!res.ok) {
+      el.innerHTML = '<div style="color:var(--red);font-size:12px;line-height:1.6">Stats unavailable: ' + esc(d.error || 'error') + '</div>';
+      return;
+    }
+    el.innerHTML = _statsCardHtml(d);
+  } catch (e) {
+    el.innerHTML = '<div style="color:var(--red);font-size:12px">Could not load stats right now.</div>';
+  }
 }
 
 function renderProfile() {
