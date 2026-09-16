@@ -1,0 +1,60 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1080 1080" width="1080" height="1080" role="img" aria-label="CLUTCH Spring Split Option A social post: Play For The Win">
+  <defs>
+    <pattern id="grid" width="54" height="54" patternUnits="userSpaceOnUse">
+      <path d="M54 0H0V54" fill="none" stroke="#04130a" stroke-width="2" opacity="0.12"/>
+    </pattern>
+    <radialGradient id="glow" cx="72%" cy="28%" r="58%">
+      <stop offset="0" stop-color="#c9ffe4" stop-opacity="0.9"/>
+      <stop offset="0.48" stop-color="#00FF87" stop-opacity="0.38"/>
+      <stop offset="1" stop-color="#00FF87" stop-opacity="0"/>
+    </radialGradient>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="18" stdDeviation="18" flood-color="#04130a" flood-opacity="0.28"/>
+    </filter>
+  </defs>
+
+  <rect width="1080" height="1080" fill="#00FF87"/>
+  <rect width="1080" height="1080" fill="url(#grid)"/>
+  <circle cx="825" cy="275" r="430" fill="url(#glow)"/>
+  <circle cx="840" cy="312" r="250" fill="none" stroke="#04130a" stroke-width="5" opacity="0.16"/>
+  <circle cx="840" cy="312" r="342" fill="none" stroke="#04130a" stroke-width="3" stroke-dasharray="18 18" opacity="0.2"/>
+  <path d="M715 83 L928 55 L1004 246 L790 276 Z" fill="none" stroke="#04130a" stroke-width="5" opacity="0.18"/>
+
+  <g transform="translate(76 78)">
+    <rect x="0" y="0" width="156" height="58" rx="4" fill="#04130a"/>
+    <path d="M22 14 L46 14 L34 44 L10 44 Z" fill="#00FF87"/>
+    <text x="61" y="38" font-family="Arial Black, Impact, sans-serif" font-size="25" font-style="italic" fill="#00FF87" letter-spacing="1">CLUTCH</text>
+  </g>
+
+  <g transform="translate(74 220)">
+    <rect x="0" y="0" width="232" height="46" rx="3" fill="#04130a"/>
+    <text x="20" y="30" font-family="Arial, sans-serif" font-size="18" font-weight="800" fill="#00FF87" letter-spacing="3">SPRING SPLIT · 02</text>
+  </g>
+
+  <g filter="url(#shadow)">
+    <text x="72" y="410" font-family="Arial Black, Impact, sans-serif" font-size="128" font-style="italic" font-weight="900" fill="#04130a" letter-spacing="-7">PLAY</text>
+    <text x="72" y="542" font-family="Arial Black, Impact, sans-serif" font-size="128" font-style="italic" font-weight="900" fill="#04130a" letter-spacing="-7">FOR THE</text>
+    <text x="72" y="674" font-family="Arial Black, Impact, sans-serif" font-size="128" font-style="italic" font-weight="900" fill="#eafff4" stroke="#04130a" stroke-width="5" paint-order="stroke" letter-spacing="-7">WIN.</text>
+  </g>
+
+  <g transform="translate(78 742)">
+    <rect x="0" y="0" width="532" height="88" rx="6" fill="#04130a"/>
+    <text x="28" y="38" font-family="Arial, sans-serif" font-size="22" font-weight="800" fill="#eafff4">CREATE A CHALLENGE. CALL YOUR RIVAL.</text>
+    <text x="28" y="68" font-family="Arial, sans-serif" font-size="18" fill="#00FF87" font-weight="700">CLIMB THE SPRING SPLIT LEADERBOARD</text>
+  </g>
+
+  <g transform="translate(78 875)">
+    <rect x="0" y="0" width="242" height="62" rx="4" fill="none" stroke="#04130a" stroke-width="3"/>
+    <text x="23" y="39" font-family="Arial Black, Impact, sans-serif" font-size="22" fill="#04130a">CLUTCH.BEST/JOIN</text>
+    <text x="282" y="39" font-family="Arial, sans-serif" font-size="21" font-weight="800" fill="#04130a" letter-spacing="1">#PLAYFORTHEWIN</text>
+  </g>
+
+  <g opacity="0.9">
+    <path d="M836 145 L927 307 L761 307 Z" fill="#04130a" opacity="0.9"/>
+    <path d="M851 206 L895 277 L811 277 Z" fill="#00FF87"/>
+    <path d="M746 404 L980 377 L935 515 L714 500 Z" fill="none" stroke="#04130a" stroke-width="6"/>
+    <path d="M781 446 L916 431 L894 477 L767 480 Z" fill="#04130a" opacity="0.82"/>
+  </g>
+
+  <text x="76" y="1016" font-family="Arial, sans-serif" font-size="16" fill="#0a3a24" font-weight="700" letter-spacing="1.5">OPTION A · NEON CLASH · CLUTCH AMBASSADOR KIT</text>
+</svg>
