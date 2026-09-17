@@ -717,11 +717,18 @@ export default function AmbassadorDashboard() {
   }, []);
 
   useEffect(() => {
+    // Activity persistence is optional: when the backend/DB isn't configured we
+    // stay in demo mode on the seeded state rather than alarming the user.
     fetch("/api/ambassador/activity")
-      .then((response) => response.ok ? response.json() : Promise.reject())
-      .then((data: { activities: Activity[]; points: number }) => { setActivities(data.activities); setPoints(data.points); })
-      .catch(() => showToast("Live activity could not be loaded.", "error"));
-  }, [showToast]);
+      .then((response) => (response.ok ? response.json() : Promise.reject()))
+      .then((data: { activities: Activity[]; points: number }) => {
+        setActivities(data.activities);
+        setPoints(data.points);
+      })
+      .catch(() => {
+        /* no backend yet — keep the seeded demo state, no error toast */
+      });
+  }, []);
 
   const claimed = useMemo(() => new Set(activities.map((item) => `${item.actionType}:${item.actionId}`)), [activities]);
   const submitAction = async (actionType: "mission" | "reward", actionId: string) => {
