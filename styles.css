@@ -724,6 +724,8 @@ button:disabled,[aria-disabled="true"]{opacity:.55;cursor:not-allowed}
 .snav-icon{width:18px;height:18px;display:flex;align-items:center;justify-content:center;flex-shrink:0;color:var(--txt2)}
 .snav-icon svg{width:18px;height:18px}
 .snav-badge{margin-left:auto;background:var(--red);color:#fff;font-size:9px;font-weight:800;padding:2px 6px;border-radius:10px}
+.snav-ext{margin-left:auto;display:flex;align-items:center;color:var(--txt3);transition:color .15s,transform .15s}
+.snav-item:hover .snav-ext{color:var(--acc);transform:translate(1px,-1px)}
 
 .sidebar-bottom{padding:9px 12px 11px;border-top:1px solid var(--b);flex-shrink:0;background:linear-gradient(180deg,transparent,rgba(0,0,0,.35) 70%)}
 .disconnect-btn{display:flex;align-items:center;gap:9px;width:100%;padding:8px 10px;border-radius:var(--r);font-size:12px;font-weight:600;color:var(--txt2);transition:all .15s;border:1px solid transparent;background:transparent}

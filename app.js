@@ -46,6 +46,13 @@ function initAppShell() {
   return true;
 }
 
+// Open the Clutch Ambassador HQ (separate app) in a new tab. URL from config.
+function openAmbassadors() {
+  var url = (window.ARENA_CONFIG && ARENA_CONFIG.AMBASSADOR_URL) || '';
+  if (!url) { if (typeof toast === 'function') toast('Ambassador program link not configured yet', 'info'); return; }
+  window.open(url, '_blank', 'noopener,noreferrer');
+}
+
 function goTo(id) {
   var target = document.getElementById('scr-' + id);
   if (!target) {

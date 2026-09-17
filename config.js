@@ -66,6 +66,11 @@ const ARENA_CONFIG = {
   // Set to '' for local dev (falls back to mock data).
   API_BASE: '',  // e.g. 'https://your-app.vercel.app' — leave empty when served from same origin
 
+  // ── AMBASSADOR PROGRAM ─────────────────────────────────────
+  // The Clutch Ambassador HQ (separate Next.js app). Set to its deployed URL
+  // so the sidebar "Ambassadors" link opens the program in a new tab.
+  AMBASSADOR_URL: 'https://ambassadors.clutch.best',  // TODO: set to the deployed Ambassador HQ URL
+
   // ── PLATFORM SETTINGS ──────────────────────────────────────
   // Starting token balance for new users
   STARTING_TOKENS: 1000,
