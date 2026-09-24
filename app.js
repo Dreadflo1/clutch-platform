@@ -2119,6 +2119,18 @@ function calcFairness(you, them) {
 var _boardFilter = 'all';
 var _boardView = 'grid';
 var _boardSeed = null;
+var _myCohort = null; // fetched lazily, see _ensureMyCohort()
+
+// Skill cohort colors — soft sort/display only, not a hard rank.
+var COHORT_COLORS = { Diamond:'#6ee7ff', Gold:'#e8a020', Silver:'#c8cfe0', Bronze:'#cd7f32', Unranked:'var(--txt3)' };
+
+function _ensureMyCohort() {
+  if (_myCohort || !U.addr) return Promise.resolve(_myCohort);
+  return authFetch('/api/profile/achievements')
+    .then(function(r){ return r.ok ? r.json() : null; })
+    .then(function(d){ _myCohort = (d && d.cohort) || null; return _myCohort; })
+    .catch(function(){ return null; });
+}
 
 function _seedBoardChallenges() {
   var now = Date.now();
@@ -2200,6 +2212,9 @@ function loadBoard() {
       }
     }
     applyBoardFilters();
+    // Skill cohort loads lazily/async; re-render once known so same-cohort
+    // duels can move up without blocking the initial board paint.
+    _ensureMyCohort().then(function(c){ if (c) applyBoardFilters(); });
   };
   fetch(base + '/api/challenges').then(function(r){ return r.json(); }).then(done).catch(function(){ done(null); });
 }
@@ -2214,9 +2229,22 @@ function applyBoardFilters() {
   }
   var sortSel = document.getElementById('cb-sort');
   var sortBy = (sortSel && sortSel.value) || 'newest';
-  if (sortBy === 'highest') { out.sort(function(a,b){ return b.stake - a.stake; }); }
-  else if (sortBy === 'expiring') { out.sort(function(a,b){ return a.expiresAt - b.expiresAt; }); }
-  else { out.sort(function(a,b){ return (b.created||0) - (a.created||0); }); }
+  var within = function(a,b) {
+    if (sortBy === 'highest') return b.stake - a.stake;
+    if (sortBy === 'expiring') return a.expiresAt - b.expiresAt;
+    return (b.created||0) - (a.created||0);
+  };
+  // Soft bias: same-cohort-as-you duels float up first (never hides others —
+  // it's a sort preference, not a matchmaking restriction).
+  if (_myCohort) {
+    out.sort(function(a,b){
+      var am = (a.creatorCohort||'Unranked')===_myCohort ? 0 : 1;
+      var bm = (b.creatorCohort||'Unranked')===_myCohort ? 0 : 1;
+      return am - bm || within(a,b);
+    });
+  } else {
+    out.sort(within);
+  }
   renderBoard(out);
 }
 function sortBoard(v) { applyBoardFilters(); }
@@ -2257,6 +2285,10 @@ function renderBoard(challenges) {
     var gameDisp = _initToDisplayName(c.game);
     var shortG = _initToShortName(c.game);
     var isOwn = U.addr && c.creator === U.addr;
+    var cohort = c.creatorCohort || 'Unranked';
+    var cohortClr = COHORT_COLORS[cohort] || 'var(--txt3)';
+    var cohortSameAsMe = _myCohort && cohort === _myCohort;
+    var cohortTag = '<span style="color:'+cohortClr+';font-weight:700'+(cohortSameAsMe?';text-decoration:underline':'')+'" title="Skill cohort — activity-based, not a hard match requirement">'+cohort+'</span>';
     var time = _timeAgo(c.created || Date.now());
     var parts = c.participants || '1 / 2';
     var verifiedBadge = prof.verified ? '<div class="cb-avatar-check">✓</div>' : '';
@@ -2286,7 +2318,7 @@ function renderBoard(challenges) {
       +       '<div class="cb-player-name">'+c.creator
       +         (prof.verified ? ' <svg width="12" height="12" viewBox="0 0 24 24" fill="#00FF87"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>' : '')
       +       '</div>'
-      +       '<div class="cb-player-rank"><span class="rnk-gem" style="color:'+pillClr+'">'+_rankIcon(c.game)+'</span> '+rankShort+'</div>'
+      +       '<div class="cb-player-rank"><span class="rnk-gem" style="color:'+pillClr+'">'+_rankIcon(c.game)+'</span> '+rankShort+(rankShort?' · ':'')+cohortTag+'</div>'
       +     '</div>'
       +   '</div>'
       +   '<div class="cb-title-row">'+c.title+'</div>'
@@ -2442,6 +2474,7 @@ async function renderProfileProgress() {
     var res = await authFetch('/api/profile/achievements');
     var d = await res.json();
     if (!res.ok) { el.innerHTML = '<div style="color:var(--red);font-size:12px">Progress unavailable: ' + (window._escAcc||String)(d.error || 'error') + '</div>'; if (streakEl) streakEl.textContent=''; return; }
+    if (d.cohort) _myCohort = d.cohort; // reuse for Duel Board sort, avoids a second fetch
     el.innerHTML = _progressHtml(d);
     if (streakEl) streakEl.innerHTML = (d.stats.currentStreak > 0) ? ('🔥 ' + d.stats.currentStreak + ' win streak') : '';
   } catch (e) {
@@ -2453,7 +2486,9 @@ function _progressHtml(d) {
   var esc = (window._escAcc || String);
   var s = d.stats, b = d.badges;
   var stat = function(v, l) { return '<div style="text-align:center;flex:1"><div style="font-size:18px;font-weight:900;color:var(--acc)">' + v + '</div><div style="font-size:9px;color:var(--txt3);text-transform:uppercase;letter-spacing:.05em;margin-top:2px">' + l + '</div></div>'; };
-  var head = '<div style="display:flex;gap:8px;margin-bottom:16px;background:rgba(255,255,255,.02);border:1px solid var(--b);border-radius:12px;padding:12px 8px">'
+  var cohortClr = (window.COHORT_COLORS||{})[d.cohort] || 'var(--txt3)';
+  var cohortChip = d.cohort ? '<div style="text-align:center;margin-bottom:10px;font-size:11px;color:var(--txt3)">Skill cohort: <b style="color:' + cohortClr + '">' + esc(d.cohort) + '</b> <span style="opacity:.7">· based on recent win rate, not a public rating</span></div>' : '';
+  var head = cohortChip + '<div style="display:flex;gap:8px;margin-bottom:16px;background:rgba(255,255,255,.02);border:1px solid var(--b);border-radius:12px;padding:12px 8px">'
     + stat(s.played, 'Played') + stat(s.wins, 'Wins') + stat(s.winRate + '%', 'Win rate') + stat(s.bestStreak, 'Best streak') + stat(s.verifiedWins, 'Verified') + '</div>';
   var tierClr = { gold: '#e8a020', silver: '#c8cfe0', bronze: '#cd7f32' };
   var earnedHtml = b.earned.length
@@ -3768,15 +3803,13 @@ function renderMiniLB() {
   if(!el) return;
   var rows=buildLBData().slice(0,5);
   if(!rows.length){el.innerHTML='<div style="text-align:center;padding:20px;color:var(--txt3);font-size:12px">Complete duels to appear here</div>';return;}
-  el.innerHTML=rows.map(function(p,i){
-    var rnk=['g1','g2','g3'][i]||'';
+  el.innerHTML=rows.map(function(p){
     var av=p.addr[0].toUpperCase();
     var isMe=U.addr&&p.addr.toLowerCase()===U.addr.toLowerCase();
     return '<div class="lb-item">'
-      +'<div class="lb-rank '+rnk+'">'+(i+1)+'</div>'
       +'<div class="lb-av" style="background:'+randomColor(p.addr)+'22;color:'+randomColor(p.addr)+'">'+av+'</div>'
       +'<div class="lb-name">'+(isMe?'<span style="color:var(--acc)">You</span>':shortAddr(p.addr))+'</div>'
-      +'<div class="lb-wins">'+p.wins+'W</div>'
+      +'<div class="lb-wins">'+p.games+' games</div>'
       +'<div class="lb-eth">'+p.earned.toLocaleString()+'</div>'
       +'</div>';
   }).join('');
@@ -3786,44 +3819,42 @@ function renderLeaderboard() {
   var el=document.getElementById('lb-full-list');
   var rows=buildLBData();
   if(!rows.length){el.innerHTML='<div class="empty"><h3>No data yet</h3><p>Complete duels to appear on the leaderboard.</p></div>';return;}
-  el.innerHTML=rows.map(function(p,i){
-    var rnk=['g1','g2','g3'][i]||'';
+  // Activity list, not a skill ladder: no medal styling, sorted by games played.
+  el.innerHTML=rows.map(function(p){
     var av=p.addr[0].toUpperCase();
     var isMe=U.addr&&p.addr.toLowerCase()===U.addr.toLowerCase();
     return '<div class="lb-item" style="'+(isMe?'background:var(--acc-lo);border-radius:var(--r);padding:0 10px;':'')+'">'
-      +'<div class="lb-rank '+rnk+'">'+(i+1)+'</div>'
       +'<div class="lb-av" style="background:'+randomColor(p.addr)+'22;color:'+randomColor(p.addr)+'">'+av+'</div>'
       +'<div class="lb-name">'+(isMe?'<span style="color:var(--acc)">You — '+U.name+'</span>':shortAddr(p.addr))+'</div>'
       +'<div style="margin-left:auto;display:flex;gap:20px;align-items:center">'
-      +'<div class="lb-wins" style="font-size:13px">'+p.wins+' wins</div>'
-      +'<div class="lb-eth" style="font-size:13px">'+p.earned.toLocaleString()+' CLU</div>'
-      +'<div style="font-size:11px;color:var(--txt3)">'+p.games+' games</div>'
+      +'<div style="font-size:13px">'+p.games+' duels played</div>'
+      +'<div class="lb-wins" style="font-size:11px;color:var(--txt3)">'+p.wins+' wins</div>'
       +'</div></div>';
   }).join('');
 }
 
 function buildLBData() {
   var map = {};
-  DUELS.filter(function(d){ return d.status==='settled' && d.winner; }).forEach(function(d) {
-    var w = d.winner.toLowerCase();
-    if (!map[w]) map[w] = { addr: d.winner, name: d.winner.slice(0,6)+'…', wins: 0, earned: 0, games: 0 };
-    map[w].wins++;
-    map[w].earned += Math.floor((d.stake||0) * 2 * (1 - PLATFORM_FEE));
-    map[w].games++;
-  });
   DUELS.filter(function(d){ return d.status==='settled'; }).forEach(function(d) {
+    var winner = d.winner ? d.winner.toLowerCase() : null;
     [d.creator, d.opponent].forEach(function(addr) {
       if (!addr) return;
       var k = addr.toLowerCase();
       if (!map[k]) map[k] = { addr: addr, name: addr.slice(0,6)+'…', wins: 0, earned: 0, games: 0 };
-      map[k].games = map[k].games || 0;
+      map[k].games++;
+      if (winner && k === winner) {
+        map[k].wins++;
+        map[k].earned += Math.floor((d.stake||0) * 2 * (1 - PLATFORM_FEE));
+      }
     });
   });
   // Inject real name for known user
   if (U.addr && map[U.addr.toLowerCase()]) {
     map[U.addr.toLowerCase()].name = U.name || 'You';
   }
-  return Object.values(map).sort(function(a,b){ return b.wins - a.wins || b.earned - a.earned; });
+  // Sorted by activity (games played), NOT wins/earnings — this list is
+  // "who's active", not a skill ranking. See Compare for skill comparison.
+  return Object.values(map).sort(function(a,b){ return b.games - a.games || b.wins - a.wins; });
 }
 
 // ── SAVED CHALLENGE PRESETS ──────────────────────────────────────────────────

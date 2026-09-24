@@ -36,7 +36,7 @@ export const GAME_MODES = {
 };
 
 // Always available on top of any game's list — an escape hatch for arbitrary terms.
-const CUSTOM_MODE = { id: 'custom', label: 'Custom challenge', rule: 'Agree your own terms (self-reported).', verifiable: false };
+const CUSTOM_MODE = { id: 'custom', label: 'Custom duel', rule: 'Agree your own terms (self-reported).', verifiable: false };
 
 export function getModes(game) {
   const list = (GAME_MODES[game] || []).slice();

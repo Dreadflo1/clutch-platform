@@ -16,6 +16,7 @@ import {
   addUserChallenge, getUserChallengeIds,
 } from '../_challenges.js';
 import { findMode } from '../_modes.js';
+import { getUserStats, cohortFromStats } from '../_userstats.js';
 
 const CHALLENGE_SECRET = process.env.CHALLENGE_SECRET || 'dev-challenge-secret-change-me';
 const VALID_GAMES = ['valorant','lol','dota2','clashroyale','brawlstars','cs2','fortnite','apex','ow2','rl','fifa','cod'];
@@ -190,11 +191,17 @@ export default async function handler(req, res) {
   const modeId = modeDef ? modeDef.id : 'custom';
   const modeVerifiable = !!(modeDef && modeDef.verifiable);
 
+  // Soft skill cohort, stamped at creation so the open board can sort toward
+  // similar-skill opponents without a per-card lookup. See _userstats.js —
+  // this is a bias for display/sort order, never a hard accept restriction.
+  const creatorStats = await getUserStats(user.userId);
+  const creatorCohort = cohortFromStats(creatorStats);
+
   const challenge = {
     id: 'CH_' + Date.now() + '_' + crypto.randomBytes(4).toString('hex'),
     game: body.game,
     modeId,
-    modeLabel: modeDef ? modeDef.label : 'Custom challenge',
+    modeLabel: modeDef ? modeDef.label : 'Custom duel',
     modeVerifiable,
     mode: (body.mode || (modeDef ? modeDef.label : '')).replace(/[<>"']/g, '').slice(0, 200),
     // challengeType: how the outcome is measured (outcome | target | custom).
@@ -205,6 +212,7 @@ export default async function handler(req, res) {
     creatorUserId: user.userId,
     creatorName: user.addr ? (user.addr.slice(0, 6) + '...' + user.addr.slice(-4)) : 'Player',
     creatorWins: parseInt(body.creatorWins) || 0,
+    creatorCohort,
     status: 'open',
     createdAt: Date.now(),
     expiresAt: Date.now() + Math.min(parseInt(body.expiryHours) || 24, 168) * 3600000,
