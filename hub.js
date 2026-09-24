@@ -600,7 +600,7 @@ async function initHub() {
    ════════════════════════════════════════════════════════════ */
 var ACTIVITY_TEMPLATES = [
   { dot:'green', tpl:'{name} won <span class="lp-amount">{amount} CLU</span> in a {game} duel' },
-  { dot:'gold',  tpl:'{name} created a <span class="lp-amount">{amount} CLU</span> {game} challenge' },
+  { dot:'gold',  tpl:'{name} created a <span class="lp-amount">{amount} CLU</span> {game} duel' },
   { dot:'purple',tpl:'{name} accepted a {game} duel · escrow locked' },
   { dot:'green', tpl:'{name} collected <span class="lp-amount">{amount} CLU</span> from {game}' },
   { dot:'gold',  tpl:'{name} is looking for a {game} opponent · <span class="lp-amount">{amount} CLU</span> stake' },

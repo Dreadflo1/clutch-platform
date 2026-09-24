@@ -7,8 +7,8 @@ var PLATFORM_FEE = 0.025;
 
 // ── SCREEN NAVIGATION ─────────────────────────────────
 var SCREEN_TITLES = {
-  dashboard:'Dashboard', create:'New Challenge', accept:'Accept Challenge',
-  board:'Challenge Board', duels:'My Duels', history:'Duel History',
+  dashboard:'Dashboard', create:'New Duel', accept:'Accept Duel',
+  board:'Duel Board', duels:'My Duels', history:'Duel History',
   tokens:'Token Store', leaderboard:'Leaderboard', terms:'Terms & Legal', profile:'Profile',
   wallet:'Wallet', admin:'Admin'
 };
@@ -70,8 +70,7 @@ function goTo(id) {
     var match = (el.getAttribute('onclick') || '').indexOf("'"+id+"'") > -1;
     el.classList.toggle('active', match);
   });
-  var sidebar = document.querySelector('.sidebar');
-  if (sidebar && window.innerWidth < 768) sidebar.classList.remove('open');
+  if (window.innerWidth < 768) closeSidebar();
   if (id === 'board') { try { initBoard(); } catch(e){} }
   if (id === 'profile') { try { renderProfile(); } catch(e){} }
   if (id === 'wallet') { try { syncBalance().then(function(){ renderWallet(); }); } catch(e){} }
@@ -88,6 +87,42 @@ function goTo(id) {
   if (appContent) { appContent.scrollTop = 0; }
   window.scrollTo(0, 0);
 }
+
+// ── MOBILE SIDEBAR (hamburger) ────────────────────────
+// Below 768px .sidebar is display:none by default (styles.css); these
+// toggle the .open class (sidebar) + .show class (overlay) that make it
+// visible as an off-canvas panel. No-op above 768px since the sidebar is
+// already visible inline and there's nothing to open/close.
+function openSidebar() {
+  var sidebar = document.getElementById('app-sidebar');
+  var overlay = document.getElementById('sidebar-overlay');
+  var btn = document.getElementById('topbar-menu-btn');
+  if (sidebar) sidebar.classList.add('open');
+  if (overlay) overlay.classList.add('show');
+  if (btn) btn.setAttribute('aria-expanded', 'true');
+}
+function closeSidebar() {
+  var sidebar = document.getElementById('app-sidebar');
+  var overlay = document.getElementById('sidebar-overlay');
+  var btn = document.getElementById('topbar-menu-btn');
+  if (sidebar) sidebar.classList.remove('open');
+  if (overlay) overlay.classList.remove('show');
+  if (btn) btn.setAttribute('aria-expanded', 'false');
+}
+function toggleSidebar() {
+  var sidebar = document.getElementById('app-sidebar');
+  if (sidebar && sidebar.classList.contains('open')) closeSidebar();
+  else openSidebar();
+}
+document.addEventListener('keydown', function(e){
+  if (e.key === 'Escape') closeSidebar();
+});
+// Safety net: if the viewport is resized past the mobile breakpoint while
+// the off-canvas sidebar is open, drop the open/show state so it doesn't
+// linger as a fixed-position panel once .sidebar is display:flex inline again.
+window.addEventListener('resize', function(){
+  if (window.innerWidth >= 768) closeSidebar();
+});
 
 // ── SAFE PLAY ────────────────────────────────────────
 var SAFE_PLAY = (function(){
@@ -306,7 +341,7 @@ function showGamePresets(game) {
   document.querySelectorAll('.qp-game').forEach(function(b){ b.classList.remove('active'); });
   var btn = document.querySelector('.qp-game[data-game="'+game+'"]');
   if (btn) btn.classList.add('active');
-  document.getElementById('qp-game-label').textContent = data.label + ' — pick your challenge:';
+  document.getElementById('qp-game-label').textContent = data.label + ' — pick your duel:';
   var html = '';
   data.presets.forEach(function(p) {
     html += '<button class="qp-preset" onclick="quickChallenge(\''+game+'\',\''+p.mode+'\','+p.stake+')">'
@@ -498,7 +533,7 @@ async function executeQuickChallenge(game, mode, stake) {
       await syncBalance();
       DUELS.push(data.challenge); saveDuels();
       showQRModal(data.challenge, data.code);
-      toast('Challenge locked on server! Share with your friend.','success');
+      toast('Duel locked on server! Share with your friend.','success');
     } catch(e) { toast('Server error: '+e.message,'error'); }
   } else {
     // Guest fallback: local only
@@ -508,7 +543,7 @@ async function executeQuickChallenge(game, mode, stake) {
     var code = btoa(JSON.stringify({id:duel.id,creator:duel.creator,game:duel.game,challengeType:duel.challengeType,condition:duel.condition,stake:duel.stake,expiry:duel.expiry,createdAt:duel.createdAt}));
     refreshAll();
     showQRModal(duel, code);
-    toast('Challenge locked (guest mode — local only).','info');
+    toast('Duel locked (guest mode — local only).','info');
   }
 }
 
@@ -794,7 +829,7 @@ function connectGuest() {
   _authToken = null;
   U.addr = 'guest_' + Date.now(); U.name = 'Guest'; U.via = 'guest';
   U.balance = 0; U.escrow = 0;
-  saveProfile(); enterApp(); toast('Browsing as guest — connect a wallet for real challenges','info');
+  saveProfile(); enterApp(); toast('Browsing as guest — connect a wallet for real duels','info');
 }
 
 function connectTwitch() { toast('Twitch login coming soon','info'); }
@@ -1348,7 +1383,7 @@ function gatherCond() {
 
 async function createDuel() {
   if (!_authToken) { toast('Connect your wallet to play for real','info'); return; }
-  if (!U.addr || U.via==='guest') { toast('Connect a wallet to create challenges','error'); return; }
+  if (!U.addr || U.via==='guest') { toast('Connect a wallet to create duels','error'); return; }
   if (!CREATE.game) { toast('Pick a game first','error'); return; }
   var stake = parseInt(document.getElementById('stake-input').value);
   if (!stake||stake<10) { toast('Minimum entry is 10 CLU','error'); return; }
@@ -1368,7 +1403,7 @@ async function createDuel() {
       await syncBalance();
       DUELS.push(data.challenge); saveDuels();
       showQRModal(data.challenge, data.code);
-      toast('Challenge locked on server!','success');
+      toast('Duel locked on server!','success');
     } catch(e) { toast('Server error','error'); }
   } else {
     var duel = {id:'D'+Date.now(), creator:U.addr, opponent:null, game:CREATE.game, challengeType:CREATE.challengeType, condition:cond, stake:stake, totalPot:stake*2, expiry:Date.now()+expiry, createdAt:Date.now(), status:'pending', creatorResult:null, opponentResult:null, winner:null};
@@ -1377,7 +1412,7 @@ async function createDuel() {
     var code = btoa(JSON.stringify({id:duel.id,creator:duel.creator,game:duel.game,challengeType:duel.challengeType,condition:duel.condition,stake:duel.stake,expiry:duel.expiry,createdAt:duel.createdAt}));
     refreshAll();
     showQRModal(duel, code);
-    toast('Challenge locked (local mode).','info');
+    toast('Duel locked (local mode).','info');
   }
 }
 
@@ -1428,15 +1463,15 @@ function previewAccept() {
   var raw = document.getElementById('accept-input').value.trim();
   if (!raw) { toast('Paste a code first','error'); return; }
   var data; try { data=JSON.parse(atob(raw)); } catch(e){ toast('Invalid code','error'); return; }
-  if (Date.now()>data.expiry) { toast('This challenge has expired','error'); return; }
-  if (U.addr && data.creator.toLowerCase()===U.addr.toLowerCase()) { toast("That's your own challenge!",'error'); return; }
+  if (Date.now()>data.expiry) { toast('This duel has expired','error'); return; }
+  if (U.addr && data.creator.toLowerCase()===U.addr.toLowerCase()) { toast("That's your own duel!",'error'); return; }
   PENDING_ACCEPT = data;
   var g = GAMES.find(function(x){ return x.id===data.game; })||{name:data.game,api:false};
   var rows = [
     ['Game', g.name + (g.api?' <span style="color:var(--acc);font-size:11px">✓ API verified</span>':'')],
-    ['Challenge type', {outcome:'Match Outcome',target:'Performance Target',custom:'Custom Condition'}[data.challengeType]||data.challengeType],
+    ['Duel type', {outcome:'Match Outcome',target:'Performance Target',custom:'Custom Condition'}[data.challengeType]||data.challengeType],
     ['Condition', condLabel(data)],
-    ['Challenger', '<span style="font-family:monospace;font-size:12px">'+data.creator+'</span>'],
+    ['Duelist', '<span style="font-family:monospace;font-size:12px">'+data.creator+'</span>'],
     ['Expires', timeUntil(data.expiry)],
   ];
   document.getElementById('accept-preview-rows').innerHTML = rows.map(function(r){
@@ -1471,7 +1506,7 @@ async function confirmAccept() {
   var isFree = !!d.free || (d.stake||0)===0;
   if (!isFree) {
     if (!_authToken) { toast('Connect your wallet to play for real','info'); return; }
-    if (!U.addr||U.via==='guest') { toast('Connect a wallet to accept paid challenges','error'); return; }
+    if (!U.addr||U.via==='guest') { toast('Connect a wallet to accept paid duels','error'); return; }
     if (d.stake > U.balance) { toast('Not enough CLU — get tokens first','error'); goTo('tokens'); return; }
   } else {
     if (!U.addr) { toast('Please sign in (or browse as guest) to accept free duels','info'); return; }
@@ -1501,7 +1536,7 @@ async function confirmAccept() {
   document.getElementById('accept-input').value = '';
   document.getElementById('accept-preview-panel').style.display = 'none';
   refreshAll();
-  toast('Challenge accepted! Tokens locked. Go play!','success');
+  toast('Duel accepted! Tokens locked. Go play!','success');
   goTo('duels');
 }
 
@@ -1538,7 +1573,7 @@ function openPinSetup(force){
   _pinSetupBind();
 }
 function closePinSetupSkip(){
-  if (!_hasPinSet() && !confirm('You can set a passcode later. No challenge can be accepted until a passcode is set. Skip anyway?')) return;
+  if (!_hasPinSet() && !confirm('You can set a passcode later. No duel can be accepted until a passcode is set. Skip anyway?')) return;
   var m = document.getElementById('pin-setup-modal'); if (m) m.classList.remove('open');
 }
 function _pinSetupRender(){
@@ -1549,7 +1584,7 @@ function _pinSetupRender(){
   document.getElementById('pin-step-ind').textContent = step===1 ? 'STEP 1 · CREATE CODE' : 'STEP 2 · CONFIRM CODE';
   document.getElementById('pin-setup-title').textContent = step===1 ? 'Set your CLUTCH Passcode' : 'Confirm your Passcode';
   document.getElementById('pin-setup-sub').textContent = step===1
-    ? '6-digit secret number. Required to accept challenges, withdraw CLU, unlock sensitive data.'
+    ? '6-digit secret number. Required to accept duels, withdraw CLU, unlock sensitive data.'
     : 'Re-enter the exact same 6 digits to confirm.';
   document.getElementById('pin-setup-hint').textContent = (step===1 ? _pinSetup.code1 : _pinSetup.code2).length + ' / 6 digits';
   document.getElementById('pin-setup-match').classList.toggle('show', step===2 && _pinSetup.code2.length===6 && _pinSetup.code1===_pinSetup.code2);
@@ -1777,7 +1812,7 @@ if (typeof postChallenge === 'function') {
       try { localStorage.setItem('clutch_board_cache', JSON.stringify(_boardCache)); } catch(e){}
       closeModal('post-challenge-modal');
       renderBoard();
-      toast('Free duel posted on the Challenge Board','success');
+      toast('Free duel posted on the Duel Board','success');
       return;
     }
     _origPC.apply(this, arguments);
@@ -1797,7 +1832,7 @@ if (typeof lockWiz === 'function') {
       return;
     }
     if (_wizMode === 'paid' && !_hasPinSet()) {
-      alert('Please set your 6-digit CLUTCH passcode first — required for any paid challenge.');
+      alert('Please set your 6-digit CLUTCH passcode first — required for any paid duel.');
       openPinSetup(true);
       return;
     }
@@ -1813,8 +1848,8 @@ if (typeof acceptBoardChallenge === 'function') {
     var needsPin = !ch || ch.stake > 0;
     var cb = function(){ _origABC(id); };
     if (!_hasPinSet()) {
-      if (confirm('You must set a 6-digit passcode before accepting challenges. Set it now?')) openPinSetup(true);
-      else toast('Set a passcode in your profile to accept challenges','info');
+      if (confirm('You must set a 6-digit passcode before accepting duels. Set it now?')) openPinSetup(true);
+      else toast('Set a passcode in your profile to accept duels','info');
       return;
     }
     if (needsPin && !_isPinUnlocked()) {
@@ -2068,9 +2103,9 @@ function calcFairness(you, them) {
   else if (winPct >= 45) diff = 'Hard';
   else diff = 'Very Hard';
   var rec;
-  if (overall >= 90) rec = 'This challenge is expected to be highly competitive and fair.';
-  else if (overall >= 75) rec = 'This challenge is expected to be competitive � slight edge on one side.';
-  else rec = 'Skill mismatch detected � consider a closer opponent for a more balanced match.';
+  if (overall >= 90) rec = 'This duel is expected to be highly competitive and fair.';
+  else if (overall >= 75) rec = 'This duel is expected to be competitive — slight edge on one side.';
+  else rec = 'Skill mismatch detected — consider a closer opponent for a more balanced match.';
   return {
     overall: overall, breakdown:[
       {k:'Skill Balance', v:skillBal}, {k:'Recent Form', v:formBal}, {k:'Experience', v:expBal},
@@ -2092,7 +2127,7 @@ function _seedBoardChallenges() {
     { id:'cb-frag',     game:'cs2',        isNew:true,  creator:'FragMaster',      crRankShort:'Gold Nova III',stake:2500,  format:'Best of 1', modeShort:'Bo1', title:'AWP only, no scopes only.',   desc:'No scope AWP kills only. Most kills in 10 rounds.',        created:now-300000,    expiresAt:now+82800000,  participants:'1 / 2' },
     { id:'cb-shadow',   game:'lol',        isNew:true,  creator:'ShadowTitan',     crRankShort:'Platinum I',   stake:3000,  format:'Best of 1', modeShort:'Bo1', title:'1v1 Mid lane. No excuses.',    desc:'First blood + 100 CS by 10 min wins.',                      created:now-600000,    expiresAt:now+79200000,  participants:'1 / 2' },
     { id:'cb-viper',    game:'fortnite',   isNew:false, creator:'ViperLynx',       crRankShort:'Elite',        stake:1000,  format:'First to 3', modeShort:'Ft3', title:'Build fight to the death.',    desc:'Box fight 1v1. First to 3 wins.',                          created:now-720000,    expiresAt:now+75600000,  participants:'1 / 2' },
-    { id:'cb-kii',      game:'apex',       isNew:false, creator:'KiiTheorem',      crRankShort:'Diamond IV',   stake:2000,  format:'Best of 3', modeShort:'Bo3', title:'2v2 Arenas challenge.',        desc:'You + a friend vs us. Best of 3. Let\'s see it.',           created:now-1080000,   expiresAt:now+72000000,  participants:'2 / 4' },
+    { id:'cb-kii',      game:'apex',       isNew:false, creator:'KiiTheorem',      crRankShort:'Diamond IV',   stake:2000,  format:'Best of 3', modeShort:'Bo3', title:'2v2 Arenas duel.',        desc:'You + a friend vs us. Best of 3. Let\'s see it.',           created:now-1080000,   expiresAt:now+72000000,  participants:'2 / 4' },
     { id:'cb-wiz',      game:'rl',         isNew:false, creator:'ClutchWizard',    crRankShort:'Champion II',  stake:1500,  format:'Best of 3', modeShort:'Bo3', title:'1v1 for the rank.',            desc:'Winner takes the rank. No rematches.',                      created:now-1500000,   expiresAt:now+68400000,  participants:'1 / 2' },
     { id:'cb-ghost',    game:'dota2',      isNew:false, creator:'CyberGhost',      crRankShort:'Ancient II',   stake:2000,  format:'Best of 1', modeShort:'Bo1', title:'Mid only or lose.',            desc:'Mid lane only. 1v1. No jungle, no help.',                   created:now-1920000,   expiresAt:now+64800000,  participants:'1 / 2' },
     { id:'cb-owl',      game:'cod',        isNew:false, creator:'NightOwl_X',      crRankShort:'Crimson I',    stake:1000,  format:'Best of 1', modeShort:'Bo1', title:'Sniper only. Quickscopes.',    desc:'First to 20 kills wins. Search & Destroy.',                 created:now-2400000,   expiresAt:now+61200000,  participants:'1 / 2' }
@@ -2206,8 +2241,8 @@ function renderBoard(challenges) {
   if (!list) return;
   if (!challenges || !challenges.length) {
     list.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:60px 24px;color:var(--txt3)">'
-      + '<div style="font-size:22px;font-weight:800;color:#c8cfe0;margin-bottom:6px">No open challenges match</div>'
-      + '<div style="font-size:12px">Post the first challenge or clear some filters.</div></div>';
+      + '<div style="font-size:22px;font-weight:800;color:#c8cfe0;margin-bottom:6px">No open duels match</div>'
+      + '<div style="font-size:12px">Post the first duel or clear some filters.</div></div>';
     if (pag) pag.innerHTML = '';
     return;
   }
@@ -2267,7 +2302,7 @@ function renderBoard(challenges) {
       +   '<div class="cb-action-row">'
       +     (isOwn
         ? '<button class="cb-accept-btn c-'+c.game+'" onclick="cancelChallenge(\''+c.id+'\')" style="filter:grayscale(.6)">Cancel</button>'
-        : '<button class="cb-accept-btn c-'+c.game+'" onclick="acceptBoardChallenge(\''+c.id+'\')">Accept Challenge</button>')
+        : '<button class="cb-accept-btn c-'+c.game+'" onclick="acceptBoardChallenge(\''+c.id+'\')">Accept Duel</button>')
       +     '<button class="cb-chat-btn" onclick="toast(\'Direct chat coming soon\',\'info\')" title="Message player">'
       +       '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>'
       +     '</button>'
@@ -2284,10 +2319,10 @@ function renderBoard(challenges) {
       ph += '<button class="cb-page-btn'+(i===1?' active':'')+'">'+i+'</button>';
     }
     if (totalPages > 5) {
-      ph += '<button class="cb-page-btn dots">�</button><button class="cb-page-btn">'+totalPages+'</button>';
+      ph += '<button class="cb-page-btn dots">…</button><button class="cb-page-btn">'+totalPages+'</button>';
     }
     if (totalPages > 1) {
-      pag.innerHTML = '<button class="cb-page-btn" style="opacity:.5">�</button>' + ph + '<button class="cb-page-btn">�</button>';
+      pag.innerHTML = '<button class="cb-page-btn" style="opacity:.5">‹</button>' + ph + '<button class="cb-page-btn">›</button>';
     } else {
       pag.innerHTML = '<button class="cb-page-btn active">1</button>';
     }
@@ -2398,7 +2433,7 @@ async function renderProfileProgress() {
   if (!el) return;
   var streakEl = document.getElementById('prog-streak');
   if (!_authToken) {
-    el.innerHTML = '<div style="color:var(--txt3);font-size:12px;line-height:1.6">Connect your wallet to start earning badges from settled challenges.</div>';
+    el.innerHTML = '<div style="color:var(--txt3);font-size:12px;line-height:1.6">Connect your wallet to start earning badges from settled duels.</div>';
     if (streakEl) streakEl.textContent = '';
     return;
   }
@@ -2427,7 +2462,7 @@ function _progressHtml(d) {
         + '<div style="font-size:22px">' + x.icon + '</div>'
         + '<div style="font-size:10px;font-weight:800;margin-top:4px;color:' + (tierClr[x.tier] || 'var(--txt)') + '">' + esc(x.label) + '</div></div>'; }).join('')
       + '</div>'
-    : '<div style="color:var(--txt3);font-size:12px;margin-bottom:16px">No badges yet — win your first challenge to earn <b>First Blood</b> 🩸</div>';
+    : '<div style="color:var(--txt3);font-size:12px;margin-bottom:16px">No badges yet — win your first duel to earn <b>First Blood</b> 🩸</div>';
   var nextHtml = b.next.length
     ? '<div style="font-size:11px;font-weight:800;color:var(--txt3);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px">Next up</div>'
       + b.next.slice(0, 4).map(function(x) { return '<div style="margin-bottom:10px">'
@@ -2683,8 +2718,8 @@ async function populateBoardModes(game) {
       return '<option value="' + (window._escAcc||String)(m.id) + '">' + (window._escAcc||String)(m.label) + '</option>';
     }).join('');
   } catch(e) {
-    window._boardModes = { custom: { id:'custom', label:'Custom challenge', rule:'Agree your own terms (self-reported).', verifiable:false } };
-    sel.innerHTML = '<option value="custom">Custom challenge</option>';
+    window._boardModes = { custom: { id:'custom', label:'Custom duel', rule:'Agree your own terms (self-reported).', verifiable:false } };
+    sel.innerHTML = '<option value="custom">Custom duel</option>';
   }
   boardModeChanged();
 }
@@ -2707,7 +2742,7 @@ function boardModeChanged() {
 }
 
 function openPostChallengeModal() {
-  if (!U.addr || U.via === 'guest') { toast('Connect a wallet to post challenges','error'); return; }
+  if (!U.addr || U.via === 'guest') { toast('Connect a wallet to post duels','error'); return; }
   closeModal('post-challenge-modal');
   document.getElementById('board-game').value = '';
   document.getElementById('board-mode').value = '';
@@ -2725,12 +2760,12 @@ async function postChallenge() {
   var modeObj = (window._boardModes || {})[modeId];
   var customText = (document.getElementById('board-mode') || {value:''}).value.trim();
   // Free-text terms only for the "custom" mode; otherwise use the catalog label.
-  var mode = (modeId === 'custom') ? (customText || 'Custom challenge') : (modeObj ? modeObj.label : '');
+  var mode = (modeId === 'custom') ? (customText || 'Custom duel') : (modeObj ? modeObj.label : '');
   var stake = parseInt(document.getElementById('board-stake').value);
   var expiry = parseInt(document.getElementById('board-expiry').value);
 
   if (!game) { toast('Pick a game','error'); return; }
-  if (!modeId) { toast('Pick a challenge mode','error'); return; }
+  if (!modeId) { toast('Pick a duel mode','error'); return; }
   if (modeId === 'custom' && !customText) { toast('Describe your custom terms','error'); return; }
   if (!stake || stake < 10) { toast('Minimum stake is 10 CLU','error'); return; }
   if (stake > U.balance) { toast('Not enough CLU','error'); return; }
@@ -2750,14 +2785,14 @@ async function postChallenge() {
       await syncBalance();
       if (data.challenge) _boardCache.unshift(data.challenge);
       renderBoard(_boardCache);
-      toast('Challenge posted — stake locked on server!','success');
+      toast('Duel posted — stake locked on server!','success');
     } catch(e) { toast('Server error','error'); return; }
   } else {
     var challenge = {id:'CB_'+Date.now()+'_'+Math.random().toString(36).slice(2,6), game:game, modeId:modeId, modeLabel:(modeObj?modeObj.label:mode), modeVerifiable:!!(modeObj&&modeObj.verifiable), mode:mode, challengeType:'outcome', condition:mode, stake:stake, creator:U.addr, creatorName:U.name||'Anonymous', creatorWins:wins, status:'open', createdAt:Date.now(), expiresAt:Date.now()+expiry*3600000};
     U.balance -= stake; U.escrow += stake; saveProfile();
     _boardCache.unshift(challenge);
     renderBoard(_boardCache);
-    toast('Challenge posted (local mode)','info');
+    toast('Duel posted (local mode)','info');
   }
   refreshAll();
   closeModal('post-challenge-modal');
@@ -2766,9 +2801,9 @@ async function postChallenge() {
 async function acceptBoardChallenge(challengeId) {
   if (!_authToken) { toast('Connect your wallet to play for real','info'); return; }
   var c = _boardCache.find(function(x) { return x.id === challengeId; });
-  if (!c) { toast('Challenge not found','error'); return; }
+  if (!c) { toast('Duel not found','error'); return; }
   if (!U.addr || U.via === 'guest') { toast('Connect a wallet first','error'); return; }
-  if (c.creatorUserId === (U.userId||'') || c.creator === U.addr) { toast('Cannot accept your own challenge','error'); return; }
+  if (c.creatorUserId === (U.userId||'') || c.creator === U.addr) { toast('Cannot accept your own duel','error'); return; }
   if (c.stake > U.balance) { toast('Not enough CLU — need ' + c.stake + ' CLU','error'); return; }
 
   var integrity = getIntegrity();
@@ -3204,7 +3239,7 @@ async function cancelChallenge(challengeId) {
   var d = DUELS.find(function(x){return x.id===challengeId;});
   var fromBoard = !d;
   var c = fromBoard ? _boardCache.find(function(x){return x.id===challengeId;}) : d;
-  if (!c) { toast('Challenge not found','error'); return; }
+  if (!c) { toast('Duel not found','error'); return; }
 
   var isCreator = (c.creatorUserId === (U.userId||'')) || (c.creator && U.addr && c.creator.toLowerCase()===U.addr.toLowerCase());
   if (!isCreator) { toast('Only the creator can cancel','error'); return; }
@@ -3226,7 +3261,7 @@ async function cancelChallenge(challengeId) {
         saveDuels();
         renderDuels();
       }
-      toast(data.message || 'Challenge cancelled — stake refunded','success');
+      toast(data.message || 'Duel cancelled — stake refunded','success');
       if (data.warning) toast(data.warning, 'info');
       refreshAll();
     } catch(e) { toast('Server error','error'); return; }
@@ -3239,7 +3274,7 @@ async function cancelChallenge(challengeId) {
     }
     U.balance += (c.stake||0); U.escrow -= (c.stake||0); saveProfile();
     saveDuels(); renderDuels(); refreshAll();
-    toast('Challenge cancelled — stake refunded (local mode)','info');
+    toast('Duel cancelled — stake refunded (local mode)','info');
   }
 }
 
@@ -3293,7 +3328,7 @@ async function renderWallet() {
   listEl.innerHTML = '<div style="text-align:center;padding:32px;color:var(--txt3)">Loading transactions…</div>';
   var txs = await fetchTransactions(50);
   if (!txs.length) {
-    listEl.innerHTML = '<div style="text-align:center;padding:32px;color:var(--txt3)"><div style="font-size:13px;font-weight:700;margin-bottom:4px">No transactions yet</div><div style="font-size:12px">Create your first challenge to get started.</div></div>';
+    listEl.innerHTML = '<div style="text-align:center;padding:32px;color:var(--txt3)"><div style="font-size:13px;font-weight:700;margin-bottom:4px">No transactions yet</div><div style="font-size:12px">Create your first duel to get started.</div></div>';
     return;
   }
 
@@ -3446,7 +3481,7 @@ async function loadAdminDisputes() {
       + '<div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px;flex-wrap:wrap;gap:10px">'
       + '<div>'
       + '<div style="font-size:12px;font-weight:800;color:var(--red);margin-bottom:4px">DISPUTED · ' + (ch.disputeReason || 'no reason') + '</div>'
-      + '<div style="font-size:13px;font-weight:700">Challenge ' + ch.id + ' · ' + (ch.game||'?') + '</div>'
+      + '<div style="font-size:13px;font-weight:700">Duel ' + ch.id + ' · ' + (ch.game||'?') + '</div>'
       + '<div style="font-size:11px;color:var(--txt3);margin-top:2px">Stake: ' + (ch.stake||0) + ' CLU · Pot: ' + (ch.totalPot||(ch.stake*2)||0) + ' CLU</div>'
       + '</div>'
       + '<div style="text-align:right;font-size:11px;color:var(--txt2);line-height:1.6">'
@@ -3570,11 +3605,11 @@ async function runAdminMaintenance() {
 // ── RENDER: DASHBOARD ─────────────────────────────────
 // Activity data for ticker
 var ACTIVITY_FEED = [
-  {msg:'xZerO challenged SpeedRunner on Valorant', t:'2m ago'},
+  {msg:'xZerO dueled SpeedRunner on Valorant', t:'2m ago'},
   {msg:'NightHawk vs CryptoKing — LoL match settled', t:'7m ago'},
   {msg:'Fr0st locked 200 CLU vs Apex_Legend', t:'15m ago'},
   {msg:'Bolt claimed 400 CLU from CS2 match', t:'23m ago'},
-  {msg:'GG_Wolf challenged ShadowByte on Fortnite', t:'31m ago'},
+  {msg:'GG_Wolf dueled ShadowByte on Fortnite', t:'31m ago'},
 ];
 
 function isMyDuel(d) {
@@ -3674,7 +3709,7 @@ function duelFullCard(d) {
     +'<div style="background:var(--l2);border:1px solid var(--b);border-radius:var(--r);padding:12px;margin-bottom:14px;font-size:13px;font-style:italic;color:var(--txt2)">"'+condLabel(d)+'"</div>'
     +'<div style="display:flex;align-items:center;justify-content:space-between;font-size:12px">'
     +'<div style="display:flex;align-items:center;gap:20px">'
-    +'<div><div style="font-weight:700">'+(role==='creator'?'<span style="color:var(--acc)">You</span>':'Challenger')+'</div><div style="color:var(--txt3);font-family:monospace">'+shortAddr(d.creator)+'</div></div>'
+    +'<div><div style="font-weight:700">'+(role==='creator'?'<span style="color:var(--acc)">You</span>':'Duelist')+'</div><div style="color:var(--txt3);font-family:monospace">'+shortAddr(d.creator)+'</div></div>'
     +'<div style="color:var(--txt3);font-weight:800;font-size:11px;letter-spacing:.1em">VS</div>'
     +'<div><div style="font-weight:700">'+(role==='opponent'?'<span style="color:var(--acc)">You</span>':'Opponent')+'</div><div style="color:var(--txt3);font-family:monospace">'+(d.opponent?shortAddr(d.opponent):'Waiting…')+'</div></div>'
     +'</div>'
@@ -3688,7 +3723,7 @@ function copyDuelCode(duelId) {
   var d=DUELS.find(function(x){return x.id===duelId;});
   if(!d)return;
   var code=btoa(JSON.stringify({id:d.id,creator:d.creator,game:d.game,challengeType:d.challengeType,condition:d.condition,stake:d.stake,expiry:d.expiry,createdAt:d.createdAt}));
-  navigator.clipboard.writeText(code).then(function(){toast('Challenge code copied!','success');});
+  navigator.clipboard.writeText(code).then(function(){toast('Duel code copied!','success');});
 }
 
 // ── RENDER: HISTORY ───────────────────────────────────
@@ -3904,11 +3939,11 @@ function tryCreateDuelWithPin(){
     }
   };
   if (!_hasPinSet() && !isFree) {
-    if (confirm('Set a 6-digit CLUTCH Passcode first. It protects your wallet, stakes and challenges. Set now?')) { openPinSetup(true); return; }
+    if (confirm('Set a 6-digit CLUTCH Passcode first. It protects your wallet, stakes and duels. Set now?')) { openPinSetup(true); return; }
     toast('Passcode required for paid actions','info'); return;
   }
   if (!isFree && !_isPinUnlocked()) {
-    openPinVerify({ title:'Lock Stake Â· Passcode Required', sub: 'Confirm your 6-digit code to escrow this CLU stake.', onSuccess: proceed });
+    openPinVerify({ title:'Lock Stake · Passcode Required', sub: 'Confirm your 6-digit code to escrow this CLU stake.', onSuccess: proceed });
     return;
   }
   proceed();
@@ -3926,7 +3961,7 @@ function createDuelFree(){
   var code = btoa(JSON.stringify({id:duel.id,creator:duel.creator,game:duel.game,challengeType:duel.challengeType,condition:duel.condition,stake:0,free:true,expiry:duel.expiry,createdAt:duel.createdAt}));
   refreshAll();
   showQRModal(duel, code);
-  toast('Free duel created Â· no stake, verified result.','success');
+  toast('Free duel created · no stake, verified result.','success');
 }
 function tryWithdrawWithPin(){
   var cb = function(){ openWithdrawModal(); };
@@ -3945,7 +3980,7 @@ window.wizNext = function(from){
     var mode = (typeof _wizMode !== "undefined") ? _wizMode : 'paid';
     if (mode === 'free') { wizGoTo(3); return; }
     var sv = parseInt((document.getElementById('stake-input')||{}).value)||0;
-    if (sv < 10) { toast('Minimum 10 CLU stake for paid challenges (or pick FREE mode)','error'); return; }
+    if (sv < 10) { toast('Minimum 10 CLU stake for paid duels (or pick FREE mode)','error'); return; }
     wizGoTo(3); return;
   }
   return _origWizNextBeforeInjectPINFREE.apply(this, arguments);
@@ -3963,8 +3998,8 @@ window.wizPopulateReview = function(){
   if (isFree) {
     function s(id,v){ var el=document.getElementById(id); if(el) el.textContent=v; }
     s('rev-pot','Bragging Rights');
-    s('rev-stake','FREE Â· No CLU');
-    var sub = document.getElementById('rev-pot-sub'); if(sub) sub.textContent = 'No escrow Â· verified result Â· recorded in profile';
+    s('rev-stake','FREE · No CLU');
+    var sub = document.getElementById('rev-pot-sub'); if(sub) sub.textContent = 'No escrow · verified result · recorded in profile';
     var lbl = document.querySelector('.wiz-pot-hero-lbl'); if(lbl) lbl.textContent = 'PRIZE';
     return;
   } else {
@@ -3980,11 +4015,11 @@ window.confirmAccept = function(){
   var isPaid = d && (d.stake||0) > 0;
   var proceed = function(){ return _origConfirmAcceptBeforePin(); };
   if (!_hasPinSet()) {
-    if (confirm('Create a 6-digit CLUTCH Passcode first to confirm this challenge.')) { openPinSetup(true); return; }
-    toast('Passcode required to accept challenges','info'); return;
+    if (confirm('Create a 6-digit CLUTCH Passcode first to confirm this duel.')) { openPinSetup(true); return; }
+    toast('Passcode required to accept duels','info'); return;
   }
   if (isPaid && !_isPinUnlocked()) {
-    openPinVerify({ title:'Accept Challenge Â· Passcode', sub:'Your matching stake will escrow after unlock.', onSuccess: proceed });
+    openPinVerify({ title:'Accept Duel · Passcode', sub:'Your matching stake will escrow after unlock.', onSuccess: proceed });
     return;
   }
   proceed();
@@ -4130,7 +4165,7 @@ function shareStatsCard(){
     + 'Integrity: ' + integrity.score + '/100\n'
     + 'Total earned: ' + totalEarned.toLocaleString() + ' CLU\n'
     + '━━━━━━━━━━━━━━━━━━\n'
-    + 'Challenge me on CLUTCH!';
+    + 'Duel me on CLUTCH!';
 
   if(navigator.share) {
     navigator.share({title:'CLUTCH Player Card — '+(U.name||'Player'),text:text}).catch(function(){});
