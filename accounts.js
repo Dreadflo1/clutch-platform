@@ -127,7 +127,10 @@ window.renderConnectedAccounts = function() {
   if (!wrap) return;
   var data = loadConnectedAccounts();
   var html = '';
-  var order = ['twitch','youtube','steam','riot','xbox','psn','battlenet','discord','epic'];
+  // Trimmed to the two accounts that actually matter for duels (game handles for
+  // Riot/Steam auto-verification). The other platforms' definitions stay defined
+  // above but aren't shown — add them back to this list to re-enable.
+  var order = ['riot','steam'];
   order.forEach(function(platform){
     var meta = GAMING_ACCOUNTS_META[platform];
     if (!meta) return;
@@ -168,10 +171,10 @@ window.renderConnectedAccounts = function() {
         '</div>' +
       '</div></div>';
   });
-  var total = Object.keys(data).length;
+  var total = order.filter(function(p){ return data[p]; }).length;
   html += '<div class="account-footer" style="margin-top:10px;display:flex;align-items:center;justify-content:space-between;padding:10px 12px;border-top:1px dashed var(--b,#262a36);border-radius:8px;background:var(--l2,#131624);font-size:11px;color:var(--txt3,#8692ad)">' +
-    '<span>' + total + ' / ' + order.length + ' platforms linked</span>' +
-    '<span>Self-reported · OAuth verification coming soon</span></div>';
+    '<span>' + total + ' / ' + order.length + ' linked</span>' +
+    '<span>Used to auto-verify your LoL / Valorant / Dota results</span></div>';
   wrap.innerHTML = html;
 };
 (function ensureAccountsWired(){
