@@ -437,10 +437,43 @@ function switchAuthTab(which) {
 // Auth form handler — creates fake session for demo then redirects into challenge flow or app
 function submitAuth(e, mode) {
   e.preventDefault();
-  // Email/password auth has no secure backend yet — never fabricate a session.
-  toast('Email accounts are coming soon — use Connect Wallet to play for real, or browse as guest', 'info');
+  var btn = e.target.querySelector('button[type=submit]');
+  var original = btn ? btn.innerHTML : '';
+  if (btn) { btn.disabled = true; btn.innerHTML = 'Entering Clutch…'; }
+  var restore = function(){ if (btn) { btn.disabled = false; btn.innerHTML = original; } };
+  var email, password, name;
+  if (mode === 'login') {
+    email = ((document.getElementById('li-email')||{}).value || '').trim();
+    password = (document.getElementById('li-password')||{}).value || '';
+  } else {
+    email = ((document.getElementById('su-email')||{}).value || '').trim();
+    password = (document.getElementById('su-password')||{}).value || '';
+    name = (document.getElementById('su-username')||{}).value || '';
+  }
+  fetch((ARENA_CONFIG.API_BASE || '') + '/api/auth/email', {
+    method: 'POST', headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({ mode: mode, email: email, password: password, name: name })
+  }).then(function(res){ return res.json().catch(function(){ return {}; }).then(function(data){ return { ok: res.ok, data: data }; }); })
+    .then(async function(r){
+      if (!r.ok || !r.data.token) { toast(r.data.error || 'Sign-in failed', 'error'); restore(); return; }
+      _authToken = r.data.token;
+      try { sessionStorage.setItem('clutch_jwt', _authToken); } catch(err) {}
+      U.userId = r.data.user.id; U.name = r.data.user.name; U.via = 'email'; U.addr = r.data.user.id;
+      await syncBalance();
+      if (typeof saveProfile === 'function') saveProfile();
+      closeModal('connect-modal');
+      restore();
+      toast(mode === 'login' ? 'Welcome back, ' + (U.name||'') + '!' : 'Account created — welcome to Clutch!', 'success');
+      var qc = sessionStorage.getItem('quick_challenge');
+      if (qc) { try { qc = JSON.parse(qc); executeQuickChallenge(qc.game, qc.mode, qc.stake); return; } catch(err){} }
+      enterApp();
+    }).catch(function(){ toast('Connection error — try again', 'error'); restore(); });
   return false;
-  // Legacy demo flow below is intentionally unreachable.
+}
+
+// Legacy demo flow retained (unused, never called) — kept out of the reachable path.
+function _submitAuthLegacyUnused(e, mode) {
+  e.preventDefault();
   var btn = e.target.querySelector('button[type=submit]');
   var original = btn.innerHTML;
   btn.disabled = true;

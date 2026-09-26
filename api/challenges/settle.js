@@ -15,7 +15,7 @@
  *     Both submit; agreement settles, conflict disputes.
  */
 import { requireAuth } from '../_auth.js';
-import { kvGet, kvLock, kvUnlock } from '../_kv.js';
+import { kvGet, kvSet, kvLock, kvUnlock } from '../_kv.js';
 import { BalanceError } from '../_balance.js';
 import { isVerifiable, resolveOutcome } from '../_verify.js';
 import { persist, saveChallenge, settleToWinner, refundDraw } from '../_challenges.js';
@@ -107,6 +107,21 @@ export default async function handler(req, res) {
         return res.status(400).json({ error: `Auto-verification not supported for ${ch.game} — settle with result win/loss instead` });
       }
       if (!handle) return res.status(400).json({ error: 'handle required for auto-verification' });
+
+      // ── Handle ownership binding (anti-impersonation) ──────────────────────
+      // A game handle (Riot ID / Steam ID) is bound to the first CLUTCH account
+      // that settles with it. Another account can never settle under someone
+      // else's handle — so a "nasty" player can't claim a stranger's account,
+      // impersonate a higher-skill identity, or share one handle across accounts.
+      // (Match-consensus already blocks faking the *outcome*; this protects
+      // *identity*. Cryptographic proof of ownership is the OAuth path.)
+      const normHandle = String(handle).trim().toLowerCase();
+      const claimKey = `ghandle:${ch.game}:${normHandle}`;
+      const claimedBy = await kvGet(claimKey);
+      if (claimedBy && claimedBy !== user.userId) {
+        return res.status(403).json({ error: 'That game handle is already linked to another CLUTCH account.' });
+      }
+      if (!claimedBy) await kvSet(claimKey, user.userId);
 
       const submission = { matchId: String(matchId), handle: String(handle), region: region || null };
       // Record the submission. A resubmission with the SAME match id is allowed
