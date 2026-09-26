@@ -66,6 +66,14 @@ export default async function handler(req, res) {
       if (e.code === 'NO_ACCOUNT') return res.status(404).json({ error: 'Account not found' });
       if (e.code === 'INSUFFICIENT_AVAILABLE') return res.status(400).json({ error: 'Insufficient available balance' });
     }
+    if (e && e.code === 'WITHDRAW_CAP') {
+      return res.status(400).json({
+        error: e.cap > 0
+          ? `You can withdraw up to ${e.cap} CLU (what you've deposited). Winnings above your deposits unlock with account verification.`
+          : `Withdrawals require a deposit first — the free starting balance isn't cashable.`,
+        withdrawable: e.cap,
+      });
+    }
     throw e;
   }
 

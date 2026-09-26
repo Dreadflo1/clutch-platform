@@ -78,7 +78,17 @@ export async function creditDeposit({ userId, provider, ref, clu, meta = {} }) {
   });
   await kvSet(payKey, { status: 'credited', userId, provider, ref, clu, txId, at: Date.now() });
 
+  // Track lifetime real deposits — this is what caps how much can be withdrawn
+  // (the free starting balance / un-deposited winnings are never cashable).
+  await kvSet(`deposited:${userId}`, ((await kvGet(`deposited:${userId}`)) || 0) + clu);
+
   return { credited: true, clu, available: bal.available, txId };
+}
+
+/** How much this user may withdraw: lifetime deposited minus lifetime withdrawn. */
+export async function withdrawableCap(userId) {
+  const [dep, wd] = await Promise.all([kvGet(`deposited:${userId}`), kvGet(`withdrawn:${userId}`)]);
+  return Math.max(0, (dep || 0) - (wd || 0));
 }
 
 /**
@@ -93,8 +103,25 @@ export async function creditDeposit({ userId, provider, ref, clu, meta = {} }) {
 export async function createPayoutRequest({ userId, clu, rail, destination, meta = {} }) {
   if (!Number.isInteger(clu) || clu <= 0) throw new Error('createPayoutRequest: clu must be a positive integer');
 
+  // Anti-faucet: a user can only cash out real money they've actually put in.
+  // Lifetime withdrawals are capped at lifetime deposits, so the free starting
+  // balance and un-deposited winnings are never withdrawable (this also keeps
+  // real-money payout gated until KYC/compliance is in place).
+  const withdrawnSoFar = (await kvGet(`withdrawn:${userId}`)) || 0;
+  const cap = Math.max(0, ((await kvGet(`deposited:${userId}`)) || 0) - withdrawnSoFar);
+  if (clu > cap) {
+    const e = new Error('WITHDRAW_CAP');
+    e.code = 'WITHDRAW_CAP';
+    e.cap = cap;
+    throw e;
+  }
+
   // Debit first — fails (throws BalanceError) if underfunded; never overdraws.
   const bal = await mutateBalance(userId, { dAvailable: -clu, minAvailable: clu });
+
+  // Count it toward the lifetime withdrawal total (advisory; small races here
+  // are bounded by the daily cap and are not fund-critical).
+  await kvSet(`withdrawn:${userId}`, withdrawnSoFar + clu);
 
   const payoutId = `po_${Date.now()}_${crypto.randomBytes(5).toString('hex')}`;
   const payout = {
