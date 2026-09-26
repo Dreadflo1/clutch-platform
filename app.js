@@ -178,6 +178,7 @@ var CREATE = { game:null, challengeType:'outcome' };
 var PENDING_ACCEPT = null;
 var _selectedResult = null;
 var _resultDuelId   = null;
+var _proofDataUrl   = null; // last uploaded screenshot (data URL) for AI verification
 
 function loadDuels(){ try { var arr = JSON.parse(localStorage.getItem('clutch_duels')||'[]'); return arr.map(function(d){ if(d && !d.challengeType) d.challengeType = d.betType || 'outcome'; return d; }); } catch(e){ return []; } }
 function saveDuels(){ try { localStorage.setItem('clutch_duels', JSON.stringify(DUELS)); } catch(e){} }
@@ -2925,7 +2926,7 @@ function openResultModal(duelId) {
   var role = U.addr && d.creator.toLowerCase()===U.addr.toLowerCase() ? 'creator' : 'opponent';
   if (role==='creator'?d.creatorResult:d.opponentResult) { toast('Already submitted','info'); return; }
   var g = GAMES.find(function(x){ return x.id===d.game; })||{};
-  _selectedResult = null; _resultDuelId = duelId;
+  _selectedResult = null; _resultDuelId = duelId; _proofDataUrl = null;
 
   // Integrity score badge
   var intColor = integrity.score >= 80 ? 'var(--acc)' : integrity.score >= 50 ? 'var(--gold)' : 'var(--red)';
@@ -2972,9 +2973,10 @@ function openResultModal(duelId) {
       +'<div class="api-result" id="av-res"></div></div>';
   } else {
     html += '<div style="background:rgba(232,160,32,.06);border:1px solid rgba(232,160,32,.15);border-radius:10px;padding:12px;margin:12px 0;font-size:12px;color:var(--gold)">'
-      +'<strong>Manual verification</strong> — '+g.name+' has no public API. Both players must agree on the result. Upload a screenshot for evidence.</div>'
+      +'<strong>Screenshot verification</strong> — '+g.name+' has no public API. Upload your end-of-match scoreboard and enter your in-game name; both players\' screenshots are read by AI and must agree before anyone is paid.</div>'
+      +'<div class="field" style="margin:0 0 10px"><input class="fi" id="shot-handle" placeholder="Your exact in-game name (as it appears on the scoreboard)" style="padding:11px 13px;font-size:13px"/></div>'
       +'<div class="proof-drop"><input type="file" accept="image/*" onchange="handleProofWithMeta(event)"/>'
-      +'<div class="proof-drop-text">Upload screenshot of result screen</div></div>'
+      +'<div class="proof-drop-text">Upload screenshot of the result / scoreboard screen</div></div>'
       +'<div id="proof-prev"></div>'
       +'<div id="proof-meta" style="display:none"></div>';
   }
@@ -3095,6 +3097,7 @@ function handleProofWithMeta(e) {
   // Show image preview
   var rd = new FileReader();
   rd.onload = function(ev) {
+    _proofDataUrl = ev.target.result; // captured for server-side AI verification
     var el = document.getElementById('proof-prev');
     if (el) el.innerHTML = '<div class="proof-preview"><img src="'+ev.target.result+'"/></div>';
     analyzeImageMeta(f, ev.target.result);
@@ -3193,13 +3196,39 @@ function renderMetaResult(el, checks, warnings) {
 
 async function submitResult() {
   if (!_authToken) { toast('Connect your wallet to play for real','info'); return; }
-  if (!_selectedResult){toast('Pick win or loss first','error');return;}
 
   var integrity = getIntegrity();
   if (integrity.banned) { toast('Account suspended','error'); closeModal('result-modal'); return; }
 
   var d = DUELS.find(function(x){return x.id===_resultDuelId;});
   if (!d) return;
+  var _g = GAMES.find(function(x){ return x.id===d.game; }) || {};
+
+  // Screenshot + AI verification path for non-API games (when a screenshot is uploaded).
+  if (!_g.api && _proofDataUrl) {
+    var shotHandle = ((document.getElementById('shot-handle')||{}).value || '').trim();
+    if (!shotHandle) { toast('Enter your in-game name so the screenshot can be matched','error'); return; }
+    try {
+      var sres = await authFetch('/api/challenges/verify-shot', {
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({ challengeId: d.id, handle: shotHandle, image: _proofDataUrl })
+      });
+      var sdata = await sres.json().catch(function(){ return {}; });
+      if (sres.status !== 503) {
+        if (sdata.error) { toast(sdata.error, 'error'); return; }
+        await syncBalance();
+        if (sdata.status === 'settled') { d.status='settled'; d.settledAt=Date.now(); saveDuels(); toast('Screenshots matched — winner paid. Check your balance.','success'); }
+        else if (sdata.status === 'disputed') { d.status='disputed'; saveDuels(); toast('Screenshots did not agree ('+(sdata.reason||'conflict')+') — sent to review.','error'); }
+        else { d.status='awaiting_result'; saveDuels(); toast('Screenshot received — waiting for your opponent to upload theirs.','info'); }
+        _selectedResult=null; _resultDuelId=null; _proofDataUrl=null;
+        closeModal('result-modal'); refreshAll(); renderDuels(); syncBalance();
+        return;
+      }
+      // 503 -> screenshot verification not enabled on the server; fall through to manual declare.
+    } catch(e) { toast('Server error verifying screenshot','error'); return; }
+  }
+
+  if (!_selectedResult){toast('Pick win or loss first','error');return;}
 
   // Submit to server if authenticated
   if (_authToken) {
