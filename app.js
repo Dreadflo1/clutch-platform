@@ -752,10 +752,34 @@ async function syncBalance() {
     if (data.available !== undefined) {
       U.balance = data.available;
       U.escrow = data.escrow || 0;
+      if (data.integrity) { U.integrity = data.integrity; renderDisputeStatus(); }
       saveProfile();
       refreshAll();
     }
   } catch(e) {}
+}
+
+// Show the server-authoritative dispute count / ban to the player. Honest
+// players (0 disputes) never see it; it appears once a dispute is on record and
+// turns into a suspension banner at the threshold (2 disputes → banned).
+function renderDisputeStatus() {
+  var it = U.integrity || {};
+  var el = document.getElementById('dispute-pill');
+  if (!(it.disputes > 0) && !it.banned) { if (el) el.parentNode && el.parentNode.removeChild(el); return; }
+  if (!el) {
+    el = document.createElement('div');
+    el.id = 'dispute-pill';
+    el.style.cssText = 'position:fixed;bottom:16px;right:16px;z-index:9999;padding:9px 14px;border-radius:11px;font-size:12px;font-weight:800;box-shadow:0 10px 28px rgba(0,0,0,.45);letter-spacing:.01em';
+    document.body.appendChild(el);
+  }
+  if (it.banned) {
+    el.style.background = 'var(--red)'; el.style.border = '1px solid var(--red)'; el.style.color = '#fff';
+    el.textContent = '⛔ Account suspended — repeated disputes';
+  } else {
+    var thr = it.threshold || 2;
+    el.style.background = 'rgba(232,160,32,.14)'; el.style.border = '1px solid var(--gold)'; el.style.color = 'var(--gold)';
+    el.textContent = '⚠ Disputes: ' + it.disputes + ' / ' + thr + (it.disputes === thr - 1 ? ' — one more = suspension' : '');
+  }
 }
 
 // ── CONNECTION ────────────────────────────────────────
@@ -2973,10 +2997,13 @@ function openResultModal(duelId) {
       +'<div class="api-result" id="av-res"></div></div>';
   } else {
     html += '<div style="background:rgba(232,160,32,.06);border:1px solid rgba(232,160,32,.15);border-radius:10px;padding:12px;margin:12px 0;font-size:12px;color:var(--gold)">'
-      +'<strong>Screenshot verification</strong> — '+g.name+' has no public API. Upload your end-of-match scoreboard and enter your in-game name; both players\' screenshots are read by AI and must agree before anyone is paid.</div>'
-      +'<div class="field" style="margin:0 0 10px"><input class="fi" id="shot-handle" placeholder="Your exact in-game name (as it appears on the scoreboard)" style="padding:11px 13px;font-size:13px"/></div>'
+      +'<strong>Report the score</strong> — '+g.name+' has no public API, so both players enter the final scoreline. If your numbers match, the winner is paid instantly. If they don\'t, it goes to dispute review.</div>'
+      +'<div style="display:flex;gap:10px;margin:12px 0">'
+      +'<div class="field" style="flex:1;margin:0"><label style="font-size:12px;font-weight:800;color:var(--txt2)">Your score</label><input class="fi" id="score-mine" type="number" min="0" max="9999" inputmode="numeric" placeholder="e.g. 13" style="padding:11px 13px;font-size:14px"/></div>'
+      +'<div class="field" style="flex:1;margin:0"><label style="font-size:12px;font-weight:800;color:var(--txt2)">Opponent\'s score</label><input class="fi" id="score-opp" type="number" min="0" max="9999" inputmode="numeric" placeholder="e.g. 7" style="padding:11px 13px;font-size:14px"/></div>'
+      +'</div>'
       +'<div class="proof-drop"><input type="file" accept="image/*" onchange="handleProofWithMeta(event)"/>'
-      +'<div class="proof-drop-text">Upload screenshot of the result / scoreboard screen</div></div>'
+      +'<div class="proof-drop-text">Optional: attach a screenshot as evidence (used only if there\'s a dispute)</div></div>'
       +'<div id="proof-prev"></div>'
       +'<div id="proof-meta" style="display:none"></div>';
   }
@@ -3204,28 +3231,40 @@ async function submitResult() {
   if (!d) return;
   var _g = GAMES.find(function(x){ return x.id===d.game; }) || {};
 
-  // Screenshot + AI verification path for non-API games (when a screenshot is uploaded).
-  if (!_g.api && _proofDataUrl) {
-    var shotHandle = ((document.getElementById('shot-handle')||{}).value || '').trim();
-    if (!shotHandle) { toast('Enter your in-game name so the screenshot can be matched','error'); return; }
+  // Score-consensus path for non-API games: both players enter the final
+  // scoreline. Matching numbers pay the winner instantly; a mismatch disputes.
+  if (!_g.api) {
+    var myScore = parseInt(((document.getElementById('score-mine')||{}).value || ''), 10);
+    var oppScore = parseInt(((document.getElementById('score-opp')||{}).value || ''), 10);
+    if (isNaN(myScore) || isNaN(oppScore)) { toast('Enter both scores — yours and your opponent’s','error'); return; }
+    if (myScore === oppScore) { toast('Scores can’t be tied — a duel needs a winner','error'); return; }
     try {
-      var sres = await authFetch('/api/challenges/verify-shot', {
+      var sres = await authFetch('/api/challenges/settle', {
         method:'POST', headers:{'Content-Type':'application/json'},
-        body: JSON.stringify({ challengeId: d.id, handle: shotHandle, image: _proofDataUrl })
+        body: JSON.stringify({ challengeId: d.id, myScore: myScore, oppScore: oppScore })
       });
       var sdata = await sres.json().catch(function(){ return {}; });
-      if (sres.status !== 503) {
-        if (sdata.error) { toast(sdata.error, 'error'); return; }
-        await syncBalance();
-        if (sdata.status === 'settled') { d.status='settled'; d.settledAt=Date.now(); saveDuels(); toast('Screenshots matched — winner paid. Check your balance.','success'); }
-        else if (sdata.status === 'disputed') { d.status='disputed'; saveDuels(); toast('Screenshots did not agree ('+(sdata.reason||'conflict')+') — sent to review.','error'); }
-        else { d.status='awaiting_result'; saveDuels(); toast('Screenshot received — waiting for your opponent to upload theirs.','info'); }
-        _selectedResult=null; _resultDuelId=null; _proofDataUrl=null;
-        closeModal('result-modal'); refreshAll(); renderDuels(); syncBalance();
-        return;
+      if (sdata.error) { toast(sdata.error, 'error'); return; }
+      await syncBalance();
+      if (sdata.status === 'settled') {
+        d.status='settled'; d.winner = sdata.challenge && sdata.challenge.winner; d.settledAt=Date.now(); saveDuels();
+        closeModal('result-modal');
+        var iWon = sdata.challenge && sdata.challenge.winner === U.userId;
+        if (iWon) { setTimeout(function(){ showWinModal(sdata.challenge.payout); }, 200); }
+        else { setTimeout(function(){ showLossModal(d.stake); }, 200); }
+      } else if (sdata.status === 'disputed') {
+        d.status='disputed'; var sr = addStrike('Score mismatch on duel '+d.id); saveDuels();
+        closeModal('result-modal');
+        if (sr.banned) { toast('Integrity limit reached — account suspended.','error'); }
+        else { toast('Your scores don’t match your opponent’s — dispute filed. Strike '+sr.strikes+'/3.','error'); }
+      } else {
+        d.status='awaiting_result'; saveDuels();
+        toast('Score submitted — waiting for your opponent to enter theirs.','info');
       }
-      // 503 -> screenshot verification not enabled on the server; fall through to manual declare.
-    } catch(e) { toast('Server error verifying screenshot','error'); return; }
+      _selectedResult=null; _resultDuelId=null; _proofDataUrl=null;
+      closeModal('result-modal'); refreshAll(); renderDuels(); syncBalance();
+      return;
+    } catch(e) { toast('Server error','error'); return; }
   }
 
   if (!_selectedResult){toast('Pick win or loss first','error');return;}

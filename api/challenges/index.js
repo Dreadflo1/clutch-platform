@@ -16,6 +16,7 @@ import {
   addUserChallenge, getUserChallengeIds,
 } from '../_challenges.js';
 import { findMode } from '../_modes.js';
+import { isBanned } from '../_integrity.js';
 import { getUserStats, cohortFromStats } from '../_userstats.js';
 
 const CHALLENGE_SECRET = process.env.CHALLENGE_SECRET || 'dev-challenge-secret-change-me';
@@ -110,6 +111,12 @@ export default async function handler(req, res) {
     } finally {
       await kvUnlock(lockKey);
     }
+  }
+
+  // Banned players (repeat disputers) can still CANCEL to reclaim a stake above,
+  // but cannot start or accept new duels.
+  if (await isBanned(user.userId)) {
+    return res.status(403).json({ error: 'Account suspended after repeated disputes — you can no longer start or accept duels.' });
   }
 
   // ── ACCEPT FLOW ──

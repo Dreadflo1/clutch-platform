@@ -4,6 +4,7 @@
  */
 import { requireAuth } from '../_auth.js';
 import { kvGet } from '../_kv.js';
+import { integrityOf } from '../_integrity.js';
 
 export default async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(200).end();
@@ -11,13 +12,17 @@ export default async function handler(req, res) {
   const user = requireAuth(req, res);
   if (!user) return;
 
-  const bal = await kvGet(`bal:${user.userId}`);
+  const [bal, integrity] = await Promise.all([
+    kvGet(`bal:${user.userId}`),
+    integrityOf(user.userId),
+  ]);
   if (!bal) {
-    return res.status(200).json({ available: 0, escrow: 0 });
+    return res.status(200).json({ available: 0, escrow: 0, integrity });
   }
 
   return res.status(200).json({
     available: bal.available,
     escrow: bal.escrow,
+    integrity, // { disputes, threshold, banned }
   });
 }

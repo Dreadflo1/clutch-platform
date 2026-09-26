@@ -19,6 +19,7 @@ import { kvGet, kvSet, kvLock, kvUnlock } from '../_kv.js';
 import { BalanceError } from '../_balance.js';
 import { isVerifiable, resolveOutcome } from '../_verify.js';
 import { persist, saveChallenge, settleToWinner, refundDraw } from '../_challenges.js';
+import { recordDisputeBoth } from '../_integrity.js';
 
 // The verifying match must have STARTED after acceptance (small negative slack
 // only for clock skew), so a player cannot point at a game they pre-played and
@@ -65,8 +66,9 @@ export default async function handler(req, res) {
   if (!challengeId) return res.status(400).json({ error: 'challengeId required' });
 
   const verifiedMode = Boolean(matchId);
-  if (!verifiedMode && !['win', 'loss'].includes(result)) {
-    return res.status(400).json({ error: 'Provide either { matchId, handle } (auto-verify) or { result: win|loss }' });
+  const scoreMode = body.myScore !== undefined && body.oppScore !== undefined;
+  if (!verifiedMode && !scoreMode && !['win', 'loss'].includes(result)) {
+    return res.status(400).json({ error: 'Provide { matchId, handle }, { myScore, oppScore }, or { result: win|loss }' });
   }
 
   // Per-challenge lock. Held only for read-modify-write of state — NEVER across
@@ -151,6 +153,7 @@ export default async function handler(req, res) {
         ch.status = 'disputed';
         ch.disputeReason = 'match_id_mismatch';
         ch.disputedAt = Date.now();
+        await recordDisputeBoth(ch);
         await saveChallenge(ch);
         return res.status(200).json({ status: ch.status, reason: ch.disputeReason, challenge: challengeView(ch) });
       }
@@ -191,6 +194,7 @@ export default async function handler(req, res) {
         ch.status = 'disputed';
         ch.disputeReason = verdict.reason;
         ch.disputedAt = Date.now();
+        await recordDisputeBoth(ch);
         await saveChallenge(ch);
         return res.status(200).json({ status: ch.status, reason: verdict.reason, challenge: challengeView(ch) });
       }
@@ -205,6 +209,54 @@ export default async function handler(req, res) {
       }
       await saveChallenge(ch);
       return res.status(200).json({ status: ch.status, challenge: challengeView(ch) });
+    }
+
+    // ── Score-based (honor system) path — both enter the final scoreline ──
+    // Each player independently reports (their own score, the opponent's score).
+    // The two reports must mirror each other exactly and name a winner, else the
+    // mismatch itself flags the dispute. No AI, no trust — pure consensus.
+    if (scoreMode) {
+      const my = parseInt(body.myScore, 10);
+      const opp = parseInt(body.oppScore, 10);
+      if (!Number.isInteger(my) || !Number.isInteger(opp) || my < 0 || opp < 0 || my > 9999 || opp > 9999) {
+        return res.status(400).json({ error: 'Enter both scores as whole numbers (0–9999).' });
+      }
+      if (isCreator) {
+        if (ch.creatorScore) return res.status(400).json({ error: 'Already submitted' });
+        ch.creatorScore = { my, opp };
+      } else {
+        if (ch.opponentScore) return res.status(400).json({ error: 'Already submitted' });
+        ch.opponentScore = { my, opp };
+      }
+
+      if (ch.creatorScore && ch.opponentScore) {
+        const c = ch.creatorScore, o = ch.opponentScore;
+        const consistent = c.my === o.opp && c.opp === o.my; // the two reports mirror
+        if (!consistent || c.my === c.opp) {
+          ch.status = 'disputed';
+          ch.disputeReason = c.my === c.opp ? 'tie_no_winner' : 'score_mismatch';
+          ch.disputedAt = Date.now();
+          await recordDisputeBoth(ch);
+        } else {
+          const creatorWon = c.my > c.opp;
+          ch.creatorResult = creatorWon ? 'win' : 'loss';
+          ch.opponentResult = creatorWon ? 'loss' : 'win';
+          ch.finalScore = { creator: c.my, opponent: c.opp };
+          const winnerId = creatorWon ? ch.creatorUserId : ch.opponentUserId;
+          const loserId = creatorWon ? ch.opponentUserId : ch.creatorUserId;
+          try {
+            await settleToWinner(ch, winnerId, loserId);
+          } catch (e) {
+            if (e instanceof BalanceError) return res.status(409).json({ error: `Cannot settle escrow (${e.code})` });
+            throw e;
+          }
+        }
+      } else {
+        ch.status = 'awaiting_result';
+      }
+
+      await saveChallenge(ch);
+      return res.status(200).json({ status: ch.status, reason: ch.disputeReason, challenge: challengeView(ch) });
     }
 
     // ── Result-based (honor system) path — no network, stays in lock ──
@@ -233,6 +285,7 @@ export default async function handler(req, res) {
         ch.status = 'disputed';
         ch.disputeReason = 'result_conflict';
         ch.disputedAt = Date.now();
+        await recordDisputeBoth(ch);
       }
     } else {
       ch.status = 'awaiting_result';
