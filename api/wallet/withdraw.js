@@ -10,6 +10,7 @@
 import { requireAuth } from '../_auth.js';
 import { kvGet, kvSet } from '../_kv.js';
 import { createPayoutRequest, BalanceError } from '../_payments.js';
+import { isAdult } from '../_age.js';
 
 const DAILY_WITHDRAW_CAP = 10000;
 const MIN_WITHDRAW = 10;
@@ -22,6 +23,9 @@ export default async function handler(req, res) {
 
   const user = requireAuth(req, res);
   if (!user) return;
+  if (!(await isAdult(user.userId))) {
+    return res.status(403).json({ error: 'Withdrawals require 18+ age confirmation (ID verification via Stripe applies at cash-out).', code: 'age_required' });
+  }
 
   const body = typeof req.body === 'string' ? JSON.parse(req.body) : req.body;
   const amount = parseInt(body.amount);

@@ -12,6 +12,7 @@
  */
 import { requireAuth } from '../_auth.js';
 import { cluFromUsd } from '../_payments.js';
+import { isAdult } from '../_age.js';
 
 const MIN_USD = 1;
 const MAX_USD = 500;
@@ -23,6 +24,9 @@ export default async function handler(req, res) {
 
   const user = requireAuth(req, res);
   if (!user) return;
+  if (!(await isAdult(user.userId))) {
+    return res.status(403).json({ error: 'Deposits require 18+ age confirmation.', code: 'age_required' });
+  }
 
   const apiKey = process.env.NOWPAYMENTS_API_KEY;
   if (!apiKey) return res.status(503).json({ error: 'Crypto deposits are not configured' });

@@ -17,6 +17,7 @@ import {
 } from '../_challenges.js';
 import { findMode } from '../_modes.js';
 import { isBanned } from '../_integrity.js';
+import { isAgeConfirmed } from '../_age.js';
 import { getUserStats, cohortFromStats } from '../_userstats.js';
 
 const CHALLENGE_SECRET = process.env.CHALLENGE_SECRET || 'dev-challenge-secret-change-me';
@@ -113,8 +114,12 @@ export default async function handler(req, res) {
     }
   }
 
-  // Banned players (repeat disputers) can still CANCEL to reclaim a stake above,
-  // but cannot start or accept new duels.
+  // Age gate — must confirm 16+ to play. (Real cash-out is 18+, gated at
+  // deposit/withdraw.) Banned players can still CANCEL to reclaim a stake above,
+  // but neither can start or accept new duels.
+  if (!(await isAgeConfirmed(user.userId))) {
+    return res.status(403).json({ error: 'Confirm your date of birth to play.', code: 'age_required' });
+  }
   if (await isBanned(user.userId)) {
     return res.status(403).json({ error: 'Account suspended after repeated disputes — you can no longer start or accept duels.' });
   }

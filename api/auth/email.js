@@ -10,6 +10,7 @@
 import crypto from 'crypto';
 import { kvGet, kvSet, kvSetNx } from '../_kv.js';
 import { signJwt } from '../_jwt.js';
+import { ageFromDob, confirmAge, MIN_AGE } from '../_age.js';
 
 const STARTING_BALANCE = 500;
 const MAX_ATTEMPTS = 8;          // per-account login attempts before a cooldown
@@ -57,6 +58,11 @@ export default async function handler(req, res) {
   }
 
   if (mode === 'signup') {
+    // Age gate — 16+ to play; DOB verified. (18+ needed for real money later.)
+    const age = ageFromDob(body.dob);
+    if (age === null) return res.status(400).json({ error: 'Enter a valid date of birth.' });
+    if (age < MIN_AGE) return res.status(403).json({ error: `You must be at least ${MIN_AGE} to sign up for CLUTCH.`, code: 'under_min' });
+
     const salt = crypto.randomBytes(16).toString('hex');
     const hash = hashPassword(password, salt);
     // Atomic create: fails (returns false) if the account already exists — no race.
@@ -69,6 +75,7 @@ export default async function handler(req, res) {
     await kvSet(userId, user);
     await kvSet(`bal:${userId}`, { available: STARTING_BALANCE, escrow: 0, version: 1 });
     await kvSet(`txlog:${userId}`, []);
+    await confirmAge(userId, body.dob); // record the 18+ confirmation
 
     const token = signJwt({ sub: userId, addr: null, via: 'email', name });
     return res.status(200).json({ token, user: { id: userId, addr: null, name, via: 'email' } });

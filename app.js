@@ -442,7 +442,7 @@ function submitAuth(e, mode) {
   var original = btn ? btn.innerHTML : '';
   if (btn) { btn.disabled = true; btn.innerHTML = 'Entering Clutch…'; }
   var restore = function(){ if (btn) { btn.disabled = false; btn.innerHTML = original; } };
-  var email, password, name;
+  var email, password, name, dob;
   if (mode === 'login') {
     email = ((document.getElementById('li-email')||{}).value || '').trim();
     password = (document.getElementById('li-password')||{}).value || '';
@@ -450,10 +450,11 @@ function submitAuth(e, mode) {
     email = ((document.getElementById('su-email')||{}).value || '').trim();
     password = (document.getElementById('su-password')||{}).value || '';
     name = (document.getElementById('su-username')||{}).value || '';
+    dob = (document.getElementById('su-dob')||{}).value || '';
   }
   fetch((ARENA_CONFIG.API_BASE || '') + '/api/auth/email', {
     method: 'POST', headers: {'Content-Type':'application/json'},
-    body: JSON.stringify({ mode: mode, email: email, password: password, name: name })
+    body: JSON.stringify({ mode: mode, email: email, password: password, name: name, dob: dob })
   }).then(function(res){ return res.json().catch(function(){ return {}; }).then(function(data){ return { ok: res.ok, data: data }; }); })
     .then(async function(r){
       if (!r.ok || !r.data.token) { toast(r.data.error || 'Sign-in failed', 'error'); restore(); return; }
@@ -753,6 +754,7 @@ async function syncBalance() {
       U.balance = data.available;
       U.escrow = data.escrow || 0;
       if (data.integrity) { U.integrity = data.integrity; renderDisputeStatus(); }
+      if (data.age) { U.age = data.age; if (!data.age.confirmed) showAgeGate(); }
       saveProfile();
       refreshAll();
     }
@@ -780,6 +782,41 @@ function renderDisputeStatus() {
     el.style.background = 'rgba(232,160,32,.14)'; el.style.border = '1px solid var(--gold)'; el.style.color = 'var(--gold)';
     el.textContent = '⚠ Disputes: ' + it.disputes + ' / ' + thr + (it.disputes === thr - 1 ? ' — one more = suspension' : '');
   }
+}
+
+// ── CONNECTION ────────────────────────────────────────
+// ── AGE GATE (16+ to play · 18+ for money) ────────────
+// Shown for wallet/Telegram accounts that haven't confirmed a DOB yet (email
+// signup collects it inline). Blocks the app until 16+ is confirmed.
+function showAgeGate() {
+  if (document.getElementById('age-gate')) return;
+  var el = document.createElement('div');
+  el.id = 'age-gate';
+  el.style.cssText = 'position:fixed;inset:0;z-index:10000;background:rgba(0,0,0,.72);display:flex;align-items:center;justify-content:center;padding:20px';
+  el.innerHTML = '<div style="background:var(--l1);border:1px solid var(--b);border-radius:16px;max-width:380px;width:100%;padding:24px;text-align:center">'
+    + '<div style="font-size:18px;font-weight:900;margin-bottom:6px">Confirm your age</div>'
+    + '<div style="font-size:12.5px;color:var(--txt2);line-height:1.6;margin-bottom:16px">You must be <b>16+</b> to play. <b>18+</b> is required to deposit or cash out — ID verification via Stripe applies at cash-out.</div>'
+    + '<input id="age-gate-dob" type="date" class="fi" style="padding:12px 14px;font-size:14px;width:100%;margin-bottom:10px"/>'
+    + '<div id="age-gate-err" style="font-size:11.5px;color:var(--red);min-height:16px;margin-bottom:10px"></div>'
+    + '<button class="btn btn-p btn-full" onclick="submitAgeGate()">Confirm</button>'
+    + '</div>';
+  document.body.appendChild(el);
+}
+function submitAgeGate() {
+  var dob = (document.getElementById('age-gate-dob') || {}).value || '';
+  var errEl = document.getElementById('age-gate-err');
+  if (!dob) { if (errEl) errEl.textContent = 'Enter your date of birth'; return; }
+  fetch((ARENA_CONFIG.API_BASE || '') + '/api/auth/age', {
+    method: 'POST', headers: { 'Content-Type': 'application/json', 'Authorization': 'Bearer ' + _authToken },
+    body: JSON.stringify({ dob: dob })
+  }).then(function (r) { return r.json().then(function (d) { return { status: r.status, d: d }; }); })
+    .then(function (x) {
+      if (x.status === 200 && x.d.confirmed) {
+        U.age = { confirmed: true, adult: !!x.d.adult };
+        var g = document.getElementById('age-gate'); if (g && g.parentNode) g.parentNode.removeChild(g);
+        toast('Age confirmed' + (x.d.adult ? '' : ' — 18+ needed for real money'), 'success');
+      } else if (errEl) { errEl.textContent = x.d.error || 'Could not confirm'; }
+    }).catch(function () { if (errEl) errEl.textContent = 'Connection error'; });
 }
 
 // ── CONNECTION ────────────────────────────────────────
