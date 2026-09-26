@@ -97,10 +97,14 @@ window.openAccountUrl = function(platform) {
 };
 // ── OAuth verified linking ──────────────────────────────────────
 window.connectViaOAuth = function(platform) {
+  var tok = (typeof _authToken !== 'undefined' && _authToken) || window._authToken || '';
+  if (!tok) { toast('Sign in first to connect an account', 'info'); return; }
   var w = 520, h = 700;
   var left = Math.max(0, (screen.width - w) / 2), top = Math.max(0, (screen.height - h) / 2);
   var meta = GAMING_ACCOUNTS_META[platform];
-  window.open('/api/oauth/' + encodeURIComponent(platform) + '?mode=authorize',
+  // Pass the signed-in user's token so the server links the gathered data to
+  // this account (verified server-side; never forwarded to the provider).
+  window.open('/api/oauth/' + encodeURIComponent(platform) + '?mode=authorize&t=' + encodeURIComponent(tok),
     'clutch_oauth', 'width=' + w + ',height=' + h + ',left=' + left + ',top=' + top);
   toast('Opening ' + (meta ? meta.name : platform) + ' verification…', 'info');
 };
@@ -127,10 +131,10 @@ window.renderConnectedAccounts = function() {
   if (!wrap) return;
   var data = loadConnectedAccounts();
   var html = '';
-  // Trimmed to the two accounts that actually matter for duels (game handles for
-  // Riot/Steam auto-verification). The other platforms' definitions stay defined
-  // above but aren't shown — add them back to this list to re-enable.
-  var order = ['riot','steam'];
+  // Riot/Steam = game handles for auto-verification; Discord/Twitch = OAuth
+  // connect that gathers community data (servers / follower count). The other
+  // platform definitions stay above and can be re-enabled by adding them here.
+  var order = ['riot','steam','discord','twitch'];
   order.forEach(function(platform){
     var meta = GAMING_ACCOUNTS_META[platform];
     if (!meta) return;

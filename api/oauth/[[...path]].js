@@ -15,17 +15,32 @@
  *   OAUTH_REDIRECT_URI — override autoredirect (defaults: request origin + /authed.html)
  */
 import crypto from 'crypto';
+import { kvGet, kvSet } from '../_kv.js';
+import { verifyJwt } from '../_jwt.js';
 
 const PLATFORMS = {
   twitch: {
     authHost: 'https://id.twitch.tv',
     authPath: '/oauth2/authorize',
     tokenPath: '/oauth2/token',
-    scopes: ['openid', 'user:read:email'],
+    scopes: ['user:read:email', 'moderator:read:followers'],
     idKey: () => [process.env.TWITCH_CLIENT_ID, process.env.TWITCH_CLIENT_SECRET],
     userinfoUrl: (t) => ({ url: 'https://api.twitch.tv/helix/users',
       headers: { Authorization: `Bearer ${t}`, 'Client-Id': process.env.TWITCH_CLIENT_ID } }),
-    extractUser: (d) => ({ name: d.data[0].login, displayName: d.data[0].display_name })
+    extractUser: (d) => ({ name: d.data[0].login, displayName: d.data[0].display_name }),
+    // Gather: profile + email + follower count (needs moderator:read:followers).
+    gather: async (access, d) => {
+      const u = (d.data && d.data[0]) || {};
+      const out = { twitchId: u.id || null, email: u.email || null, avatar: u.profile_image_url || null, broadcasterType: u.broadcaster_type || '' };
+      try {
+        if (u.id) {
+          const fr = await fetch(`https://api.twitch.tv/helix/channels/followers?broadcaster_id=${u.id}&first=1`,
+            { headers: { Authorization: `Bearer ${access}`, 'Client-Id': process.env.TWITCH_CLIENT_ID } });
+          if (fr.ok) { const fd = await fr.json(); out.followers = typeof fd.total === 'number' ? fd.total : null; }
+        }
+      } catch {}
+      return out;
+    }
   },
   youtube: {
     authHost: 'https://accounts.google.com',
@@ -40,10 +55,23 @@ const PLATFORMS = {
     authHost: 'https://discord.com',
     authPath: '/oauth2/authorize',
     tokenPath: 'https://discord.com/api/oauth2/token',
-    scopes: ['identify'],
+    scopes: ['identify', 'email', 'guilds'],
     idKey: () => [process.env.DISCORD_CLIENT_ID, process.env.DISCORD_CLIENT_SECRET],
     userinfoUrl: (t) => ({ url: 'https://discord.com/api/users/@me', headers: { Authorization: `Bearer ${t}` } }),
-    extractUser: (d) => ({ name: d.username, displayName: d.global_name || d.username })
+    extractUser: (d) => ({ name: d.username, displayName: d.global_name || d.username }),
+    // Gather: id + email + which servers they're in (community reach).
+    gather: async (access, d) => {
+      const out = { discordId: d.id || null, email: d.email || null, avatar: d.avatar || null };
+      try {
+        const gr = await fetch('https://discord.com/api/users/@me/guilds', { headers: { Authorization: `Bearer ${access}` } });
+        if (gr.ok) {
+          const guilds = await gr.json();
+          out.guildCount = Array.isArray(guilds) ? guilds.length : 0;
+          out.guilds = (Array.isArray(guilds) ? guilds : []).slice(0, 50).map((g) => g.name).filter(Boolean);
+        }
+      } catch {}
+      return out;
+    }
   },
   battlenet: {
     authHost: 'https://oauth.battle.net',
@@ -202,7 +230,14 @@ export default async function handler(req, res) {
   const ruri = redirectUri(req);
   if (!isCallback) {
     const state = genState();
-    try { res.setHeader('Set-Cookie', `clutch_oauth_state=${state}; Path=/; SameSite=Lax; HttpOnly; Secure; Max-Age=900`); } catch(e){}
+    // Bind this OAuth flow to the signed-in CLUTCH user (passed as ?t=<jwt> by the
+    // client) so the callback can store the gathered data against their account.
+    // The JWT is verified here and only its userId is kept, in an HttpOnly cookie
+    // — it is never forwarded to the provider.
+    const cookies = [`clutch_oauth_state=${state}; Path=/; SameSite=Lax; HttpOnly; Secure; Max-Age=900`];
+    const jwt = url.searchParams.get('t');
+    if (jwt) { const p = verifyJwt(jwt); if (p && p.sub) cookies.push(`clutch_oauth_uid=${p.sub}; Path=/; SameSite=Lax; HttpOnly; Secure; Max-Age=900`); }
+    try { res.setHeader('Set-Cookie', cookies); } catch(e){}
     const qp = new URLSearchParams({
       response_type: 'code',
       client_id: clientId,
@@ -228,8 +263,8 @@ export default async function handler(req, res) {
   if (!cookieState || !stateToken || stateToken !== cookieState) {
     return finish(res, platform, null, true, 'state mismatch (possible CSRF)');
   }
-  // one-time use — clear it
-  try { res.setHeader('Set-Cookie', 'clutch_oauth_state=; Path=/; Max-Age=0; SameSite=Lax'); } catch (e) {}
+  // one-time use — clear both flow cookies
+  try { res.setHeader('Set-Cookie', ['clutch_oauth_state=; Path=/; Max-Age=0; SameSite=Lax', 'clutch_oauth_uid=; Path=/; Max-Age=0; SameSite=Lax']); } catch (e) {}
 
   let data = null;
   try {
@@ -264,6 +299,22 @@ export default async function handler(req, res) {
       if (!r2.ok) return finish(res, platform, null, true, `userinfo ${r2.status}: ${JSON.stringify(userData).slice(0,120)}`);
     }
     const user = def.extractUser(userData);
+
+    // Gather richer data (Discord: email + servers; Twitch: email + followers).
+    let gathered = {};
+    if (def.gather) { try { gathered = (await def.gather(access, userData)) || {}; } catch {} }
+
+    // Store the connection + gathered data against the CLUTCH user, if we know
+    // who they are (uid cookie set from the JWT at the authorize step).
+    const uid = readCookie(req, 'clutch_oauth_uid');
+    if (uid) {
+      const record = { platform, name: user.name, displayName: user.displayName || user.name, status: 'verified', connectedAt: Date.now(), ...gathered };
+      try {
+        await kvSet(`conn:${uid}:${platform}`, record);
+        const list = (await kvGet(`connlist:${uid}`)) || [];
+        if (!list.includes(platform)) { list.push(platform); await kvSet(`connlist:${uid}`, list); }
+      } catch {}
+    }
     return finish(res, platform, user);
   } catch(e) {
     return finish(res, platform, null, true, 'userinfo: ' + e.message);
