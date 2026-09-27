@@ -1523,23 +1523,28 @@ function setSt(v){ document.getElementById('stake-input').value=v; updPreview();
 
 // ── CREATE DUEL ───────────────────────────────────────
 function gatherCond() {
-  var t = CREATE.challengeType;
-  if (t==='outcome') {
-    var chips = window._condChips || [];
-    if (chips.length === 0) { toast('Pick at least one win condition','error'); return null; }
-    return { text: chips.join(' + '), username:(document.getElementById('c-user')||{}).value||'' };
+  var t = CREATE.challengeType || 'outcome';
+  // The condition lives in the field buildCondFields() renders — c-out (outcome),
+  // c-tval (target) or c-cust (custom) — set by a Quick-pick preset or typed in.
+  // This reads the same source as updPreview() and the Step-5 review screen.
+  var elId = t==='target' ? 'c-tval' : t==='custom' ? 'c-cust' : 'c-out';
+  var el = document.getElementById(elId);
+  var val = (el && el.value != null ? String(el.value) : '').trim();
+  if (!val) {
+    var msg = t==='target' ? 'Set a performance target'
+            : t==='custom' ? 'Describe the condition'
+            : 'Pick or write a win condition';
+    toast(msg, 'error');
+    return null;
   }
   if (t==='target') {
-    var rows = (window._targetRows||[]).filter(function(r){ return String(r.val).trim(); });
-    if (rows.length === 0) { toast('Set at least one target value','error'); return null; }
-    var ctx = (document.getElementById('c-ctx')||{}).value||'';
-    var text = rows.map(function(r){ return r.stat+': '+r.val; }).join(' · ') + (ctx?' ('+ctx+')':'');
-    return { text: text };
+    var ctx = ((document.getElementById('c-ctx')||{}).value||'').trim();
+    return { text: ctx ? val + ' (' + ctx + ')' : val };
   }
-  var rows = (window._customRows||[]).filter(function(r){ return r.trim(); });
-  if (rows.length === 0) { toast('Enter at least one condition','error'); return null; }
-  var proof = (document.getElementById('c-proof')||{}).value||'screenshot';
-  return { text: rows.join(' + '), proof: proof };
+  if (t==='custom') {
+    return { text: val, proof: (document.getElementById('c-proof')||{}).value||'screenshot' };
+  }
+  return { text: val, username: (document.getElementById('c-user')||{}).value||'' };
 }
 
 async function createDuel() {
@@ -4308,6 +4313,7 @@ function wizPopulateReview(){
   function s(id,v){ var el=document.getElementById(id); if(el) el.textContent=v; }
   s('rev-game',g.name); s('rev-stake',stake.toLocaleString()+' CLU'); s('rev-type',typeMap[CREATE.challengeType]||'—');
   s('rev-pot',win.toLocaleString()+' CLU'); s('rev-expiry',expLabel); s('rev-cond',condText);
+  s('rev-verify', g.api ? ('✓ ' + (g.apiName || 'API auto-verify')) : 'Both players report the score');
 }
 
 // ─── PERFORMANCE PANEL ───────────────────────────────────────────────────────
