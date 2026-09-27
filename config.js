@@ -21,10 +21,9 @@ const ARENA_CONFIG = {
   FOOTBALLDATA_KEY: '',         // e.g. 'a1b2c3d4e5f6...'
   FOOTBALLDATA_BASE: 'https://api.football-data.org/v4',
 
-  // The Odds API  →  https://the-odds-api.com/
-  // Free: 500 req/month · Works directly from the browser (CORS OK)
-  THEODDS_KEY: '',              // e.g. '1234abcd5678...'
-  THEODDS_BASE: 'https://api.the-odds-api.com/v4',
+  // NOTE: CLUTCH is a skill-based contest platform — NOT a betting/bookmaking
+  // service. It intentionally integrates NO betting-line providers of any kind.
+  // Match data below is used only for informational live-score previews.
 
   // ── LEAGUE OF LEGENDS ──────────────────────────────────────
   // Riot Games API  →  https://developer.riotgames.com/
@@ -33,7 +32,7 @@ const ARENA_CONFIG = {
   RIOT_REGION: 'europe',        // americas | europe | asia | esports
   RIOT_BASE: 'https://europe.api.riotgames.com',
 
-  // PandaScore (esports odds)  →  https://pandascore.co/
+  // PandaScore (esports match data — schedules & results)  →  https://pandascore.co/
   // Free tier: 1,000 req/hr
   PANDASCORE_KEY: '',           // e.g. 'TOKEN_abc123...'
   PANDASCORE_BASE: 'https://api.pandascore.co',

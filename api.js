@@ -67,35 +67,9 @@ async function fetchLiveMatches() {
   return null; // caller uses MOCK_MATCHES
 }
 
-/* ────────────────────────────────────────────────────────────
-   FOOTBALL — ODDS
-   Returns odds for a given fixture from The Odds API.
-──────────────────────────────────────────────────────────── */
-async function fetchOdds(sport = 'soccer_fifa_world_cup') {
-  if (!hasKey(ARENA_CONFIG.THEODDS_KEY)) return null;
-
-  const data = await apiFetch(
-    `${ARENA_CONFIG.THEODDS_BASE}/sports/${sport}/odds/?apiKey=${ARENA_CONFIG.THEODDS_KEY}&regions=eu&markets=h2h&oddsFormat=decimal`
-  );
-  if (!data?.length) return null;
-
-  // Returns { matchTitle: { home, draw, away } }
-  const map = {};
-  data.forEach(function(event) {
-    const bm = event.bookmakers?.[0];
-    if (!bm) return;
-    const h2h = bm.markets?.find(function(m){ return m.key === 'h2h'; });
-    if (!h2h) return;
-    const outcomes = {};
-    h2h.outcomes.forEach(function(o){ outcomes[o.name] = o.price; });
-    map[event.home_team + ' vs ' + event.away_team] = {
-      home: outcomes[event.home_team] || 2.0,
-      draw: outcomes['Draw'] || 3.2,
-      away: outcomes[event.away_team] || 3.5,
-    };
-  });
-  return map;
-}
+// NOTE: CLUTCH is a skill-based contest platform, not a betting service — it
+// deliberately has NO betting-line fetcher and no line-making logic. Live
+// data below is purely informational match previews (scores & schedules).
 
 /* ────────────────────────────────────────────────────────────
    LOL — FEATURED GAMES (lobby/match previews)
@@ -161,7 +135,6 @@ function normaliseAPIFootballMatch(f) {
     home:   { name: teams.home.name, code: teams.home.name.slice(0,3).toUpperCase(), bg:'#1a2035', fg:'#dde2f0' },
     away:   { name: teams.away.name, code: teams.away.name.slice(0,3).toUpperCase(), bg:'#1a2035', fg:'#dde2f0' },
     sc:     { h: goals.home ?? 0, a: goals.away ?? 0 },
-    odds:   { h: 2.0, d: 3.2, a: 3.5 }, // overwritten by fetchOdds()
     _raw:   f,
   };
 }
@@ -175,7 +148,6 @@ function normaliseFootballDataMatch(m) {
     home: { name: m.homeTeam.name, code: m.homeTeam.tla || m.homeTeam.name.slice(0,3).toUpperCase(), bg:'#1a2035', fg:'#dde2f0' },
     away: { name: m.awayTeam.name, code: m.awayTeam.tla || m.awayTeam.name.slice(0,3).toUpperCase(), bg:'#1a2035', fg:'#dde2f0' },
     sc:   { h: m.score.fullTime.home ?? 0, a: m.score.fullTime.away ?? 0 },
-    odds: { h: 2.0, d: 3.2, a: 3.5 },
     _raw: m,
   };
 }
@@ -191,7 +163,6 @@ function normaliseLoLGame(g) {
     type:     g.gameMode,
     blue:     blue.map(function(p){ return { summonerName: p.summonerName, champion: p.championId }; }),
     red:      red.map(function(p){ return  { summonerName: p.summonerName, champion: p.championId }; }),
-    odds:     { blue: 1.85, red: 1.95 },
     _raw:     g,
   };
 }
@@ -208,7 +179,6 @@ function normaliseLoLProMatch(m) {
     team2:   { name: t2?.name || 'TBD', acronym: t2?.acronym || 'T2', bg: '#2a1a1a', fg: '#dde2f0', logo: t2?.image_url || null },
     bo:      m.number_of_games || 1,
     scores:  { t1: m.results?.[0]?.score || 0, t2: m.results?.[1]?.score || 0 },
-    odds:    { t1: 1.9, t2: 1.9 },
     _raw:    m,
   };
 }
