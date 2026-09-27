@@ -19,6 +19,7 @@ import { findMode } from '../_modes.js';
 import { isBanned } from '../_integrity.js';
 import { isAgeConfirmed } from '../_age.js';
 import { getUserStats, cohortFromStats } from '../_userstats.js';
+import { limit } from '../_ratelimit.js';
 
 const CHALLENGE_SECRET = process.env.CHALLENGE_SECRET || 'dev-challenge-secret-change-me';
 const VALID_GAMES = ['valorant','lol','dota2','clashroyale','brawlstars','cs2','fortnite','apex','ow2','rl','fifa','cod'];
@@ -74,6 +75,8 @@ export default async function handler(req, res) {
   // POST requires auth
   const user = requireAuth(req, res);
   if (!user) return;
+  // Every POST here locks or moves escrow (create / accept / cancel).
+  if (!(await limit(req, res, 'challenge', { limit: 20, windowSec: 60, id: user.userId }))) return;
 
   const body = typeof req.body === 'string' ? JSON.parse(req.body) : req.body;
 

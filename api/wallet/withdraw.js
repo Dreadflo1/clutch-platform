@@ -11,6 +11,8 @@ import { requireAuth } from '../_auth.js';
 import { kvGet, kvSet } from '../_kv.js';
 import { createPayoutRequest, BalanceError } from '../_payments.js';
 import { isAdult } from '../_age.js';
+import { limit } from '../_ratelimit.js';
+import { auditLog } from '../_log.js';
 
 const DAILY_WITHDRAW_CAP = 10000;
 const MIN_WITHDRAW = 10;
@@ -23,6 +25,8 @@ export default async function handler(req, res) {
 
   const user = requireAuth(req, res);
   if (!user) return;
+  // Money out — tight per-user cap on top of the balance/daily/deposit limits.
+  if (!(await limit(req, res, 'withdraw', { limit: 8, windowSec: 60, id: user.userId }))) return;
   if (!(await isAdult(user.userId))) {
     return res.status(403).json({ error: 'Withdrawals require 18+ age confirmation (ID verification via Stripe applies at cash-out).', code: 'age_required' });
   }
@@ -82,6 +86,7 @@ export default async function handler(req, res) {
   }
 
   await kvSet(todayKey, todayTotal + amount, 86400);
+  auditLog('withdraw_requested', { userId: user.userId, amount, rail, payoutId: result.payoutId });
 
   return res.status(202).json({
     status: 'pending',

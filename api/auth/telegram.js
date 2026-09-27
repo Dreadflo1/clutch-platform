@@ -6,6 +6,8 @@
 import crypto from 'crypto';
 import { kvGet, kvSet } from '../_kv.js';
 import { signJwt } from '../_jwt.js';
+import { limit } from '../_ratelimit.js';
+import { securityLog } from '../_log.js';
 
 const STARTING_BALANCE = 500;
 
@@ -51,6 +53,8 @@ export default async function handler(req, res) {
 
   if (req.method !== 'POST') return res.status(405).json({ error: 'POST only' });
 
+  if (!(await limit(req, res, 'auth', { limit: 15, windowSec: 60 }))) return;
+
   const body = typeof req.body === 'string' ? JSON.parse(req.body) : req.body;
 
   if (!body.id || !body.hash) {
@@ -59,6 +63,7 @@ export default async function handler(req, res) {
 
   // Verify Telegram hash
   if (!verifyTelegramAuth(body)) {
+    securityLog('auth_fail', { via: 'telegram', reason: 'hash_mismatch' });
     return res.status(401).json({ error: 'Invalid Telegram auth — hash mismatch or expired' });
   }
 

@@ -1,0 +1,569 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<title>CLUTCH.best — Telegram Ad (1200×675)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=JetBrains+Mono:wght@500;600;700;800&family=Bricolage+Grotesque:wght@600;700;800&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+html,body{width:100%;height:100%;background:#1a1a1a;overflow:hidden}
+
+/* RESPONSIVE WRAPPER: auto-scale 1200x675 canvas to fit viewport */
+.stage-wrap{
+  position:fixed;inset:0;
+  display:flex;align-items:center;justify-content:center;
+  background:#1a1a1a;overflow:hidden;
+}
+
+.canvas{
+  position:relative;
+  width:1200px;height:675px;
+  transform-origin:center center;
+  transform:scale(var(--s,1));
+  background:#050608;
+  overflow:hidden;
+  font-family:'Bricolage Grotesque',sans-serif;
+  color:#E8F5EE;
+  box-shadow:0 0 50px rgba(0,0,0,.6);
+  flex-shrink:0;
+}
+
+/* BACKGROUND */
+.bg-grid{
+  position:absolute;inset:0;
+  background-image:
+    linear-gradient(rgba(0,255,135,0.05) 1px,transparent 1px),
+    linear-gradient(90deg,rgba(0,255,135,0.05) 1px,transparent 1px);
+  background-size:44px 44px;
+  mask-image:linear-gradient(90deg,transparent,black 15%,black 85%,transparent);
+}
+.bg-glow-a{
+  position:absolute;width:540px;height:540px;border-radius:50%;
+  background:radial-gradient(circle,rgba(122,0,255,.2) 0%,transparent 60%);
+  top:-180px;left:-80px;filter:blur(50px);
+  animation:fa 13s ease-in-out infinite;
+}
+.bg-glow-b{
+  position:absolute;width:480px;height:480px;border-radius:50%;
+  background:radial-gradient(circle,rgba(0,255,135,.22) 0%,transparent 60%);
+  bottom:-130px;right:-60px;filter:blur(50px);
+  animation:fb 16s ease-in-out infinite;
+}
+@keyframes fa{0%,100%{transform:translate(0,0)}50%{transform:translate(35px,20px)}}
+@keyframes fb{0%,100%{transform:translate(0,0)}50%{transform:translate(-45px,-25px)}}
+.noise{position:absolute;inset:0;opacity:.07;pointer-events:none;
+  background-image:url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='240' height='240'><filter id='n'><feTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2'/></filter><rect width='100%25' height='100%25' filter='url(%23n)'/></svg>");}
+.diag-line{
+  position:absolute;top:0;left:-20%;width:140%;height:100%;
+  background:repeating-linear-gradient(105deg,transparent 0 70px,rgba(0,255,135,.03) 70px 71px);
+  pointer-events:none;
+}
+
+/* LAYOUT — 2 COLUMNS: LEFT COPY + RIGHT VISUAL */
+.layout{
+  position:relative;z-index:10;
+  width:100%;height:100%;
+  display:grid;grid-template-columns:1.12fr .88fr;
+}
+
+/* LEFT COLUMN */
+.left{
+  padding:48px 44px 42px 56px;
+  display:flex;flex-direction:column;
+  border-right:1px solid rgba(0,255,135,.1);
+  position:relative;
+}
+.left::after{
+  content:"";position:absolute;right:0;top:50px;bottom:50px;width:1px;
+  background:linear-gradient(180deg,transparent,rgba(0,255,135,.25) 30%,rgba(122,0,255,.25) 70%,transparent);
+}
+
+/* BRAND ROW */
+.brand-row{
+  display:flex;justify-content:space-between;align-items:center;
+  margin-bottom:22px;
+}
+.brand{display:flex;align-items:center;gap:12px}
+.brand-mark{
+  width:42px;height:42px;
+  background:linear-gradient(135deg,#00FF87,#7A00FF);
+  clip-path:polygon(18% 0,100% 0,100% 82%,82% 100%,0 100%,0 18%);
+  display:flex;align-items:center;justify-content:center;
+}
+.brand-mark svg{width:22px;height:22px;fill:#04130a}
+.brand-name{font-family:'Archivo Black',sans-serif;font-size:26px;letter-spacing:-.02em;color:#fff}
+.brand-name em{font-style:normal;color:#00FF87;font-weight:900}
+.tg-channel{
+  display:inline-flex;align-items:center;gap:7px;
+  padding:6px 12px;border-radius:999px;
+  background:rgba(0,255,135,.08);
+  border:1px solid rgba(0,255,135,.25);
+  font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:800;
+  letter-spacing:.06em;color:#00FF87;
+}
+.tg-channel::before{content:"";width:7px;height:7px;border-radius:50%;background:#00FF87;box-shadow:0 0 10px #00FF87}
+
+/* HEADLINE */
+.hd-eyebrow{
+  font-family:'JetBrains Mono',monospace;
+  font-size:11px;font-weight:800;letter-spacing:.18em;
+  color:#A855FF;text-transform:uppercase;
+  display:flex;align-items:center;gap:8px;margin-bottom:14px;
+}
+.hd-eyebrow::before{content:"▣"}
+.hd-eyebrow em{font-style:normal;color:#FFC727}
+
+.headline{
+  font-family:'Archivo Black',sans-serif;
+  font-size:52px;line-height:.98;letter-spacing:-.035em;color:#fff;
+  margin-bottom:16px;
+}
+.headline .l{display:block;overflow:hidden;height:1em;margin-bottom:1px}
+.headline .l span{display:inline-block;animation:ri .9s cubic-bezier(.2,.9,.2,1) both}
+.headline .l:nth-child(2) span{animation-delay:.12s}
+.headline .l:nth-child(3) span{animation-delay:.23s}
+@keyframes ri{from{transform:translateY(110%)}to{transform:translateY(0)}}
+.headline .hit{color:#00FF87}
+.headline .slash{color:#A855FF;font-style:italic}
+
+.sub{
+  font-family:'JetBrains Mono',monospace;
+  font-size:13.5px;line-height:1.6;color:#88978F;
+  max-width:540px;padding-left:14px;border-left:2px solid #00FF87;
+  margin-bottom:22px;
+}
+.sub strong{color:#fff;font-weight:800}
+.sub em{font-style:normal;color:#00FF87;font-weight:800}
+
+/* BULLET FEATURES */
+.features-row{
+  display:grid;grid-template-columns:repeat(2,1fr);gap:10px;
+  margin-bottom:22px;
+}
+.feat{
+  display:flex;align-items:flex-start;gap:10px;
+  padding:12px 13px;
+  background:rgba(10,14,18,.65);
+  border:1px solid rgba(0,255,135,.12);
+  border-radius:6px;
+}
+.feat-ico{
+  width:30px;height:30px;min-width:30px;border-radius:6px;
+  background:rgba(0,255,135,.09);color:#00FF87;
+  display:flex;align-items:center;justify-content:center;
+}
+.feat.purple .feat-ico{background:rgba(122,0,255,.1);color:#A855FF}
+.feat.gold .feat-ico{background:rgba(255,199,39,.1);color:#FFC727}
+.feat.red .feat-ico{background:rgba(255,51,85,.1);color:#FF3355}
+.feat-ico svg{width:14px;height:14px}
+.feat-body{}
+.feat-t{font-family:'Archivo Black',sans-serif;font-size:12px;color:#fff;letter-spacing:-.01em}
+.feat-d{font-family:'JetBrains Mono',monospace;font-size:10.5px;color:#6B7A72;margin-top:3px;line-height:1.45}
+
+/* STATS BAR */
+.stats-bar{
+  display:grid;grid-template-columns:repeat(4,1fr);gap:8px;
+  margin-bottom:22px;
+}
+.sb{
+  padding:10px 12px;
+  background:linear-gradient(180deg,rgba(0,255,135,.06),rgba(0,255,135,.02));
+  border:1px solid rgba(0,255,135,.15);
+  border-radius:5px;text-align:left;
+}
+.sb.purple{background:linear-gradient(180deg,rgba(122,0,255,.08),rgba(122,0,255,.02));border-color:rgba(122,0,255,.18)}
+.sb.gold{background:linear-gradient(180deg,rgba(255,199,39,.07),rgba(255,199,39,.02));border-color:rgba(255,199,39,.18)}
+.sb.red{background:linear-gradient(180deg,rgba(255,51,85,.06),rgba(255,51,85,.02));border-color:rgba(255,51,85,.18)}
+.sb-n{font-family:'Archivo Black',sans-serif;font-size:22px;line-height:1;color:#00FF87;letter-spacing:-.01em}
+.sb.purple .sb-n{color:#A855FF}
+.sb.gold .sb-n{color:#FFC727}
+.sb.red .sb-n{color:#FF3355}
+.sb-l{margin-top:4px;font-family:'JetBrains Mono',monospace;font-size:9px;font-weight:800;letter-spacing:.12em;color:#6B7A72;text-transform:uppercase}
+
+/* CTA */
+.cta-row{
+  margin-top:auto;
+  display:flex;align-items:center;justify-content:space-between;gap:16px;
+}
+.cta-left{display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+.btn-main{
+  display:inline-flex;align-items:center;gap:10px;
+  padding:14px 24px;
+  font-family:'Archivo Black',sans-serif;font-size:15px;letter-spacing:-.01em;
+  color:#04130a;
+  background:linear-gradient(135deg,#00FF87,#00E67A);
+  border:none;border-radius:5px;
+  clip-path:polygon(0 0,calc(100% - 14px) 0,100% 14px,100% 100%,14px 100%,0 calc(100% - 14px));
+  box-shadow:0 6px 30px rgba(0,255,135,.4);
+  text-decoration:none;
+}
+.btn-main svg{width:15px;height:15px}
+.btn-sec{
+  display:inline-flex;align-items:center;gap:8px;
+  padding:12px 18px;
+  font-family:'JetBrains Mono',monospace;font-size:11.5px;font-weight:800;letter-spacing:.08em;
+  color:#fff;
+  background:rgba(122,0,255,.08);
+  border:1px solid rgba(122,0,255,.3);
+  border-radius:5px;
+}
+.btn-sec svg{width:12px;height:12px}
+
+.cta-right{text-align:right}
+.url-tg{
+  font-family:'JetBrains Mono',monospace;
+  font-size:14px;font-weight:800;color:#00FF87;letter-spacing:.02em;
+}
+.url-tg .pr{color:#6B7A72;font-weight:600;font-size:12px}
+.cta-right .meta{
+  font-family:'JetBrains Mono',monospace;font-size:10.5px;color:#6B7A72;margin-top:4px;
+}
+
+/* RIGHT COLUMN — VISUAL PANEL */
+.right{
+  padding:48px 52px 42px 44px;
+  display:flex;flex-direction:column;gap:18px;
+  position:relative;
+}
+
+/* TELEGRAM POST STYLE */
+.tg-post{
+  background:linear-gradient(180deg,rgba(23,25,33,.98),rgba(12,14,20,.98));
+  border:1px solid rgba(255,255,255,.06);
+  border-radius:14px;
+  padding:16px 18px 18px;
+  position:relative;
+  backdrop-filter:blur(6px);
+}
+.tg-post::before{
+  content:"";position:absolute;top:0;right:18px;width:0;height:0;
+  border-style:solid;border-width:0 0 16px 16px;
+  border-color:transparent transparent rgba(23,25,33,.98) transparent;
+  transform:translateY(-14px);
+}
+.tg-head{
+  display:flex;align-items:center;gap:10px;margin-bottom:10px;
+}
+.tg-avatar{
+  width:40px;height:40px;border-radius:50%;
+  background:linear-gradient(135deg,#00FF87,#7A00FF);
+  display:flex;align-items:center;justify-content:center;
+  font-family:'Archivo Black',sans-serif;font-size:15px;color:#04130a;
+}
+.tg-head-t{flex:1}
+.tg-title{font-family:'Bricolage Grotesque',sans-serif;font-weight:800;font-size:14px;color:#fff;display:flex;align-items:center;gap:5px}
+.tg-title .ver{color:#3390EC;font-size:11px}
+.tg-sub{font-family:'JetBrains Mono',monospace;font-size:10.5px;color:#6B7A72;margin-top:1px}
+.tg-time{font-family:'JetBrains Mono',monospace;font-size:10.5px;color:#6B7A72}
+.tg-body{margin:10px 0}
+.tg-line1{font-family:'Archivo Black',sans-serif;font-size:18px;color:#fff;letter-spacing:-.01em;line-height:1.2}
+.tg-line1 em{font-style:normal;color:#00FF87}
+.tg-line2{margin-top:6px;font-family:'JetBrains Mono',monospace;font-size:12px;color:#88978F;line-height:1.55}
+.tg-line2 strong{color:#fff;font-weight:700}
+.tg-line2 .hi{color:#FFC727;font-weight:800}
+
+/* STAKES VISUAL */
+.stakes-card{
+  padding:14px 16px;
+  background:linear-gradient(165deg,rgba(12,18,24,.9),rgba(6,10,14,.9));
+  border:1px solid rgba(0,255,135,.18);
+  border-radius:10px;
+  position:relative;
+}
+.stakes-card::before{
+  content:"";position:absolute;inset:-1px;border-radius:10px;
+  background:linear-gradient(135deg,rgba(0,255,135,.4),transparent 35%,transparent 65%,rgba(122,0,255,.35));
+  -webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);
+  mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);
+  -webkit-mask-composite:xor;mask-composite:exclude;
+  padding:1px;pointer-events:none;
+}
+.sk-head{
+  display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;
+  padding-bottom:10px;border-bottom:1px dashed rgba(0,255,135,.15);
+}
+.sk-title{
+  font-family:'JetBrains Mono',monospace;font-size:10.5px;font-weight:800;letter-spacing:.16em;
+  color:#00FF87;text-transform:uppercase;display:flex;align-items:center;gap:7px;
+}
+.sk-id{font-family:'JetBrains Mono',monospace;font-size:10px;color:#6B7A72}
+.sk-id strong{color:#fff;font-weight:700}
+.sk-duel{
+  display:grid;grid-template-columns:1fr auto 1fr;gap:10px;align-items:center;
+  margin-bottom:12px;
+}
+.sk-p{
+  display:flex;align-items:center;gap:9px;
+  padding:9px 10px;background:rgba(255,255,255,.02);
+  border-radius:6px;border:1px solid rgba(255,255,255,.05);
+}
+.sk-av{width:34px;height:34px;border-radius:50%;background-size:cover;background-position:center;border:2px solid rgba(0,255,135,.45)}
+.sk-p.opp .sk-av{border-color:rgba(255,51,85,.45)}
+.sk-n{font-family:'Archivo Black',sans-serif;font-size:12px;color:#fff;letter-spacing:-.01em}
+.sk-r{font-family:'JetBrains Mono',monospace;font-size:9.5px;color:#00FF87;font-weight:700;margin-top:2px;letter-spacing:.05em}
+.sk-p.opp .sk-r{color:#FF3355}
+.vs-b{
+  width:40px;height:40px;border-radius:50%;
+  background:linear-gradient(135deg,#7A00FF,#FF2D78);
+  display:flex;align-items:center;justify-content:center;
+  font-family:'Archivo Black',sans-serif;font-size:13px;color:#fff;
+  box-shadow:0 0 22px rgba(122,0,255,.4);
+  animation:vs 2.2s ease-in-out infinite;
+}
+@keyframes vs{0%,100%{transform:scale(1)}50%{transform:scale(1.06)}}
+.sk-pay{
+  display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:10px;
+}
+.sp{
+  padding:8px 10px;background:rgba(0,255,135,.05);
+  border:1px solid rgba(0,255,135,.2);border-radius:5px;
+  text-align:center;
+}
+.sp.opp{background:rgba(255,51,85,.05);border-color:rgba(255,51,85,.2)}
+.sp-l{font-family:'JetBrains Mono',monospace;font-size:9px;font-weight:800;letter-spacing:.1em;color:#6B7A72;text-transform:uppercase}
+.sp-v{font-family:'Archivo Black',sans-serif;font-size:15px;color:#00FF87;margin-top:2px;letter-spacing:-.01em}
+.sp.opp .sp-v{color:#FF3355}
+.sk-winner{
+  padding:9px 12px;
+  background:linear-gradient(90deg,rgba(255,199,39,.1),rgba(0,255,135,.08));
+  border-radius:6px;border:1px solid rgba(255,199,39,.2);
+  display:flex;justify-content:space-between;align-items:center;
+}
+.sw-left{display:flex;align-items:center;gap:8px}
+.sw-t{font-family:'JetBrains Mono',monospace;font-size:10.5px;color:#6B7A72;font-weight:700;letter-spacing:.06em}
+.sw-v{font-family:'Archivo Black',sans-serif;font-size:15px;color:#FFC727;margin-top:2px}
+.sw-fee{font-family:'JetBrains Mono',monospace;font-size:9.5px;color:#6B7A72;text-align:right;line-height:1.4}
+.sw-fee em{font-style:normal;color:#00FF87;font-weight:800}
+
+/* GAME TAGS */
+.games-row{
+  display:flex;gap:7px;flex-wrap:wrap;
+  margin-top:2px;
+}
+.gm{
+  padding:6px 11px;
+  border-radius:5px;
+  font-family:'JetBrains Mono',monospace;font-size:10.5px;font-weight:800;letter-spacing:.06em;
+  background:rgba(0,255,135,.06);color:#00FF87;
+  border:1px solid rgba(0,255,135,.2);
+}
+.gm.purple{background:rgba(122,0,255,.08);color:#A855FF;border-color:rgba(122,0,255,.25)}
+.gm.gold{background:rgba(255,199,39,.07);color:#FFC727;border-color:rgba(255,199,39,.22)}
+.gm.blue{background:rgba(0,212,255,.07);color:#00D4FF;border-color:rgba(0,212,255,.2)}
+.gm.red{background:rgba(255,69,0,.08);color:#FF4500;border-color:rgba(255,69,0,.22)}
+
+@media (max-width:1200px){body{background:#1a1a1a}}
+</style>
+</head>
+<body>
+<div class="stage-wrap">
+<div class="canvas">
+  <div class="bg-grid"></div>
+  <div class="bg-glow-a"></div>
+  <div class="bg-glow-b"></div>
+  <div class="diag-line"></div>
+  <div class="noise"></div>
+
+  <div class="layout">
+
+    <!-- LEFT -->
+    <div class="left">
+      <div class="brand-row">
+        <div class="brand">
+          <div class="brand-mark">
+            <svg viewBox="0 0 24 24"><path d="M14.5 17.5L3 6V3h3l11.5 11.5M9.5 6.5L21 18v3h-3L6.5 9.5" stroke-width="2.5" stroke-linecap="round"/><circle cx="12" cy="12" r="3" opacity=".6"/></svg>
+          </div>
+          <div class="brand-name">CL<em>UTCH</em></div>
+        </div>
+        <span class="tg-channel">📢 @clutch_best · 47.2K members</span>
+      </div>
+
+      <div class="hd-eyebrow">SKILL-BASED P2P CHALLENGES · <em>NOT GAMBLING</em></div>
+
+      <h1 class="headline">
+        <span class="l"><span>YOUR FRIEND SAYS</span></span>
+        <span class="l"><span>HE'S <span class="hit">BETTER</span>? <span class="slash">PROVE IT.</span></span></span>
+        <span class="l"><span>WINNER TAKES ALL.</span></span>
+      </h1>
+
+      <div class="sub">
+        Pick a game. Set a stake. Share a QR code. Both players lock <strong>CLU tokens</strong> into <em>atomic escrow</em>. Results verified by <strong>Riot API</strong> (Valorant/LoL) and <strong>Steam</strong> (Dota 2). No house, no rigged odds.
+      </div>
+
+      <div class="features-row">
+        <div class="feat">
+          <div class="feat-ico">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2l8 3v5c0 5-3.5 9-8 11-4.5-2-8-6-8-11V5l8-3z"/></svg>
+          </div>
+          <div class="feat-body">
+            <div class="feat-t">P2P ESCROW</div>
+            <div class="feat-d">Atomic Redis lock · No double-spend</div>
+          </div>
+        </div>
+        <div class="feat purple">
+          <div class="feat-ico">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"/></svg>
+          </div>
+          <div class="feat-body">
+            <div class="feat-t">API-VERIFIED</div>
+            <div class="feat-d">Riot · Steam · Auto-result</div>
+          </div>
+        </div>
+        <div class="feat gold">
+          <div class="feat-ico">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 8V6a2 2 0 012-2h10a2 2 0 012 2v2M7 8h10M12 8v14"/></svg>
+          </div>
+          <div class="feat-body">
+            <div class="feat-t">MULTI-RAIL</div>
+            <div class="feat-d">MetaMask · Stripe · NOWPayments</div>
+          </div>
+        </div>
+        <div class="feat red">
+          <div class="feat-ico">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2M9 11a4 4 0 100-8 4 4 0 000 8z"/></svg>
+          </div>
+          <div class="feat-body">
+            <div class="feat-t">ANTI-CHEAT</div>
+            <div class="feat-d">3-strike · Match freshness · Flee-ban</div>
+          </div>
+        </div>
+      </div>
+
+      <div class="stats-bar">
+        <div class="sb">
+          <div class="sb-n">97.5%</div>
+          <div class="sb-l">WINNER CUT</div>
+        </div>
+        <div class="sb purple">
+          <div class="sb-n">2.5%</div>
+          <div class="sb-l">FLAT FEE</div>
+        </div>
+        <div class="sb gold">
+          <div class="sb-n">$42K+</div>
+          <div class="sb-l">PAID OUT</div>
+        </div>
+        <div class="sb red">
+          <div class="sb-n">893</div>
+          <div class="sb-l">ONLINE NOW</div>
+        </div>
+      </div>
+
+      <div class="cta-row">
+        <div class="cta-left">
+          <a href="https://t.me/clutch_best" class="btn-main" target="_blank">
+            <svg viewBox="0 0 24 24" fill="currentColor"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm4.64 6.8c-.15 1.58-.8 5.42-1.13 7.19-.14.75-.42 1-.68 1.03-.58.05-1.02-.38-1.58-.75-.88-.58-1.38-.94-2.23-1.5-.99-.65-.35-1.01.22-1.59.15-.15 2.71-2.48 2.76-2.69a.2.2 0 00-.05-.18c-.06-.05-.14-.03-.21-.02-.09.02-1.49.95-4.22 2.79-.4.27-.76.41-1.08.4-.36-.01-1.04-.2-1.55-.37-.63-.2-1.12-.31-1.08-.66.02-.18.27-.36.74-.55 2.92-1.27 4.86-2.11 5.83-2.51 2.78-1.16 3.35-1.36 3.73-1.36.08 0 .27.02.39.12.1.08.13.19.14.27-.01.06.01.24 0 .38z"/></svg>
+            JOIN TELEGRAM
+          </a>
+          <a href="https://clutch.best" class="btn-sec" target="_blank">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
+            clutch.best →
+          </a>
+        </div>
+        <div class="cta-right">
+          <div class="url-tg"><span class="pr">t.me/</span>clutch_best</div>
+          <div class="meta">🔗 Invite link · No KYC for low stakes</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- RIGHT -->
+    <div class="right">
+
+      <!-- FAKE TELEGRAM POST -->
+      <div class="tg-post">
+        <div class="tg-head">
+          <div class="tg-avatar">C</div>
+          <div class="tg-head-t">
+            <div class="tg-title">CLUTCH.best Official <span class="ver">✓</span></div>
+            <div class="tg-sub">@clutch_best · pinned · 2h ago</div>
+          </div>
+          <div class="tg-time">14:32</div>
+        </div>
+        <div class="tg-body">
+          <div class="tg-line1">🔥 <em>1,247 duels</em> created today. Someone just won <em style="color:#FFC727">$2,500</em> in a single LoL 1v1.</div>
+          <div class="tg-line2">Tired of that friend who <strong>never shuts up</strong> about their "Radiant smurf" account? <span class="hi">Challenge them for real money.</span> Both stakes locked → winner gets 97.5%.</div>
+        </div>
+      </div>
+
+      <!-- STAKES CARD -->
+      <div class="stakes-card">
+        <div class="sk-head">
+          <div class="sk-title">▣ ESCROW LOCKED · MATCH IN PLAY</div>
+          <div class="sk-id">ID: <strong>7F2C-9A1D</strong></div>
+        </div>
+        <div class="sk-duel">
+          <div class="sk-p you">
+            <div class="sk-av" style="background-image:url('Photos_Gamers/pexels-yankrukov-9069279.jpg')"></div>
+            <div>
+              <div class="sk-n">NovaStriker</div>
+              <div class="sk-r">RADIANT · 27W</div>
+            </div>
+          </div>
+          <div class="vs-b">VS</div>
+          <div class="sk-p opp">
+            <div class="sk-av" style="background-image:url('Photos_Gamers/pexels-a-darmel-7862590.jpg')"></div>
+            <div>
+              <div class="sk-n">ShadowTitan</div>
+              <div class="sk-r">IMM3 · 1.84KD</div>
+            </div>
+          </div>
+        </div>
+        <div class="sk-pay">
+          <div class="sp you">
+            <div class="sp-l">YOUR STAKE</div>
+            <div class="sp-v">2,500 CLU</div>
+          </div>
+          <div class="sp opp">
+            <div class="sp-l">THEIR STAKE</div>
+            <div class="sp-v">2,500 CLU</div>
+          </div>
+        </div>
+        <div class="sk-winner">
+          <div class="sw-left">
+            <div style="width:22px;height:22px;border-radius:50%;background:rgba(255,199,39,.15);color:#FFC727;display:flex;align-items:center;justify-content:center">
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4"><path d="M12 2l3 7h7l-5.5 4 2 7L12 16l-6.5 4 2-7L2 9h7z"/></svg>
+            </div>
+            <div>
+              <div class="sw-t">PROJECTED WINNER PAYS OUT</div>
+              <div class="sw-v">4,875 CLU</div>
+            </div>
+          </div>
+          <div class="sw-fee">
+            Pot 5,000 CLU<br>
+            Fee 2.5% → <em>winner takes 97.5%</em>
+          </div>
+        </div>
+      </div>
+
+      <div class="games-row">
+        <span class="gm">VALORANT</span>
+        <span class="gm purple">LOL</span>
+        <span class="gm red">DOTA 2</span>
+        <span class="gm gold">CS2</span>
+        <span class="gm blue">FORTNITE</span>
+        <span class="gm purple">APEX</span>
+        <span class="gm">OVERWATCH 2</span>
+      </div>
+
+    </div>
+
+  </div>
+</div>
+</div>
+
+<script>
+(function(){
+  var c = document.querySelector('.canvas');
+  function update(){
+    var s = Math.min(window.innerWidth/1200, window.innerHeight/675) * 0.96;
+    c.style.setProperty('--s', s);
+  }
+  update();
+  window.addEventListener('resize', update);
+})();
+</script>
+
+</body>
+</html>

@@ -11,6 +11,7 @@ import crypto from 'crypto';
 import { kvGet, kvSet, kvSetNx } from '../_kv.js';
 import { signJwt } from '../_jwt.js';
 import { ageFromDob, confirmAge, MIN_AGE } from '../_age.js';
+import { limit } from '../_ratelimit.js';
 
 const STARTING_BALANCE = 500;
 const MAX_ATTEMPTS = 8;          // per-account login attempts before a cooldown
@@ -38,6 +39,10 @@ function cleanName(name, fallback) {
 export default async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST') return res.status(405).json({ error: 'POST only' });
+
+  // Per-IP cap (complements the per-account throttle below): blunts signup spam
+  // and password spraying spread across many accounts from one host.
+  if (!(await limit(req, res, 'auth', { limit: 20, windowSec: 60 }))) return;
 
   const body = typeof req.body === 'string' ? JSON.parse(req.body) : req.body || {};
   const mode = body.mode === 'signup' ? 'signup' : 'login';

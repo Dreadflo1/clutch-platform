@@ -20,6 +20,7 @@ import { BalanceError } from '../_balance.js';
 import { isVerifiable, resolveOutcome } from '../_verify.js';
 import { persist, saveChallenge, settleToWinner, refundDraw } from '../_challenges.js';
 import { recordDisputeBoth } from '../_integrity.js';
+import { limit } from '../_ratelimit.js';
 
 // The verifying match must have STARTED after acceptance (small negative slack
 // only for clock skew), so a player cannot point at a game they pre-played and
@@ -59,6 +60,7 @@ export default async function handler(req, res) {
 
   const user = requireAuth(req, res);
   if (!user) return;
+  if (!(await limit(req, res, 'settle', { limit: 20, windowSec: 60, id: user.userId }))) return;
 
   const body = typeof req.body === 'string' ? JSON.parse(req.body) : req.body;
   const { challengeId, result, matchId, handle, region } = body;

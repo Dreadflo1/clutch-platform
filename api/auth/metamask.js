@@ -6,6 +6,8 @@
 import { ethers } from 'ethers';
 import { kvGet, kvSet, kvDel } from '../_kv.js';
 import { signJwt } from '../_jwt.js';
+import { limit } from '../_ratelimit.js';
+import { securityLog } from '../_log.js';
 
 const STARTING_BALANCE = 500;
 
@@ -20,6 +22,10 @@ export default async function handler(req, res) {
   if (!addr || !signature) {
     return res.status(400).json({ error: 'addr and signature required' });
   }
+
+  // Per-IP and per-address: a signature is cheap to submit but expensive to
+  // verify, and a wrong one should never be brute-forceable.
+  if (!(await limit(req, res, 'auth', { limit: 15, windowSec: 60, id: addr }))) return;
 
   // 1. Retrieve the nonce we issued
   const nonceData = await kvGet(`nonce:${addr}`);
@@ -36,6 +42,7 @@ export default async function handler(req, res) {
   }
 
   if (recoveredAddr !== addr) {
+    securityLog('auth_fail', { via: 'metamask', addr, reason: 'sig_mismatch' });
     return res.status(401).json({ error: 'Signature does not match address' });
   }
 

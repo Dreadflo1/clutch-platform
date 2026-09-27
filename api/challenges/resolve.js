@@ -12,6 +12,7 @@ import { kvGet, kvLock, kvUnlock } from '../_kv.js';
 import { BalanceError } from '../_balance.js';
 import { saveChallenge, settleToWinner, refundDraw } from '../_challenges.js';
 import { applyRuling, exonerateBoth } from '../_integrity.js';
+import { auditLog } from '../_log.js';
 
 const IS_PROD =
   process.env.VERCEL_ENV === 'production' || process.env.NODE_ENV === 'production';
@@ -82,6 +83,8 @@ export default async function handler(req, res) {
       }
       throw e;
     }
+
+    auditLog('dispute_resolved', { challengeId, resolution, stake: ch.stake || 0, reason: ch.disputeReason || null });
 
     return res.status(200).json({
       status: ch.status,

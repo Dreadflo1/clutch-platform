@@ -10,6 +10,7 @@
 import crypto from 'crypto';
 import { kvGet, kvSet } from './_kv.js';
 import { refundEscrow, settleEscrow, BalanceError } from './_balance.js';
+import { recordSettlement } from './_userstats.js';
 
 const OPEN_KEY = 'challenges:open';
 const ACTIVE_KEY = 'challenges:active';
@@ -121,6 +122,15 @@ export async function settleToWinner(ch, winnerId, loserId) {
   ch.winner = winnerId;
   ch.payout = payout;
   ch.settledAt = Date.now();
+
+  // Progression stats (badges/streaks). Runs only after settleEscrow succeeds,
+  // so a double-settle (which throws above) never double-counts. Best-effort:
+  // never let a stats failure affect the money settlement.
+  try {
+    await recordSettlement(winnerId, loserId, { game: ch.game, verified: !!ch.modeVerifiable });
+  } catch (e) {
+    console.warn('[settleToWinner] stats update failed', e?.message);
+  }
   return payout;
 }
 

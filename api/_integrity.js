@@ -21,6 +21,7 @@
  * toward a durable ban.
  */
 import { kvGet, kvSet, kvDel } from './_kv.js';
+import { securityLog } from './_log.js';
 
 // Provisional threshold is deliberately a touch higher than the old value of 2,
 // so a couple of unlucky matchups don't insta-ban before an admin can review.
@@ -35,6 +36,7 @@ export async function recordDispute(userId) {
   await kvSet(key, count);
   if (count >= DISPUTE_BAN_THRESHOLD) {
     await kvSet(`banned:${userId}`, { at: Date.now(), reason: 'disputes', disputes: count });
+    securityLog('ban', { userId, reason: 'disputes', count });
   }
   return count;
 }
@@ -57,6 +59,7 @@ export async function recordFault(userId) {
   await kvSet(key, count);
   if (count >= FAULT_BAN_THRESHOLD) {
     await kvSet(`banned:${userId}`, { at: Date.now(), reason: 'faults', faults: count });
+    securityLog('ban', { userId, reason: 'faults', count });
   }
   return count;
 }

@@ -13,6 +13,7 @@
 import { requireAuth } from '../_auth.js';
 import { cluFromUsd } from '../_payments.js';
 import { isAdult } from '../_age.js';
+import { limit } from '../_ratelimit.js';
 
 const MIN_USD = 1;
 const MAX_USD = 500;
@@ -24,6 +25,7 @@ export default async function handler(req, res) {
 
   const user = requireAuth(req, res);
   if (!user) return;
+  if (!(await limit(req, res, 'deposit', { limit: 12, windowSec: 60, id: user.userId }))) return;
   if (!(await isAdult(user.userId))) {
     return res.status(403).json({ error: 'Deposits require 18+ age confirmation.', code: 'age_required' });
   }
