@@ -6,3 +6,6 @@ node_modules/
 *.log
 
 .vercel
+
+# Build artifacts / bundles (not source)
+*.zip
