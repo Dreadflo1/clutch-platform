@@ -234,11 +234,11 @@ function updDepPreview() {
   if (e) e.innerHTML = 'You receive: <strong>' + clu + ' CLU</strong>';
 }
 function openDepositModal() {
-  if (!_authToken) { toast('Connect your wallet first', 'error'); return; }
+  if (!_authToken) { toast('Sign in first', 'error'); return; }
   updDepPreview(); openModal('deposit-modal');
 }
 async function submitDeposit(method) {
-  if (!_authToken) { toast('Connect your wallet first', 'error'); return; }
+  if (!_authToken) { toast('Sign in first', 'error'); return; }
   var usd = parseFloat((document.getElementById('dep-usd') || {}).value);
   if (!usd || usd < 1 || usd > 500) { toast('Enter an amount between $1 and $500', 'error'); return; }
   var st = document.getElementById('dep-status'); if (st) st.textContent = 'Creating payment…';
@@ -263,12 +263,12 @@ async function submitDeposit(method) {
   } catch (e) { toast('Payment error', 'error'); if (st) st.textContent = ''; if (payWin) payWin.close(); }
 }
 function openWithdrawModal() {
-  if (!_authToken) { toast('Connect your wallet first', 'error'); return; }
+  if (!_authToken) { toast('Sign in first', 'error'); return; }
   var a = document.getElementById('wd-avail'); if (a) a.textContent = (U.balance || 0);
   openModal('withdraw-modal');
 }
 async function submitWithdraw() {
-  if (!_authToken) { toast('Connect your wallet first', 'error'); return; }
+  if (!_authToken) { toast('Sign in first', 'error'); return; }
   var clu = parseInt((document.getElementById('wd-clu') || {}).value);
   var cur = (document.getElementById('wd-cur') || {}).value;
   var addr = (((document.getElementById('wd-addr') || {}).value) || '').trim();
@@ -567,7 +567,7 @@ function quickChallenge(game, mode, stake) {
 }
 
 async function executeQuickChallenge(game, mode, stake) {
-  if (!_authToken) { toast('Connect your wallet to play for real','info'); return; }
+  if (!_authToken) { toast('Sign in to play for real','info'); return; }
   if (U.balance < stake) { toast('Not enough CLU — get more tokens','error'); return; }
 
   if (_authToken) {
@@ -1473,7 +1473,7 @@ function pinSubmit(){
       _pinAttempts++;
       pinDotError();
       if(_pinAttempts>=PIN_MAX_ATTEMPTS){
-        document.getElementById('pin-sub').textContent="Too many attempts — reconnect your wallet to reset";
+        document.getElementById('pin-sub').textContent="Too many attempts — sign in again to reset";
         document.getElementById('pin-title').textContent="Session locked";
       } else {
         document.getElementById('pin-sub').textContent=( PIN_MAX_ATTEMPTS-_pinAttempts)+" attempts remaining";
@@ -1487,7 +1487,7 @@ function pinForgot(){
   localStorage.removeItem(PIN_SETUP_KEY);
   hidePinOverlay();
   logout();
-  toast('PIN reset — reconnect your wallet to set a new one','info');
+  toast('PIN reset — sign in again to set a new one','info');
 }
 
 // Keyboard PIN support
@@ -1577,8 +1577,8 @@ function gatherCond() {
 }
 
 async function createDuel() {
-  if (!_authToken) { toast('Connect your wallet to play for real','info'); return; }
-  if (!U.addr || U.via==='guest') { toast('Connect a wallet to create duels','error'); return; }
+  if (!_authToken) { toast('Sign in to play for real','info'); return; }
+  if (!U.addr || U.via==='guest') { toast('Sign in to create duels','error'); return; }
   if (!CREATE.game) { toast('Pick a game first','error'); return; }
   var stake = parseInt(document.getElementById('stake-input').value);
   if (!stake||stake<10) { toast('Minimum entry is 10 CLU','error'); return; }
@@ -1700,8 +1700,8 @@ async function confirmAccept() {
   var d = PENDING_ACCEPT; if (!d) return;
   var isFree = !!d.free || (d.stake||0)===0;
   if (!isFree) {
-    if (!_authToken) { toast('Connect your wallet to play for real','info'); return; }
-    if (!U.addr||U.via==='guest') { toast('Connect a wallet to accept paid duels','error'); return; }
+    if (!_authToken) { toast('Sign in to play for real','info'); return; }
+    if (!U.addr||U.via==='guest') { toast('Sign in to accept paid duels','error'); return; }
     if (d.stake > U.balance) { toast('Not enough CLU — get tokens first','error'); goTo('tokens'); return; }
   } else {
     if (!U.addr) { toast('Please sign in (or browse as guest) to accept free duels','info'); return; }
@@ -2660,7 +2660,7 @@ async function renderProfileProgress() {
   if (!el) return;
   var streakEl = document.getElementById('prog-streak');
   if (!_authToken) {
-    el.innerHTML = '<div style="color:var(--txt3);font-size:12px;line-height:1.6">Connect your wallet to start earning badges from settled duels.</div>';
+    el.innerHTML = '<div style="color:var(--txt3);font-size:12px;line-height:1.6">Sign in to start earning badges from settled duels.</div>';
     if (streakEl) streakEl.textContent = '';
     return;
   }
@@ -2972,7 +2972,7 @@ function boardModeChanged() {
 }
 
 function openPostChallengeModal() {
-  if (!U.addr || U.via === 'guest') { toast('Connect a wallet to post duels','error'); return; }
+  if (!U.addr || U.via === 'guest') { toast('Sign in to post duels','error'); return; }
   closeModal('post-challenge-modal');
   document.getElementById('board-game').value = '';
   document.getElementById('board-mode').value = '';
@@ -2983,7 +2983,7 @@ function openPostChallengeModal() {
 }
 
 async function postChallenge() {
-  if (!_authToken) { toast('Connect your wallet to play for real','info'); return; }
+  if (!_authToken) { toast('Sign in to play for real','info'); return; }
   var game = document.getElementById('board-game').value;
   var modeSel = document.getElementById('board-mode-select');
   var modeId = modeSel ? modeSel.value : '';
@@ -3029,10 +3029,10 @@ async function postChallenge() {
 }
 
 async function acceptBoardChallenge(challengeId) {
-  if (!_authToken) { toast('Connect your wallet to play for real','info'); return; }
+  if (!_authToken) { toast('Sign in to play for real','info'); return; }
   var c = _boardCache.find(function(x) { return x.id === challengeId; });
   if (!c) { toast('Duel not found','error'); return; }
-  if (!U.addr || U.via === 'guest') { toast('Connect a wallet first','error'); return; }
+  if (!U.addr || U.via === 'guest') { toast('Sign in first','error'); return; }
   if (c.creatorUserId === (U.userId||'') || c.creator === U.addr) { toast('Cannot accept your own duel','error'); return; }
   if (c.stake > U.balance) { toast('Not enough CLU — need ' + c.stake + ' CLU','error'); return; }
 
@@ -3359,7 +3359,7 @@ function renderMetaResult(el, checks, warnings) {
 }
 
 async function submitResult() {
-  if (!_authToken) { toast('Connect your wallet to play for real','info'); return; }
+  if (!_authToken) { toast('Sign in to play for real','info'); return; }
 
   var integrity = getIntegrity();
   if (integrity.banned) { toast('Account suspended','error'); closeModal('result-modal'); return; }
@@ -3508,7 +3508,7 @@ function disputeDuel(duelId) {
 }
 
 async function cancelChallenge(challengeId) {
-  if (!_authToken) { toast('Connect your wallet to play for real','info'); return; }
+  if (!_authToken) { toast('Sign in to play for real','info'); return; }
   var d = DUELS.find(function(x){return x.id===challengeId;});
   var fromBoard = !d;
   var c = fromBoard ? _boardCache.find(function(x){return x.id===challengeId;}) : d;
