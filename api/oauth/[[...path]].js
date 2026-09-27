@@ -165,6 +165,14 @@ export default async function handler(req, res) {
     if (st.includes(':')) platform = st.split(':')[0];
   }
 
+  // Someone opened the callback URL directly (no provider params). This is the
+  // address the provider redirects to after you authorize — not a page to
+  // visit by hand. Send them to the homepage instead of a raw JSON error.
+  const hasProviderParams = url.searchParams.get('code') || url.searchParams.get('openid.ns') || url.searchParams.get('error');
+  if (isCallback && !platform && !hasProviderParams) {
+    return res.redirect('/');
+  }
+
   // ---- PROBE: GET /api/oauth/twitch (no mode) → return configured:true if keys present, else :false
   if (!mode && !isCallback && platform) {
     if (platform === 'steam') {
