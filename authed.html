@@ -116,13 +116,15 @@
       steam_openid: 'Steam account',
       google: 'Google account'
     };
-    document.getElementById('title').textContent = 'Successfully linked to CLUTCH';
+    var isLogin = params.login === '1' && params.token;
+    document.getElementById('title').textContent = isLogin ? 'Signed in to CLUTCH' : 'Successfully linked to CLUTCH';
+    if (isLogin) document.getElementById('sub').textContent = 'You’re signed in. This window will close and drop you into the arena.';
     document.getElementById('plat').innerHTML = '<span>Platform:</span><span class="platform-pill">'+esc(plat)+'</span>';
     document.getElementById('row').style.display = 'flex';
     document.getElementById('lbl').textContent = labels[plat] || 'Account ID';
     document.getElementById('val').textContent = String(name);
-    broadcast({ platform: plat, name: String(name), displayName: params.displayName, success: true });
-    closeSoon(3200);
+    broadcast({ platform: plat, name: String(name), displayName: params.displayName, success: true, token: params.token, login: params.login });
+    closeSoon(isLogin ? 2200 : 3200);
   } catch(e) {
     document.getElementById('title').textContent = 'Unexpected error';
     document.getElementById('err').style.display = 'block';

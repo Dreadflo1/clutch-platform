@@ -116,6 +116,9 @@ window.connectViaOAuth = function(platform) {
     var d = e.data;
     if (!d || d.__clutchOAuth !== true || !d.payload) return;
     var p = d.payload;
+    // A sign-in (Discord login) carries a token — that's handled by the login
+    // listener in app.js, not here (this listener only records profile links).
+    if (p.login && p.token) return;
     if (p.error || !p.success || !p.name || !p.platform || !GAMING_ACCOUNTS_META[p.platform]) {
       if (p.error) toast('Verification failed: ' + (p.error_description || p.error), 'error');
       return;

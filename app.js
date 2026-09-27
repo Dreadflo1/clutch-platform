@@ -516,10 +516,14 @@ function _submitAuthLegacyUnused(e, mode) {
 
 // Quick social/auth shortcuts (Wallet/Telegram/Discord/Steam — fake session + flow
 function quickAuth(which) {
-  // Only the wallet path is a real, server-verified login (MetaMask signature -> JWT).
-  if (which === 'wallet') { closeModal('connect-modal'); connectMeta(); return; }
-  var _soon = {telegram:'Telegram',discord:'Discord',steam:'Steam'};
-  toast((_soon[which] || which) + ' sign-in is coming soon — use Connect Wallet, or browse as guest', 'info');
+  // Every button here is a real, server-verified sign-in:
+  //   wallet   → MetaMask signature → JWT      (connectMeta)
+  //   telegram → Telegram Login Widget → JWT   (connectTelegram)
+  //   discord  → Discord OAuth → create/login → JWT (loginWithDiscord)
+  if (which === 'wallet')   { closeModal('connect-modal'); connectMeta(); return; }
+  if (which === 'telegram') { closeModal('connect-modal'); connectTelegram(); return; }
+  if (which === 'discord')  { closeModal('connect-modal'); loginWithDiscord(); return; }
+  toast(which + ' sign-in isn’t available — use Discord, Telegram, Wallet, or email', 'info');
   return;
   var names = {wallet:'Crypto Wallet',telegram:'Telegram',discord:'Discord',steam:'Steam'};
   var icons = {wallet:'var(--purple)',telegram:'#26A5E4',discord:'var(--purple)',steam:'var(--txt)'};
@@ -928,8 +932,70 @@ function connectGuest() {
 }
 
 function connectTwitch() { toast('Twitch login coming soon','info'); }
-function connectDiscord() { toast('Discord login coming soon','info'); }
 function connectWC() { toast('WalletConnect coming soon','info'); }
+
+// ── DISCORD SIGN-IN ───────────────────────────────────────────────
+// Opens the Discord OAuth popup in login mode. When it completes, the server
+// mints a CLUTCH JWT and /authed.html posts it back — see the listener below.
+async function loginWithDiscord() {
+  try {
+    var probeRes = await fetch((ARENA_CONFIG.API_BASE || '') + '/api/oauth/discord');
+    var probe = await probeRes.json();
+    if (!probe.configured) {
+      toast('Discord sign-in isn’t configured on this server yet. Use Telegram, Wallet, or email.', 'info');
+      return;
+    }
+  } catch (e) {
+    toast('Discord is unavailable right now — try another method.', 'error');
+    return;
+  }
+  var w = 520, h = 760;
+  var left = Math.max(0, (screen.width - w) / 2), top = Math.max(0, (screen.height - h) / 2);
+  window.open((ARENA_CONFIG.API_BASE || '') + '/api/oauth/discord?mode=authorize&login=1',
+    'clutch_oauth', 'width=' + w + ',height=' + h + ',left=' + left + ',top=' + top);
+  toast('Opening Discord sign-in…', 'info');
+}
+window.loginWithDiscord = loginWithDiscord;
+
+// Logs the user in from a JWT handed back by an OAuth popup (Discord). The JWT
+// body is public (base64url) — we read sub/addr/name/via from it for the UI,
+// then syncBalance validates the token server-side.
+async function loginWithToken(token, fallbackName, fallbackVia) {
+  try {
+    _authToken = token;
+    try { localStorage.setItem('clutch_token', token); } catch (e) {}
+    var payload = {};
+    try {
+      var b = token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/');
+      payload = JSON.parse(decodeURIComponent(escape(atob(b))));
+    } catch (e) {}
+    U.userId = payload.sub || '';
+    U.addr = payload.addr || ('dc_' + (fallbackName || ''));
+    U.name = payload.name || fallbackName || 'Player';
+    U.via = payload.via || fallbackVia || 'discord';
+    await syncBalance();
+    saveProfile();
+    enterApp();
+    toast('Welcome ' + (U.name || '') + ' — signed in with ' + (U.via === 'discord' ? 'Discord' : U.via) + ' ✓', 'success');
+  } catch (e) {
+    toast('Sign-in error: ' + (e.message || ''), 'error');
+  }
+}
+
+// Listens for the OAuth popup's sign-in result. Only login payloads (they carry
+// a token) are handled here; profile-link payloads are handled in accounts.js.
+(function wireOAuthLoginListener() {
+  if (window._oauthLoginListenerWired) return;
+  window._oauthLoginListenerWired = true;
+  window.addEventListener('message', function (e) {
+    if (e.origin !== location.origin) return;
+    var d = e.data;
+    if (!d || d.__clutchOAuth !== true || !d.payload) return;
+    var p = d.payload;
+    if (!p.login || !p.token) return;
+    loginWithToken(p.token, p.name, p.platform);
+  });
+})();
 
 function enterApp() {
   initAppShell();

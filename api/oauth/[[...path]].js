@@ -16,7 +16,12 @@
  */
 import crypto from 'crypto';
 import { kvGet, kvSet } from '../_kv.js';
-import { verifyJwt } from '../_jwt.js';
+import { verifyJwt, signJwt } from '../_jwt.js';
+
+// New Discord-login accounts start with the same play balance as every other
+// signup (non-cashable until real deposits — see _payments.js). Kept in sync
+// with api/auth/telegram.js and api/auth/email.js.
+const STARTING_BALANCE = 500;
 
 const PLATFORMS = {
   twitch: {
@@ -59,6 +64,10 @@ const PLATFORMS = {
     idKey: () => [process.env.DISCORD_CLIENT_ID, process.env.DISCORD_CLIENT_SECRET],
     userinfoUrl: (t) => ({ url: 'https://discord.com/api/users/@me', headers: { Authorization: `Bearer ${t}` } }),
     extractUser: (d) => ({ name: d.username, displayName: d.global_name || d.username }),
+    // Discord can also be a first-class SIGN-IN (not just post-login linking):
+    // a stable providerId keys the CLUTCH account. See the login branch below.
+    login: true,
+    loginId: (d) => ({ providerId: d.id, name: d.global_name || d.username, prefix: 'dc' }),
     // Gather: id + email + which servers they're in (community reach).
     gather: async (access, d) => {
       const out = { discordId: d.id || null, email: d.email || null, avatar: d.avatar || null };
@@ -237,6 +246,11 @@ export default async function handler(req, res) {
     const cookies = [`clutch_oauth_state=${state}; Path=/; SameSite=Lax; HttpOnly; Secure; Max-Age=900`];
     const jwt = url.searchParams.get('t');
     if (jwt) { const p = verifyJwt(jwt); if (p && p.sub) cookies.push(`clutch_oauth_uid=${p.sub}; Path=/; SameSite=Lax; HttpOnly; Secure; Max-Age=900`); }
+    // Sign-in intent (no signed-in user yet). Only honored for login-capable
+    // providers, and only when nobody is already signed in (no uid cookie).
+    if (!jwt && def.login && url.searchParams.get('login') === '1') {
+      cookies.push('clutch_oauth_login=1; Path=/; SameSite=Lax; HttpOnly; Secure; Max-Age=900');
+    }
     try { res.setHeader('Set-Cookie', cookies); } catch(e){}
     const qp = new URLSearchParams({
       response_type: 'code',
@@ -264,7 +278,7 @@ export default async function handler(req, res) {
     return finish(res, platform, null, true, 'state mismatch (possible CSRF)');
   }
   // one-time use — clear both flow cookies
-  try { res.setHeader('Set-Cookie', ['clutch_oauth_state=; Path=/; Max-Age=0; SameSite=Lax', 'clutch_oauth_uid=; Path=/; Max-Age=0; SameSite=Lax']); } catch (e) {}
+  try { res.setHeader('Set-Cookie', ['clutch_oauth_state=; Path=/; Max-Age=0; SameSite=Lax', 'clutch_oauth_uid=; Path=/; Max-Age=0; SameSite=Lax', 'clutch_oauth_login=; Path=/; Max-Age=0; SameSite=Lax']); } catch (e) {}
 
   let data = null;
   try {
@@ -315,13 +329,41 @@ export default async function handler(req, res) {
         if (!list.includes(platform)) { list.push(platform); await kvSet(`connlist:${uid}`, list); }
       } catch {}
     }
+
+    // ── SIGN-IN branch ─────────────────────────────────────────────
+    // If this flow was started as a login (no signed-in user) and the provider
+    // is login-capable, create-or-fetch a CLUTCH account keyed by the provider
+    // id and mint a JWT. Mirrors api/auth/telegram.js.
+    const wantLogin = readCookie(req, 'clutch_oauth_login') === '1';
+    if (wantLogin && def.login && def.loginId && !uid) {
+      const info = def.loginId(userData);
+      if (!info || !info.providerId) return finish(res, platform, null, true, 'no provider id for login');
+      const userId = `user_${info.prefix}_${info.providerId}`;
+      let acct = await kvGet(userId);
+      if (!acct) {
+        acct = {
+          addr: `${info.prefix}_${info.providerId}`,
+          name: info.name || `${platform}_${String(info.providerId).slice(0, 6)}`,
+          via: platform,
+          providerId: String(info.providerId),
+          createdAt: Date.now(),
+          ...(gathered.email ? { email: gathered.email } : {}),
+        };
+        await kvSet(userId, acct);
+        await kvSet(`bal:${userId}`, { available: STARTING_BALANCE, escrow: 0, version: 1 });
+        await kvSet(`txlog:${userId}`, []);
+      }
+      const token = signJwt({ sub: userId, addr: acct.addr, via: acct.via, name: acct.name });
+      return finish(res, platform, { name: acct.name, displayName: acct.name }, false, null, { token, login: '1' });
+    }
+
     return finish(res, platform, user);
   } catch(e) {
     return finish(res, platform, null, true, 'userinfo: ' + e.message);
   }
 }
 
-function finish(res, platform, user, isError, errorMsg) {
+function finish(res, platform, user, isError, errorMsg, extra) {
   const base = '/authed.html';
   const q = new URLSearchParams({ platform });
   if (isError || !user) {
@@ -331,5 +373,7 @@ function finish(res, platform, user, isError, errorMsg) {
   }
   q.set('name', user.name);
   if (user.displayName) q.set('displayName', user.displayName);
+  if (extra && extra.token) q.set('token', extra.token);
+  if (extra && extra.login) q.set('login', extra.login);
   return res.redirect(`${base}?${q.toString()}`);
 }
