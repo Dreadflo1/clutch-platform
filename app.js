@@ -243,14 +243,24 @@ async function submitDeposit(method) {
   if (!usd || usd < 1 || usd > 500) { toast('Enter an amount between $1 and $500', 'error'); return; }
   var st = document.getElementById('dep-status'); if (st) st.textContent = 'Creating payment…';
   var url = method === 'stripe' ? '/api/wallet/stripe-checkout' : '/api/wallet/nowpayments-create';
+  // Open the payment page in a NEW tab so CLUTCH stays put — if the user wants
+  // to back out and try another method, they just close that tab and they're
+  // still signed in and in their game space. The blank tab is opened here,
+  // synchronously inside the click handler, so popup blockers don't kill it.
+  var payWin = null;
+  try { payWin = window.open('', '_blank'); } catch (e) { payWin = null; }
   try {
     var res = await authFetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ usd: usd }) });
     var data = await res.json();
-    if (res.status === 503) { toast((method === 'stripe' ? 'Card' : 'Crypto') + ' payments not enabled yet', 'error'); if (st) st.textContent = ''; return; }
-    if (!res.ok || !data.url) { toast(data.error || 'Payment failed', 'error'); if (st) st.textContent = ''; return; }
-    if (st) st.textContent = 'Redirecting to secure payment…';
-    window.location.href = data.url;
-  } catch (e) { toast('Payment error', 'error'); if (st) st.textContent = ''; }
+    if (res.status === 503) { toast((method === 'stripe' ? 'Card' : 'Crypto') + ' payments not enabled yet', 'error'); if (st) st.textContent = ''; if (payWin) payWin.close(); return; }
+    if (!res.ok || !data.url) { toast(data.error || 'Payment failed', 'error'); if (st) st.textContent = ''; if (payWin) payWin.close(); return; }
+    if (st) st.textContent = 'Payment opened in a new tab — finish there, then come back.';
+    if (payWin) { payWin.location.href = data.url; payWin.focus(); }
+    else { window.location.href = data.url; } // popup blocked → fall back to same-tab
+    // Balance updates arrive via the provider IPN/webhook; poll a few times so
+    // the credit shows without a manual refresh when they return.
+    var polls = 0; var iv = setInterval(function(){ if (++polls > 20) return clearInterval(iv); syncBalance(); }, 6000);
+  } catch (e) { toast('Payment error', 'error'); if (st) st.textContent = ''; if (payWin) payWin.close(); }
 }
 function openWithdrawModal() {
   if (!_authToken) { toast('Connect your wallet first', 'error'); return; }
@@ -459,7 +469,7 @@ function submitAuth(e, mode) {
     .then(async function(r){
       if (!r.ok || !r.data.token) { toast(r.data.error || 'Sign-in failed', 'error'); restore(); return; }
       _authToken = r.data.token;
-      try { sessionStorage.setItem('clutch_jwt', _authToken); } catch(err) {}
+      _saveToken(_authToken);
       U.userId = r.data.user.id; U.name = r.data.user.name; U.via = 'email'; U.addr = r.data.user.id;
       await syncBalance();
       if (typeof saveProfile === 'function') saveProfile();
@@ -851,10 +861,10 @@ async function connectMeta() {
     var authData = await authRes.json();
     if (!authData.token) { toast(authData.error || 'Auth failed','error'); return; }
 
-    // Step 4: Store token in sessionStorage (survives a payment redirect;
-    // cleared when the tab closes — not persisted to localStorage).
+    // Step 4: Persist token durably (survives reloads and cross-site payment
+    // redirects). See _saveToken.
     _authToken = authData.token;
-    try { sessionStorage.setItem('clutch_jwt', _authToken); } catch(e) {}
+    _saveToken(_authToken);
     U.addr = authData.user.addr;
     U.name = authData.user.name;
     U.via = 'metamask';
@@ -910,7 +920,7 @@ async function onTelegramAuth(user) {
     var data = await res.json();
     if (!res.ok || !data.token) { toast(data.error || 'Telegram auth failed', 'error'); return; }
     _authToken = data.token;
-    try { localStorage.setItem('clutch_token', _authToken); } catch(e) {}
+    _saveToken(_authToken);
     U.addr = data.user.addr;
     U.name = data.user.name;
     U.via = 'telegram';
@@ -963,7 +973,7 @@ window.loginWithDiscord = loginWithDiscord;
 async function loginWithToken(token, fallbackName, fallbackVia) {
   try {
     _authToken = token;
-    try { localStorage.setItem('clutch_token', token); } catch (e) {}
+    _saveToken(token);
     var payload = {};
     try {
       var b = token.split('.')[1].replace(/-/g, '+').replace(/_/g, '/');
@@ -1021,7 +1031,7 @@ function enterApp() {
 function doDisconnect() {
   saveProfile();
   _authToken = null;
-  try { sessionStorage.removeItem('clutch_jwt'); } catch(e) {}
+  _clearToken();
   U = { addr:null, name:null, via:null, balance:STARTING_BALANCE, escrow:0, avatar:null, streak:0 };
   document.getElementById('page-app').style.display = 'none';
   document.getElementById('page-landing').style.display = 'flex';
@@ -1029,14 +1039,33 @@ function doDisconnect() {
 }
 
 // ── SESSION RESTORE + PAYMENT RETURN ─────────────────────
+// Token persistence is durable (localStorage) so the login survives a full
+// reload AND a cross-site round-trip through a payment provider (Stripe /
+// NOWPayments). sessionStorage is written too, and read as a fallback, so
+// tokens saved by older builds still restore.
+function _saveToken(t) {
+  if (!t) return;
+  try { localStorage.setItem('clutch_token', t); } catch(e) {}
+  try { sessionStorage.setItem('clutch_jwt', t); } catch(e) {}
+}
+function _readToken() {
+  var t = null;
+  try { t = localStorage.getItem('clutch_token'); } catch(e) {}
+  if (!t) { try { t = sessionStorage.getItem('clutch_jwt'); } catch(e) {} }
+  return t;
+}
+function _clearToken() {
+  try { localStorage.removeItem('clutch_token'); } catch(e) {}
+  try { sessionStorage.removeItem('clutch_jwt'); } catch(e) {}
+}
 function _decodeJwt(t) {
   try { return JSON.parse(atob(t.split('.')[1].replace(/-/g,'+').replace(/_/g,'/'))); } catch(e) { return null; }
 }
 async function restoreSession() {
-  var t; try { t = sessionStorage.getItem('clutch_jwt'); } catch(e) { return false; }
+  var t = _readToken();
   if (!t) return false;
   var p = _decodeJwt(t);
-  if (!p || (p.exp && p.exp < Math.floor(Date.now()/1000))) { try{ sessionStorage.removeItem('clutch_jwt'); }catch(e){} return false; }
+  if (!p || (p.exp && p.exp < Math.floor(Date.now()/1000))) { _clearToken(); return false; }
   _authToken = t;
   U.addr = p.addr || U.addr; U.name = p.name || U.name; U.userId = p.sub; U.via = p.via || 'metamask';
   enterApp();
