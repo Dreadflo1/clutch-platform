@@ -938,7 +938,7 @@ function connectGuest() {
   _authToken = null;
   U.addr = 'guest_' + Date.now(); U.name = 'Guest'; U.via = 'guest';
   U.balance = 0; U.escrow = 0;
-  saveProfile(); enterApp(); toast('Browsing as guest — connect a wallet for real duels','info');
+  saveProfile(); enterApp(); toast('Browsing as guest — sign in for real duels','info');
 }
 
 function connectTwitch() { toast('Twitch login coming soon','info'); }
@@ -1026,6 +1026,19 @@ function enterApp() {
       try { var preset = JSON.parse(qc); setTimeout(function(){ executeQuickChallenge(preset.game, preset.mode, preset.stake); }, 700); } catch(e){}
     }
   }
+  // A shared duel link (?join=<code>) stashes the code; once signed in, open the
+  // Accept screen with it prefilled so the friend can accept in one step.
+  try {
+    var pj = sessionStorage.getItem('clutch_pending_join');
+    if (pj) {
+      sessionStorage.removeItem('clutch_pending_join');
+      setTimeout(function(){
+        var inp = document.getElementById('accept-input'); if (inp) inp.value = pj;
+        try { goTo('accept'); } catch(e){}
+        try { previewAccept(); } catch(e){}
+      }, 350);
+    }
+  } catch(e){}
 }
 
 function doDisconnect() {
@@ -1076,6 +1089,10 @@ async function restoreSession() {
   function boot() {
     initAppShell();
     var params = new URLSearchParams(location.search);
+    // Stash a shared duel code BEFORE restoreSession, so enterApp() (called from
+    // inside restoreSession when a session exists) can pick it up and open Accept.
+    var join = params.get('join');
+    if (join) { try { sessionStorage.setItem('clutch_pending_join', join); } catch(e){} }
     restoreSession().then(function(ok){
       var dep = params.get('deposit');
       if (dep === 'success') {
@@ -1085,6 +1102,10 @@ async function restoreSession() {
       } else if (dep === 'cancelled') {
         toast('Payment cancelled', 'info');
         history.replaceState({}, '', location.pathname);
+      }
+      if (join) {
+        history.replaceState({}, '', location.pathname);
+        if (!ok) { toast('Sign in to accept this duel', 'info'); try { quickConnect(); } catch(e){} }
       }
     });
   }
@@ -1503,26 +1524,69 @@ function generateQRUrl(data){
   return 'https://api.qrserver.com/v1/create-qr-code/?size=200x200&margin=10&data=' + encodeURIComponent(data);
 }
 
+// Renders the shareable duel modal: QR code, summary, the duel code and copy
+// buttons. Called after a duel locks on the server (or a free duel is made).
+// NOTE: this function was previously corrupted with a stray copy of the old
+// gatherCond() body, which made it toast "Enter at least one condition" and
+// bail — so the QR never appeared. Rebuilt below.
 function showQRModal(duel, code){
-  var g = GAMES.find(function(x){ return x.id===duel.game; })||{name:duel.game,color:'#8a95b3',short:'?'};
-  var stakeUsd = (duel.stake * CLU_USD).toFixed(2);
-  var potUsd   = (duel.totalPot * CLU_USD).toFixed(2);
-  var qrUrl    = generateQRUrl(code);
-  var rows = (window._customRows||[]).filter(function(r){ return r.trim(); });
-  if (rows.length === 0) { toast('Enter at least one condition','error'); return null; }
-  var proof = (document.getElementById('c-proof')||{}).value||'screenshot';
-  return { text: rows.join(' + '), proof: proof };
-  if (t==='target') {
-    var rows = (window._targetRows||[]).filter(function(r){ return r.val.trim(); });
-    if (rows.length === 0) { toast('Set at least one target value','error'); return null; }
-    var ctx = (document.getElementById('c-ctx')||{}).value||'';
-    var text = rows.map(function(r){ return r.stat+': '+r.val; }).join(' · ') + (ctx?' ('+ctx+')':'');
-    return { text: text };
-  }
-  var txt=(document.getElementById('c-cust')||{}).value||'';
-  if (!txt.trim()){ toast('Describe the condition','error'); return null; }
-  return { text:txt.trim(), proof:(document.getElementById('c-proof')||{}).value||'screenshot' };
+  var g = GAMES.find(function(x){ return x.id===duel.game; }) || {name:duel.game,color:'#8a95b3',short:'?'};
+  var isFree = !!duel.free || duel.mode === 'free';
+  var stake = duel.stake || 0;
+  var pot = duel.totalPot || (stake * 2);
+  var fee = (typeof PLATFORM_FEE !== 'undefined') ? PLATFORM_FEE : 0.025;
+  var win = Math.floor(pot * (1 - fee));
+  var cond = condLabel(duel);
+  var qrUrl = generateQRUrl(code);
+  var shareLink = location.origin + '/?join=' + encodeURIComponent(code);
+  var expH = duel.expiry ? Math.max(1, Math.round((duel.expiry - Date.now()) / 3600000)) : 24;
+
+  window._lastDuelCode = code;
+  window._lastDuelLink = shareLink;
+  var old = document.getElementById('qr-share-modal'); if (old && old.parentNode) old.parentNode.removeChild(old);
+
+  function row(k, v){ return '<div style="display:flex;justify-content:space-between;gap:10px;padding:4px 0"><span style="color:var(--txt3)">'+k+'</span><span style="font-weight:800;text-align:right">'+String(v)+'</span></div>'; }
+
+  var el = document.createElement('div');
+  el.id = 'qr-share-modal';
+  el.style.cssText = 'position:fixed;inset:0;z-index:10001;background:rgba(0,0,0,.78);display:flex;align-items:center;justify-content:center;padding:18px;overflow:auto';
+  el.onclick = function(e){ if (e.target === el) closeQRModal(); };
+  el.innerHTML =
+    '<div style="background:var(--l1);border:1px solid var(--b);border-radius:18px;max-width:400px;width:100%;padding:22px 20px;text-align:center;box-shadow:0 30px 80px rgba(0,0,0,.55)">'
+    + '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">'
+      + '<div style="font-size:16px;font-weight:900">' + (isFree ? 'Free duel ready' : 'Duel locked in escrow') + '</div>'
+      + '<button onclick="closeQRModal()" style="background:transparent;border:none;color:var(--txt3);font-size:18px;cursor:pointer;line-height:1">✕</button>'
+    + '</div>'
+    + '<div style="font-size:12px;color:var(--txt2);line-height:1.5;margin-bottom:14px">Send this to your friend. They open <b>Accept a Duel</b>, scan the QR or paste the code, and ' + (isFree ? 'the match is on.' : 'both stakes lock in escrow.') + '</div>'
+    + '<div style="background:#fff;border-radius:14px;padding:12px;display:inline-block;margin-bottom:14px"><img src="' + qrUrl + '" width="180" height="180" alt="Duel QR" style="display:block"/></div>'
+    + '<div style="text-align:left;background:var(--l2);border:1px solid var(--b);border-radius:12px;padding:12px 14px;margin-bottom:14px;font-size:12.5px">'
+      + row('Game', g.name)
+      + row('Entry', isFree ? 'Free (bragging rights)' : (stake.toLocaleString() + ' CLU'))
+      + row('Condition', cond)
+      + (isFree ? '' : row('Winner takes', win.toLocaleString() + ' CLU'))
+      + row('Expires', expH + 'h')
+    + '</div>'
+    + '<div style="display:flex;flex-direction:column;gap:8px">'
+      + '<div style="display:flex;gap:8px">'
+        + '<input id="qr-code-field" readonly value="' + String(code).replace(/"/g, '&quot;') + '" style="flex:1;min-width:0;background:var(--l2);border:1px solid var(--b);border-radius:10px;padding:10px 12px;color:var(--txt);font-size:11px;font-family:monospace"/>'
+        + '<button onclick="copyDuelCode()" class="btn btn-p" style="white-space:nowrap;padding:0 14px">Copy code</button>'
+      + '</div>'
+      + '<button onclick="copyDuelLink()" class="btn btn-g btn-full" style="height:44px">Copy share link</button>'
+    + '</div>'
+    + '</div>';
+  document.body.appendChild(el);
 }
+function closeQRModal(){ var el = document.getElementById('qr-share-modal'); if (el && el.parentNode) el.parentNode.removeChild(el); }
+function _copyText(txt, okMsg){
+  function fb(){ var f = document.getElementById('qr-code-field'); if (f){ f.focus(); f.select(); try { document.execCommand('copy'); toast(okMsg || 'Copied', 'success'); return; } catch(e){} } toast('Copy failed — select the code manually', 'info'); }
+  try {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(txt).then(function(){ toast(okMsg || 'Copied', 'success'); }, fb);
+    } else { fb(); }
+  } catch(e){ fb(); }
+}
+function copyDuelCode(){ _copyText(window._lastDuelCode || '', 'Duel code copied — send it to your friend'); }
+function copyDuelLink(){ _copyText(window._lastDuelLink || '', 'Share link copied'); }
 
 function condLabel(d) {
   var t=d.challengeType, c=d.condition||{};
