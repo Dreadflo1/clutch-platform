@@ -30,6 +30,10 @@ function view(ch) {
     creatorUserId: ch.creatorUserId, opponentUserId: ch.opponentUserId,
     disputeReason: ch.disputeReason || null,
     creatorResult: ch.creatorResult || null, opponentResult: ch.opponentResult || null,
+    // What each side actually reported — the evidence an admin needs to rule.
+    creatorScore: ch.creatorScore || null, opponentScore: ch.opponentScore || null,
+    creatorVerify: ch.creatorVerify || null, opponentVerify: ch.opponentVerify || null,
+    condition: ch.condition || ch.mode || null,
     createdAt: ch.createdAt, acceptedAt: ch.acceptedAt || null,
     settleDeadline: ch.settleDeadline || null, disputedAt: ch.disputedAt || null,
   };

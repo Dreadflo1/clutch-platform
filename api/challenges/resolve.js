@@ -11,6 +11,7 @@
 import { kvGet, kvLock, kvUnlock } from '../_kv.js';
 import { BalanceError } from '../_balance.js';
 import { saveChallenge, settleToWinner, refundDraw } from '../_challenges.js';
+import { applyRuling, exonerateBoth } from '../_integrity.js';
 
 const IS_PROD =
   process.env.VERCEL_ENV === 'production' || process.env.NODE_ENV === 'production';
@@ -62,11 +63,17 @@ export default async function handler(req, res) {
     try {
       if (resolution === 'draw') {
         await refundDraw(ch, 'admin_draw'); // self-persists + archives
+        // Genuinely ambiguous — neither side is proven at fault, so lift the
+        // provisional strike this duel put on both of them.
+        await exonerateBoth(ch);
       } else {
         const winnerId = resolution === 'creator' ? ch.creatorUserId : ch.opponentUserId;
         const loserId = resolution === 'creator' ? ch.opponentUserId : ch.creatorUserId;
         await settleToWinner(ch, winnerId, loserId);
         ch.resolution = resolution;
+        // Fair-ban attribution: the ruled loser mis-reported (confirmed fault);
+        // the honest winner is exonerated for this dispute. See _integrity.js.
+        await applyRuling(winnerId, loserId);
         await saveChallenge(ch);
       }
     } catch (e) {

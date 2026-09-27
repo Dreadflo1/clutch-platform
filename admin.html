@@ -1,0 +1,199 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>CLUTCH — Dispute Admin</title>
+<style>
+  :root{--bg:#05070f;--l1:#0d1227;--l2:#111834;--txt:#e6ecff;--txt2:#9aa6c8;--txt3:#68739a;--acc:#00FF87;--purple:#7000ff;--purple-txt:#b98cff;--gold:#ffb700;--red:#ff5d6c;--b:#1e2542}
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0;background:radial-gradient(1200px 600px at 20% -10%,rgba(0,255,135,.08),transparent),radial-gradient(900px 500px at 80% 5%,rgba(112,0,255,.10),transparent),var(--bg);color:var(--txt);font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Arial;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:920px;margin:0 auto;padding:24px 16px 80px}
+  h1{font-size:20px;font-weight:900;letter-spacing:-.01em;margin:0 0 2px;display:flex;align-items:center;gap:10px}
+  h1 .dot{width:10px;height:10px;border-radius:50%;background:var(--acc);box-shadow:0 0 12px var(--acc)}
+  .sub{font-size:12.5px;color:var(--txt2);margin:0 0 20px}
+  .card{background:var(--l1);border:1px solid var(--b);border-radius:14px;padding:16px 18px;margin-bottom:14px}
+  label{font-size:11px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;color:var(--txt3);display:block;margin-bottom:6px}
+  input,textarea{width:100%;background:var(--l2);border:1px solid var(--b);border-radius:10px;padding:11px 13px;color:var(--txt);font-size:13px;font-family:inherit}
+  textarea{resize:vertical;min-height:44px}
+  .btn{border:none;border-radius:10px;padding:10px 16px;font-size:12.5px;font-weight:800;cursor:pointer;transition:transform .1s,filter .15s}
+  .btn:hover{filter:brightness(1.08)}.btn:active{transform:translateY(1px)}
+  .btn-acc{background:var(--acc);color:#04130a}
+  .btn-purple{background:var(--purple);color:#fff}
+  .btn-ghost{background:var(--l2);color:var(--txt2);border:1px solid var(--b)}
+  .btn-gold{background:var(--gold);color:#241a00}
+  .row{display:flex;gap:10px;flex-wrap:wrap}
+  .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px;margin-bottom:18px}
+  .stat{background:var(--l1);border:1px solid var(--b);border-radius:12px;padding:12px 14px}
+  .stat .n{font-size:22px;font-weight:900;line-height:1}
+  .stat .l{font-size:10.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--txt3);margin-top:5px}
+  .disp{border-left:3px solid var(--red)}
+  .pill{display:inline-block;font-size:10px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;padding:3px 9px;border-radius:999px;background:rgba(255,93,108,.14);color:var(--red);border:1px solid rgba(255,93,108,.3)}
+  .kv{display:flex;justify-content:space-between;gap:10px;padding:5px 0;font-size:12.5px;border-bottom:1px solid rgba(255,255,255,.05)}
+  .kv:last-child{border-bottom:none}
+  .kv .k{color:var(--txt3)}.kv .v{font-weight:700;text-align:right;word-break:break-all}
+  .claim{background:var(--l2);border:1px solid var(--b);border-radius:10px;padding:10px 12px;font-size:12px;flex:1;min-width:180px}
+  .claim h4{margin:0 0 6px;font-size:11px;font-weight:800;color:var(--purple-txt);text-transform:uppercase;letter-spacing:.04em}
+  .muted{color:var(--txt3);font-size:12px}
+  .err{color:var(--red);font-size:12px;margin-top:8px;min-height:16px}
+  .ok{color:var(--acc)}
+  #toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--l1);border:1px solid var(--b);border-radius:12px;padding:12px 18px;font-size:13px;font-weight:700;box-shadow:0 14px 40px rgba(0,0,0,.5);display:none;z-index:100;max-width:90vw;text-align:center}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1><span class="dot"></span> CLUTCH · Dispute Admin</h1>
+  <p class="sub">Resolve disputed duels and release escrow. The ruled loser takes a confirmed fault; the honest winner is exonerated. Access is gated by <b>ADMIN_SECRET</b>.</p>
+
+  <div class="card" id="auth-card">
+    <label for="secret">Admin secret (Bearer token)</label>
+    <div class="row">
+      <input id="secret" type="password" placeholder="ADMIN_SECRET" autocomplete="off" style="flex:1;min-width:180px"/>
+      <button class="btn btn-acc" onclick="connectAdmin()">Load queue</button>
+    </div>
+    <div class="err" id="auth-err"></div>
+    <div class="muted" style="margin-top:8px">Kept only in this tab's session storage — never sent anywhere but the CLUTCH admin API.</div>
+  </div>
+
+  <div id="dash" style="display:none">
+    <div class="stats" id="stats"></div>
+    <div class="row" style="justify-content:space-between;align-items:center;margin-bottom:10px">
+      <div style="font-size:15px;font-weight:900">Disputes queue</div>
+      <div class="row">
+        <button class="btn btn-ghost" onclick="loadQueue()">↻ Refresh</button>
+        <button class="btn btn-ghost" onclick="signOut()">Sign out</button>
+      </div>
+    </div>
+    <div id="disputes"></div>
+  </div>
+</div>
+<div id="toast"></div>
+
+<script>
+var SECRET = '';
+try { SECRET = sessionStorage.getItem('clutch_admin_secret') || ''; } catch(e){}
+
+function toast(msg, kind){
+  var t = document.getElementById('toast');
+  t.textContent = msg; t.style.borderColor = kind==='error' ? 'var(--red)' : (kind==='success'?'var(--acc)':'var(--b)');
+  t.style.display = 'block';
+  clearTimeout(window._tt); window._tt = setTimeout(function(){ t.style.display='none'; }, 3200);
+}
+function esc(s){ return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];}); }
+function shortId(id){ id = String(id||'—'); return id.length>18 ? id.slice(0,10)+'…'+id.slice(-6) : id; }
+
+async function api(path, opts){
+  opts = opts || {};
+  opts.headers = Object.assign({ 'Authorization': 'Bearer ' + SECRET }, opts.headers || {});
+  var r = await fetch(path, opts);
+  var data = {};
+  try { data = await r.json(); } catch(e){}
+  return { ok: r.ok, status: r.status, data: data };
+}
+
+async function connectAdmin(){
+  var s = document.getElementById('secret').value.trim();
+  var err = document.getElementById('auth-err');
+  err.textContent = '';
+  if (!s) { err.textContent = 'Enter the admin secret.'; return; }
+  SECRET = s;
+  var res = await api('/api/challenges/admin');
+  if (res.status === 401) { err.textContent = 'Wrong secret.'; SECRET=''; return; }
+  if (!res.ok) { err.textContent = res.data.error || ('Error ' + res.status); SECRET=''; return; }
+  try { sessionStorage.setItem('clutch_admin_secret', SECRET); } catch(e){}
+  document.getElementById('auth-card').style.display = 'none';
+  document.getElementById('dash').style.display = 'block';
+  render(res.data);
+}
+
+function signOut(){
+  SECRET=''; try { sessionStorage.removeItem('clutch_admin_secret'); } catch(e){}
+  document.getElementById('dash').style.display='none';
+  document.getElementById('auth-card').style.display='block';
+  document.getElementById('secret').value='';
+}
+
+async function loadQueue(){
+  var res = await api('/api/challenges/admin');
+  if (!res.ok) { toast(res.data.error || 'Load failed', 'error'); if (res.status===401) signOut(); return; }
+  render(res.data);
+}
+
+function statCard(n, l, color){ return '<div class="stat"><div class="n" style="color:'+(color||'var(--txt)')+'">'+n+'</div><div class="l">'+l+'</div></div>'; }
+
+function render(d){
+  var s = d.stats || {};
+  document.getElementById('stats').innerHTML =
+      statCard(s.disputed||0, 'Disputed', 'var(--red)')
+    + statCard(s.active||0, 'Active', 'var(--acc)')
+    + statCard(s.open||0, 'Open', 'var(--purple-txt)')
+    + statCard(s.pastDeadline||0, 'Past deadline', 'var(--gold)')
+    + statCard((s.escrowLocked||0).toLocaleString()+' CLU', 'Escrow locked');
+
+  var disputes = d.disputes || [];
+  var host = document.getElementById('disputes');
+  if (!disputes.length) { host.innerHTML = '<div class="card muted">No disputes right now. 🎉</div>'; return; }
+  host.innerHTML = disputes.map(renderDispute).join('');
+}
+
+function claimBox(title, who, ch){
+  var body = '';
+  var sc = who==='creator' ? ch.creatorScore : ch.opponentScore;
+  var rs = who==='creator' ? ch.creatorResult : ch.opponentResult;
+  var vf = who==='creator' ? ch.creatorVerify : ch.opponentVerify;
+  if (sc) body = 'Reported score — <b>me ' + esc(sc.my) + ' : ' + esc(sc.opp) + ' them</b>';
+  else if (rs) body = 'Reported result — <b>' + esc(rs) + '</b>';
+  else if (vf) body = 'Match id — <b>' + esc(vf.matchId) + '</b>' + (vf.handle?(' · '+esc(vf.handle)):'');
+  else body = '<span class="muted">no report</span>';
+  var uid = who==='creator' ? ch.creatorUserId : ch.opponentUserId;
+  return '<div class="claim"><h4>'+title+'</h4><div style="font-size:11px;color:var(--txt3);margin-bottom:5px">'+esc(shortId(uid))+'</div>'+body+'</div>';
+}
+
+function renderDispute(ch){
+  var pot = (ch.stake||0)*2;
+  var when = ch.disputedAt ? new Date(ch.disputedAt).toLocaleString() : '—';
+  return '<div class="card disp" id="ch-'+esc(ch.id)+'">'
+    + '<div class="row" style="justify-content:space-between;align-items:center;margin-bottom:10px">'
+      + '<div><span class="pill">'+esc(ch.disputeReason||'disputed')+'</span> <b style="margin-left:8px">'+esc(ch.game||'?')+'</b> <span class="muted">· '+esc(ch.stake||0)+' CLU entry · '+pot+' CLU pot</span></div>'
+      + '<div class="muted" style="font-size:11px">'+esc(shortId(ch.id))+'</div>'
+    + '</div>'
+    + '<div class="row" style="margin-bottom:12px">'
+      + claimBox('Creator', 'creator', ch)
+      + claimBox('Opponent', 'opponent', ch)
+    + '</div>'
+    + '<div class="kv"><span class="k">Condition</span><span class="v">'+esc(typeof ch.condition==='object'?(ch.condition.text||JSON.stringify(ch.condition)):(ch.condition||'—'))+'</span></div>'
+    + '<div class="kv"><span class="k">Disputed at</span><span class="v">'+esc(when)+'</span></div>'
+    + '<div style="margin-top:12px"><label>Note (optional, logged on the duel)</label><textarea id="note-'+esc(ch.id)+'" placeholder="e.g. Creator\'s screenshot confirms 3–1 win"></textarea></div>'
+    + '<div class="row" style="margin-top:10px">'
+      + '<button class="btn btn-acc" onclick="resolve(\''+esc(ch.id)+'\',\'creator\')">Award Creator</button>'
+      + '<button class="btn btn-purple" onclick="resolve(\''+esc(ch.id)+'\',\'opponent\')">Award Opponent</button>'
+      + '<button class="btn btn-gold" onclick="resolve(\''+esc(ch.id)+'\',\'draw\')">Draw · refund both</button>'
+    + '</div>'
+    + '<div class="err" id="err-'+esc(ch.id)+'"></div>'
+  + '</div>';
+}
+
+async function resolve(id, resolution){
+  var label = resolution==='draw' ? 'refund both as a draw' : ('award the '+resolution);
+  if (!confirm('Resolve '+id+': '+label+'? This moves escrow and cannot be undone.')) return;
+  var note = (document.getElementById('note-'+id)||{}).value || '';
+  var errEl = document.getElementById('err-'+id);
+  if (errEl) errEl.textContent = 'Resolving…';
+  var res = await api('/api/challenges/resolve', {
+    method:'POST', headers:{'Content-Type':'application/json'},
+    body: JSON.stringify({ challengeId:id, resolution:resolution, note:note })
+  });
+  if (!res.ok) { if (errEl) errEl.textContent = res.data.error || ('Error '+res.status); return; }
+  toast('Resolved — ' + (resolution==='draw'?'refunded both':('awarded '+resolution)), 'success');
+  var card = document.getElementById('ch-'+id); if (card) card.style.opacity = '.4';
+  setTimeout(loadQueue, 600);
+}
+
+// Auto-load if a secret is already stored this session.
+if (SECRET) {
+  document.getElementById('secret').value = SECRET;
+  connectAdmin();
+}
+</script>
+</body>
+</html>
