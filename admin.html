@@ -3,84 +3,253 @@
 <head>
 <meta charset="utf-8"/>
 <meta name="viewport" content="width=device-width,initial-scale=1"/>
-<title>CLUTCH — Dispute Admin</title>
+<meta name="robots" content="noindex,nofollow"/>
+<title>CLUTCH — Dispute Console</title>
 <style>
-  :root{--bg:#05070f;--l1:#0d1227;--l2:#111834;--txt:#e6ecff;--txt2:#9aa6c8;--txt3:#68739a;--acc:#00FF87;--purple:#7000ff;--purple-txt:#b98cff;--gold:#ffb700;--red:#ff5d6c;--b:#1e2542}
+  :root{
+    --bg:#05070f; --l1:#0c1024; --l2:#111a38; --l3:#151f42;
+    --b:#1e2542; --b2:#283161;
+    --txt:#e9edff; --txt2:#9aa6c8; --txt3:#5f6a92;
+    --acc:#00ff87; --acc-dim:rgba(0,255,135,.14);
+    --purple:#7b3dff; --purple-txt:#b98cff; --purple-dim:rgba(123,61,255,.16);
+    --gold:#ffb020; --gold-dim:rgba(255,176,32,.15);
+    --red:#ff5d6c; --red-dim:rgba(255,93,108,.14);
+    --shadow:0 24px 70px rgba(0,0,0,.55);
+    --ease:cubic-bezier(.22,.61,.36,1);
+    --radius:16px;
+  }
   *{box-sizing:border-box}
-  html,body{margin:0;padding:0;background:radial-gradient(1200px 600px at 20% -10%,rgba(0,255,135,.08),transparent),radial-gradient(900px 500px at 80% 5%,rgba(112,0,255,.10),transparent),var(--bg);color:var(--txt);font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Arial;-webkit-font-smoothing:antialiased}
-  .wrap{max-width:920px;margin:0 auto;padding:24px 16px 80px}
-  h1{font-size:20px;font-weight:900;letter-spacing:-.01em;margin:0 0 2px;display:flex;align-items:center;gap:10px}
-  h1 .dot{width:10px;height:10px;border-radius:50%;background:var(--acc);box-shadow:0 0 12px var(--acc)}
-  .sub{font-size:12.5px;color:var(--txt2);margin:0 0 20px}
-  .card{background:var(--l1);border:1px solid var(--b);border-radius:14px;padding:16px 18px;margin-bottom:14px}
-  label{font-size:11px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;color:var(--txt3);display:block;margin-bottom:6px}
-  input,textarea{width:100%;background:var(--l2);border:1px solid var(--b);border-radius:10px;padding:11px 13px;color:var(--txt);font-size:13px;font-family:inherit}
-  textarea{resize:vertical;min-height:44px}
-  .btn{border:none;border-radius:10px;padding:10px 16px;font-size:12.5px;font-weight:800;cursor:pointer;transition:transform .1s,filter .15s}
-  .btn:hover{filter:brightness(1.08)}.btn:active{transform:translateY(1px)}
-  .btn-acc{background:var(--acc);color:#04130a}
-  .btn-purple{background:var(--purple);color:#fff}
-  .btn-ghost{background:var(--l2);color:var(--txt2);border:1px solid var(--b)}
-  .btn-gold{background:var(--gold);color:#241a00}
-  .row{display:flex;gap:10px;flex-wrap:wrap}
-  .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:10px;margin-bottom:18px}
-  .stat{background:var(--l1);border:1px solid var(--b);border-radius:12px;padding:12px 14px}
-  .stat .n{font-size:22px;font-weight:900;line-height:1}
-  .stat .l{font-size:10.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--txt3);margin-top:5px}
-  .disp{border-left:3px solid var(--red)}
-  .pill{display:inline-block;font-size:10px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;padding:3px 9px;border-radius:999px;background:rgba(255,93,108,.14);color:var(--red);border:1px solid rgba(255,93,108,.3)}
-  .kv{display:flex;justify-content:space-between;gap:10px;padding:5px 0;font-size:12.5px;border-bottom:1px solid rgba(255,255,255,.05)}
-  .kv:last-child{border-bottom:none}
-  .kv .k{color:var(--txt3)}.kv .v{font-weight:700;text-align:right;word-break:break-all}
-  .claim{background:var(--l2);border:1px solid var(--b);border-radius:10px;padding:10px 12px;font-size:12px;flex:1;min-width:180px}
-  .claim h4{margin:0 0 6px;font-size:11px;font-weight:800;color:var(--purple-txt);text-transform:uppercase;letter-spacing:.04em}
-  .muted{color:var(--txt3);font-size:12px}
-  .err{color:var(--red);font-size:12px;margin-top:8px;min-height:16px}
-  .ok{color:var(--acc)}
-  #toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--l1);border:1px solid var(--b);border-radius:12px;padding:12px 18px;font-size:13px;font-weight:700;box-shadow:0 14px 40px rgba(0,0,0,.5);display:none;z-index:100;max-width:90vw;text-align:center}
+  html,body{margin:0;padding:0}
+  body{
+    min-height:100vh;
+    background:
+      radial-gradient(1100px 560px at 12% -8%, rgba(0,255,135,.09), transparent 60%),
+      radial-gradient(900px 520px at 88% 4%, rgba(123,61,255,.12), transparent 60%),
+      var(--bg);
+    color:var(--txt);
+    font-family:"Inter",system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;
+    -webkit-font-smoothing:antialiased;
+    letter-spacing:-.01em;
+  }
+  .ic{width:1em;height:1em;flex:0 0 auto;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;fill:none;display:inline-block;vertical-align:-.14em}
+  .wrap{max-width:960px;margin:0 auto;padding:32px 20px 96px}
+
+  /* ── Top bar ── */
+  .top{display:flex;align-items:center;gap:14px;margin-bottom:8px}
+  .mark{width:42px;height:42px;border-radius:12px;display:grid;place-items:center;
+    background:linear-gradient(150deg,var(--acc),#00c96a);color:#03130a;font-size:20px;
+    box-shadow:0 10px 26px rgba(0,255,135,.28),inset 0 1px 0 rgba(255,255,255,.4)}
+  .top h1{font-size:19px;font-weight:800;margin:0;line-height:1.1}
+  .top .tag{font-size:11px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:var(--acc);margin-top:3px}
+  .secured{margin-left:auto;display:inline-flex;align-items:center;gap:7px;font-size:11px;font-weight:700;
+    color:var(--acc);background:var(--acc-dim);border:1px solid rgba(0,255,135,.28);
+    padding:7px 12px;border-radius:999px;font-size:11.5px}
+  .lede{font-size:13px;color:var(--txt2);line-height:1.6;margin:14px 0 26px;max-width:640px}
+  .lede b{color:var(--txt)}
+
+  /* ── Cards ── */
+  .card{background:linear-gradient(180deg,var(--l1),rgba(12,16,36,.6));border:1px solid var(--b);
+    border-radius:var(--radius);box-shadow:var(--shadow)}
+
+  /* ── Auth gate ── */
+  #auth{max-width:440px;margin:6vh auto 0;padding:30px 28px}
+  #auth .glyph{width:52px;height:52px;border-radius:14px;display:grid;place-items:center;font-size:24px;
+    color:var(--acc);background:var(--acc-dim);border:1px solid rgba(0,255,135,.24);margin-bottom:16px}
+  #auth h2{font-size:18px;font-weight:800;margin:0 0 5px}
+  #auth p{font-size:12.5px;color:var(--txt2);line-height:1.55;margin:0 0 18px}
+  .field{position:relative;display:flex;align-items:center}
+  .field .fic{position:absolute;left:14px;color:var(--txt3);font-size:17px;pointer-events:none}
+  input,textarea{width:100%;background:var(--l2);border:1px solid var(--b2);border-radius:11px;
+    color:var(--txt);font:inherit;font-size:13.5px;padding:12px 14px;transition:border-color .15s,box-shadow .15s;outline:none}
+  .field input{padding-left:40px}
+  input:focus,textarea:focus{border-color:var(--acc);box-shadow:0 0 0 3px var(--acc-dim)}
+  textarea{resize:vertical;min-height:46px;line-height:1.5}
+  label{font-size:10.5px;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--txt3);display:block;margin-bottom:7px}
+  .hint{font-size:11.5px;color:var(--txt3);line-height:1.5;margin-top:11px;display:flex;gap:7px;align-items:flex-start}
+  .hint .ic{margin-top:2px;color:var(--acc)}
+  .err{color:var(--red);font-size:12px;min-height:16px;margin-top:9px;display:flex;align-items:center;gap:6px}
+  .err:empty{margin:0;min-height:0}
+
+  /* ── Buttons ── */
+  .btn{display:inline-flex;align-items:center;justify-content:center;gap:8px;border:1px solid transparent;
+    border-radius:11px;padding:11px 16px;font:inherit;font-size:12.5px;font-weight:700;cursor:pointer;
+    transition:transform .1s var(--ease),filter .15s,background .15s,border-color .15s;white-space:nowrap}
+  .btn .ic{font-size:16px}
+  .btn:hover{filter:brightness(1.07)} .btn:active{transform:translateY(1px)}
+  .btn:focus-visible{outline:2px solid var(--acc);outline-offset:2px}
+  .btn-acc{background:linear-gradient(180deg,#00ff87,#00d46f);color:#03130a;box-shadow:0 8px 20px rgba(0,255,135,.22)}
+  .btn-purple{background:linear-gradient(180deg,#8a4dff,#6f2fe6);color:#fff;box-shadow:0 8px 20px rgba(123,61,255,.28)}
+  .btn-gold{background:linear-gradient(180deg,#ffbe3a,#f59e0b);color:#241800;box-shadow:0 8px 20px rgba(255,176,32,.22)}
+  .btn-ghost{background:var(--l2);color:var(--txt2);border-color:var(--b2)}
+  .btn-ghost:hover{color:var(--txt);border-color:var(--acc)}
+  .btn-block{width:100%;padding:13px}
+
+  /* ── Stats ── */
+  .stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(158px,1fr));gap:12px;margin-bottom:26px}
+  .stat{padding:16px 16px 15px;display:flex;flex-direction:column;gap:10px}
+  .stat .tile{width:36px;height:36px;border-radius:10px;display:grid;place-items:center;font-size:18px}
+  .stat .n{font-size:24px;font-weight:800;line-height:1;letter-spacing:-.02em}
+  .stat .l{font-size:10.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--txt3)}
+  .t-red .tile{background:var(--red-dim);color:var(--red)} .t-red .n{color:var(--red)}
+  .t-acc .tile{background:var(--acc-dim);color:var(--acc)} .t-acc .n{color:var(--acc)}
+  .t-pur .tile{background:var(--purple-dim);color:var(--purple-txt)} .t-pur .n{color:var(--purple-txt)}
+  .t-gold .tile{background:var(--gold-dim);color:var(--gold)} .t-gold .n{color:var(--gold)}
+  .t-neutral .tile{background:var(--l3);color:var(--txt2)}
+
+  /* ── Section head ── */
+  .sec-head{display:flex;align-items:center;gap:11px;margin-bottom:14px}
+  .sec-head .ic{font-size:19px;color:var(--red)}
+  .sec-head h3{font-size:15px;font-weight:800;margin:0}
+  .count-chip{font-size:11px;font-weight:800;color:var(--red);background:var(--red-dim);
+    border:1px solid rgba(255,93,108,.3);border-radius:999px;padding:2px 9px}
+  .sec-head .actions{margin-left:auto;display:flex;gap:9px}
+
+  /* ── Dispute card ── */
+  .dispute{position:relative;padding:18px 20px;margin-bottom:16px;overflow:hidden}
+  .dispute::before{content:"";position:absolute;left:0;top:0;bottom:0;width:3px;background:linear-gradient(var(--red),#c8324a)}
+  .d-head{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:16px}
+  .reason{display:inline-flex;align-items:center;gap:6px;font-size:10.5px;font-weight:800;letter-spacing:.03em;
+    text-transform:uppercase;color:var(--red);background:var(--red-dim);border:1px solid rgba(255,93,108,.3);
+    padding:5px 11px;border-radius:8px}
+  .reason .ic{font-size:14px}
+  .meta-inline{display:inline-flex;align-items:center;gap:6px;font-size:12.5px;color:var(--txt2)}
+  .meta-inline .ic{font-size:15px;color:var(--txt3)}
+  .meta-inline b{color:var(--txt);font-weight:700}
+  .d-id{margin-left:auto;font-size:11px;color:var(--txt3);font-family:ui-monospace,SFMono-Regular,Menlo,monospace}
+
+  .claims{display:grid;grid-template-columns:1fr auto 1fr;gap:0;align-items:stretch;margin-bottom:16px}
+  .claim{background:var(--l2);border:1px solid var(--b);padding:13px 14px}
+  .claim:first-child{border-radius:12px 0 0 12px;border-right:none}
+  .claim:last-child{border-radius:0 12px 12px 0;border-left:none}
+  .claim h4{display:flex;align-items:center;gap:7px;margin:0 0 8px;font-size:11px;font-weight:800;
+    letter-spacing:.04em;text-transform:uppercase}
+  .claim.creator h4{color:var(--acc)} .claim.opponent h4{color:var(--purple-txt)}
+  .claim .who{font-size:11px;color:var(--txt3);font-family:ui-monospace,Menlo,monospace;margin-bottom:9px;
+    overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .claim .report{font-size:12.5px;color:var(--txt2);line-height:1.5}
+  .claim .report b{color:var(--txt);font-weight:800;font-size:14px}
+  .vs{display:grid;place-items:center;width:38px;background:var(--l3);border:1px solid var(--b);
+    font-size:10px;font-weight:900;letter-spacing:.06em;color:var(--txt3)}
+
+  .meta-rows{border-top:1px solid var(--b);margin-top:2px}
+  .mrow{display:flex;align-items:center;gap:9px;padding:9px 0;font-size:12.5px;border-bottom:1px solid rgba(255,255,255,.04)}
+  .mrow:last-child{border-bottom:none}
+  .mrow .ic{font-size:15px;color:var(--txt3)}
+  .mrow .k{color:var(--txt3);min-width:96px}
+  .mrow .v{color:var(--txt);font-weight:600;margin-left:auto;text-align:right;word-break:break-word}
+
+  .note-wrap{margin:14px 0 12px}
+  .actions-row{display:flex;gap:10px;flex-wrap:wrap}
+  .actions-row .btn{flex:1;min-width:150px}
+  .row-err{color:var(--red);font-size:12px;margin-top:9px;min-height:16px;display:flex;align-items:center;gap:6px}
+  .row-err:empty{min-height:0;margin:0}
+
+  /* ── Empty ── */
+  .empty{padding:44px 24px;text-align:center}
+  .empty .glyph{width:56px;height:56px;border-radius:16px;margin:0 auto 16px;display:grid;place-items:center;
+    font-size:26px;color:var(--acc);background:var(--acc-dim);border:1px solid rgba(0,255,135,.22)}
+  .empty h3{font-size:15px;font-weight:800;margin:0 0 5px}
+  .empty p{font-size:12.5px;color:var(--txt2);margin:0}
+
+  /* ── Toast ── */
+  #toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%) translateY(14px);opacity:0;
+    pointer-events:none;display:flex;align-items:center;gap:9px;background:var(--l1);border:1px solid var(--b2);
+    border-radius:12px;padding:12px 18px;font-size:13px;font-weight:600;box-shadow:var(--shadow);
+    transition:opacity .2s,transform .2s var(--ease);max-width:92vw;z-index:200}
+  #toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+  #toast .ic{font-size:17px}
+  #toast.ok{border-color:rgba(0,255,135,.4)} #toast.ok .ic{color:var(--acc)}
+  #toast.bad{border-color:rgba(255,93,108,.4)} #toast.bad .ic{color:var(--red)}
+
+  .fade{opacity:.38;transition:opacity .4s}
+  @media (max-width:560px){
+    .claims{grid-template-columns:1fr}
+    .claim:first-child{border-radius:12px 12px 0 0;border-right:1px solid var(--b);border-bottom:none}
+    .claim:last-child{border-radius:0 0 12px 12px;border-left:1px solid var(--b);border-top:none}
+    .vs{width:auto;height:30px;border-left:1px solid var(--b);border-right:1px solid var(--b)}
+  }
 </style>
 </head>
 <body>
-<div class="wrap">
-  <h1><span class="dot"></span> CLUTCH · Dispute Admin</h1>
-  <p class="sub">Resolve disputed duels and release escrow. The ruled loser takes a confirmed fault; the honest winner is exonerated. Access is gated by <b>ADMIN_SECRET</b>.</p>
+<!-- Inline SVG icon set (no emoji anywhere) -->
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-shield" viewBox="0 0 24 24"><path d="M12 3l7 3v5c0 4.6-3 8.6-7 10-4-1.4-7-5.4-7-10V6l7-3z"/><path d="M9 12l2 2 4-4"/></symbol>
+  <symbol id="i-scale" viewBox="0 0 24 24"><path d="M12 3v18M8 21h8M7 7h10M5 7l-2.5 5.5a2.5 2.5 0 005 0L5 7zm14 0l-2.5 5.5a2.5 2.5 0 005 0L19 7z"/></symbol>
+  <symbol id="i-refresh" viewBox="0 0 24 24"><path d="M20 11a8 8 0 10-2.3 5.7M20 20v-4h-4"/></symbol>
+  <symbol id="i-logout" viewBox="0 0 24 24"><path d="M9 21H6a2 2 0 01-2-2V5a2 2 0 012-2h3M16 17l5-5-5-5M21 12H9"/></symbol>
+  <symbol id="i-trophy" viewBox="0 0 24 24"><path d="M8 21h8M12 17v4M7 4h10v5a5 5 0 01-10 0V4zM7 6H4v1a3 3 0 003 3M17 6h3v1a3 3 0 01-3 3"/></symbol>
+  <symbol id="i-equal" viewBox="0 0 24 24"><path d="M5 9h14M5 15h14"/></symbol>
+  <symbol id="i-alert" viewBox="0 0 24 24"><path d="M12 3l9 16H3L12 3z"/><path d="M12 10v4M12 17h.01"/></symbol>
+  <symbol id="i-lock" viewBox="0 0 24 24"><rect x="5" y="10" width="14" height="10" rx="2"/><path d="M8 10V7a4 4 0 018 0v3"/></symbol>
+  <symbol id="i-clock" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></symbol>
+  <symbol id="i-pad" viewBox="0 0 24 24"><path d="M7 8h10a4 4 0 014 4l-.8 5a2.6 2.6 0 01-4.6 1.1L14 16H10l-1.6 2.1A2.6 2.6 0 013.8 17L3 12a4 4 0 014-4z"/><path d="M8 11v3M6.5 12.5h3M15 12h.01M17.5 13.5h.01"/></symbol>
+  <symbol id="i-key" viewBox="0 0 24 24"><circle cx="8" cy="8" r="4"/><path d="M11 11l9 9M17 17l2-2M14 14l2-2"/></symbol>
+  <symbol id="i-check" viewBox="0 0 24 24"><path d="M20 6L9 17l-5-5"/></symbol>
+  <symbol id="i-flag" viewBox="0 0 24 24"><path d="M6 3v18M6 4h11l-2 4 2 4H6"/></symbol>
+  <symbol id="i-doc" viewBox="0 0 24 24"><path d="M14 3H7a2 2 0 00-2 2v14a2 2 0 002 2h10a2 2 0 002-2V8l-5-5z"/><path d="M14 3v5h5M9 13h6M9 17h6"/></symbol>
+</svg>
 
-  <div class="card" id="auth-card">
-    <label for="secret">Admin secret (Bearer token)</label>
-    <div class="row">
-      <input id="secret" type="password" placeholder="ADMIN_SECRET" autocomplete="off" style="flex:1;min-width:180px"/>
-      <button class="btn btn-acc" onclick="connectAdmin()">Load queue</button>
+<div class="wrap">
+  <div class="top">
+    <div class="mark"><svg class="ic" style="font-size:22px"><use href="#i-shield"/></svg></div>
+    <div>
+      <h1>Dispute Console</h1>
+      <div class="tag">CLUTCH · Referee</div>
+    </div>
+    <span class="secured"><svg class="ic" style="font-size:14px"><use href="#i-lock"/></svg> Secret-gated</span>
+  </div>
+  <p class="lede">Resolve disputed duels and release escrow. The ruled loser takes a <b>confirmed fault</b>; the honest winner is <b>exonerated</b>. Every action is authorized by <b>ADMIN_SECRET</b> and logged.</p>
+
+  <!-- Auth gate -->
+  <div class="card" id="auth">
+    <div class="glyph"><svg class="ic" style="font-size:26px"><use href="#i-key"/></svg></div>
+    <h2>Referee sign-in</h2>
+    <p>Enter the admin secret to load the dispute queue.</p>
+    <label for="secret">Admin secret</label>
+    <div class="field">
+      <svg class="ic fic"><use href="#i-lock"/></svg>
+      <input id="secret" type="password" placeholder="ADMIN_SECRET" autocomplete="off" spellcheck="false"/>
     </div>
     <div class="err" id="auth-err"></div>
-    <div class="muted" style="margin-top:8px">Kept only in this tab's session storage — never sent anywhere but the CLUTCH admin API.</div>
+    <button class="btn btn-acc btn-block" style="margin-top:16px" onclick="connectAdmin()">
+      <svg class="ic"><use href="#i-shield"/></svg> Unlock console
+    </button>
+    <div class="hint"><svg class="ic"><use href="#i-check"/></svg><span>Held only in this tab's session storage — sent to the CLUTCH admin API and nowhere else.</span></div>
   </div>
 
+  <!-- Dashboard -->
   <div id="dash" style="display:none">
     <div class="stats" id="stats"></div>
-    <div class="row" style="justify-content:space-between;align-items:center;margin-bottom:10px">
-      <div style="font-size:15px;font-weight:900">Disputes queue</div>
-      <div class="row">
-        <button class="btn btn-ghost" onclick="loadQueue()">↻ Refresh</button>
-        <button class="btn btn-ghost" onclick="signOut()">Sign out</button>
+    <div class="sec-head">
+      <svg class="ic"><use href="#i-scale"/></svg>
+      <h3>Disputes queue</h3>
+      <span class="count-chip" id="qcount">0</span>
+      <div class="actions">
+        <button class="btn btn-ghost" onclick="loadQueue()"><svg class="ic"><use href="#i-refresh"/></svg> Refresh</button>
+        <button class="btn btn-ghost" onclick="signOut()"><svg class="ic"><use href="#i-logout"/></svg> Sign out</button>
       </div>
     </div>
     <div id="disputes"></div>
   </div>
 </div>
-<div id="toast"></div>
+
+<div id="toast"><svg class="ic"><use href="#i-check"/></svg><span id="toast-msg"></span></div>
 
 <script>
 var SECRET = '';
 try { SECRET = sessionStorage.getItem('clutch_admin_secret') || ''; } catch(e){}
 
+function icon(id, size){ return '<svg class="ic"' + (size?(' style="font-size:'+size+'"'):'') + '><use href="#'+id+'"/></svg>'; }
+function esc(s){ return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];}); }
+function shortId(id){ id = String(id||'—'); return id.length>20 ? id.slice(0,11)+'…'+id.slice(-6) : id; }
+
 function toast(msg, kind){
   var t = document.getElementById('toast');
-  t.textContent = msg; t.style.borderColor = kind==='error' ? 'var(--red)' : (kind==='success'?'var(--acc)':'var(--b)');
-  t.style.display = 'block';
-  clearTimeout(window._tt); window._tt = setTimeout(function(){ t.style.display='none'; }, 3200);
+  document.getElementById('toast-msg').textContent = msg;
+  t.className = 'show ' + (kind === 'error' ? 'bad' : 'ok');
+  t.querySelector('use').setAttribute('href', kind === 'error' ? '#i-alert' : '#i-check');
+  clearTimeout(window._tt); window._tt = setTimeout(function(){ t.className = ''; }, 3400);
 }
-function esc(s){ return String(s==null?'':s).replace(/[&<>"']/g,function(c){return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];}); }
-function shortId(id){ id = String(id||'—'); return id.length>18 ? id.slice(0,10)+'…'+id.slice(-6) : id; }
 
 async function api(path, opts){
   opts = opts || {};
@@ -94,103 +263,121 @@ async function api(path, opts){
 async function connectAdmin(){
   var s = document.getElementById('secret').value.trim();
   var err = document.getElementById('auth-err');
-  err.textContent = '';
-  if (!s) { err.textContent = 'Enter the admin secret.'; return; }
+  err.innerHTML = '';
+  if (!s){ err.innerHTML = icon('i-alert') + ' Enter the admin secret.'; return; }
   SECRET = s;
   var res = await api('/api/challenges/admin');
-  if (res.status === 401) { err.textContent = 'Wrong secret.'; SECRET=''; return; }
-  if (!res.ok) { err.textContent = res.data.error || ('Error ' + res.status); SECRET=''; return; }
+  if (res.status === 401){ err.innerHTML = icon('i-alert') + ' Wrong secret.'; SECRET = ''; return; }
+  if (!res.ok){ err.innerHTML = icon('i-alert') + ' ' + esc(res.data.error || ('Error ' + res.status)); SECRET = ''; return; }
   try { sessionStorage.setItem('clutch_admin_secret', SECRET); } catch(e){}
-  document.getElementById('auth-card').style.display = 'none';
+  document.getElementById('auth').style.display = 'none';
   document.getElementById('dash').style.display = 'block';
   render(res.data);
 }
 
 function signOut(){
-  SECRET=''; try { sessionStorage.removeItem('clutch_admin_secret'); } catch(e){}
-  document.getElementById('dash').style.display='none';
-  document.getElementById('auth-card').style.display='block';
-  document.getElementById('secret').value='';
+  SECRET = ''; try { sessionStorage.removeItem('clutch_admin_secret'); } catch(e){}
+  document.getElementById('dash').style.display = 'none';
+  document.getElementById('auth').style.display = 'block';
+  document.getElementById('secret').value = '';
 }
 
 async function loadQueue(){
   var res = await api('/api/challenges/admin');
-  if (!res.ok) { toast(res.data.error || 'Load failed', 'error'); if (res.status===401) signOut(); return; }
+  if (!res.ok){ toast(res.data.error || 'Load failed', 'error'); if (res.status === 401) signOut(); return; }
   render(res.data);
 }
 
-function statCard(n, l, color){ return '<div class="stat"><div class="n" style="color:'+(color||'var(--txt)')+'">'+n+'</div><div class="l">'+l+'</div></div>'; }
+function statCard(cls, ic, n, l){
+  return '<div class="card stat ' + cls + '"><div class="tile">' + icon(ic) + '</div>'
+    + '<div class="n">' + n + '</div><div class="l">' + l + '</div></div>';
+}
 
 function render(d){
   var s = d.stats || {};
   document.getElementById('stats').innerHTML =
-      statCard(s.disputed||0, 'Disputed', 'var(--red)')
-    + statCard(s.active||0, 'Active', 'var(--acc)')
-    + statCard(s.open||0, 'Open', 'var(--purple-txt)')
-    + statCard(s.pastDeadline||0, 'Past deadline', 'var(--gold)')
-    + statCard((s.escrowLocked||0).toLocaleString()+' CLU', 'Escrow locked');
+      statCard('t-red', 'i-alert', s.disputed || 0, 'Disputed')
+    + statCard('t-acc', 'i-pad', s.active || 0, 'Active')
+    + statCard('t-pur', 'i-flag', s.open || 0, 'Open')
+    + statCard('t-gold', 'i-clock', s.pastDeadline || 0, 'Past deadline')
+    + statCard('t-neutral', 'i-lock', (s.escrowLocked || 0).toLocaleString() + ' CLU', 'Escrow locked');
 
   var disputes = d.disputes || [];
+  document.getElementById('qcount').textContent = disputes.length;
   var host = document.getElementById('disputes');
-  if (!disputes.length) { host.innerHTML = '<div class="card muted">No disputes right now. 🎉</div>'; return; }
+  if (!disputes.length){
+    host.innerHTML = '<div class="card empty"><div class="glyph">' + icon('i-shield', '28px') + '</div>'
+      + '<h3>Queue clear</h3><p>No disputed duels to arbitrate right now.</p></div>';
+    return;
+  }
   host.innerHTML = disputes.map(renderDispute).join('');
 }
 
-function claimBox(title, who, ch){
-  var body = '';
-  var sc = who==='creator' ? ch.creatorScore : ch.opponentScore;
-  var rs = who==='creator' ? ch.creatorResult : ch.opponentResult;
-  var vf = who==='creator' ? ch.creatorVerify : ch.opponentVerify;
-  if (sc) body = 'Reported score — <b>me ' + esc(sc.my) + ' : ' + esc(sc.opp) + ' them</b>';
-  else if (rs) body = 'Reported result — <b>' + esc(rs) + '</b>';
-  else if (vf) body = 'Match id — <b>' + esc(vf.matchId) + '</b>' + (vf.handle?(' · '+esc(vf.handle)):'');
-  else body = '<span class="muted">no report</span>';
-  var uid = who==='creator' ? ch.creatorUserId : ch.opponentUserId;
-  return '<div class="claim"><h4>'+title+'</h4><div style="font-size:11px;color:var(--txt3);margin-bottom:5px">'+esc(shortId(uid))+'</div>'+body+'</div>';
+function claimBox(cls, title, who, uid, report){
+  return '<div class="claim ' + cls + '"><h4>' + icon(cls === 'creator' ? 'i-flag' : 'i-pad') + title + '</h4>'
+    + '<div class="who">' + esc(shortId(uid)) + '</div>'
+    + '<div class="report">' + report + '</div></div>';
+}
+
+function reportOf(ch, who){
+  var sc = who === 'creator' ? ch.creatorScore : ch.opponentScore;
+  var rs = who === 'creator' ? ch.creatorResult : ch.opponentResult;
+  var vf = who === 'creator' ? ch.creatorVerify : ch.opponentVerify;
+  if (sc) return 'Score reported<br><b>' + esc(sc.my) + ' – ' + esc(sc.opp) + '</b>';
+  if (rs) return 'Result reported<br><b>' + esc(rs) + '</b>';
+  if (vf) return 'Match id<br><b>' + esc(vf.matchId) + '</b>' + (vf.handle ? ('<br><span style="font-size:11px">' + esc(vf.handle) + '</span>') : '');
+  return '<span style="color:var(--txt3)">No report submitted</span>';
 }
 
 function renderDispute(ch){
-  var pot = (ch.stake||0)*2;
+  var pot = (ch.stake || 0) * 2;
   var when = ch.disputedAt ? new Date(ch.disputedAt).toLocaleString() : '—';
-  return '<div class="card disp" id="ch-'+esc(ch.id)+'">'
-    + '<div class="row" style="justify-content:space-between;align-items:center;margin-bottom:10px">'
-      + '<div><span class="pill">'+esc(ch.disputeReason||'disputed')+'</span> <b style="margin-left:8px">'+esc(ch.game||'?')+'</b> <span class="muted">· '+esc(ch.stake||0)+' CLU entry · '+pot+' CLU pot</span></div>'
-      + '<div class="muted" style="font-size:11px">'+esc(shortId(ch.id))+'</div>'
+  var cond = typeof ch.condition === 'object' ? (ch.condition.text || JSON.stringify(ch.condition)) : (ch.condition || '—');
+  var id = esc(ch.id);
+  return '<div class="card dispute" id="ch-' + id + '">'
+    + '<div class="d-head">'
+      + '<span class="reason">' + icon('i-alert') + esc(ch.disputeReason || 'disputed') + '</span>'
+      + '<span class="meta-inline">' + icon('i-pad') + '<b>' + esc(ch.game || '—') + '</b></span>'
+      + '<span class="meta-inline">' + icon('i-lock') + esc(ch.stake || 0) + ' CLU entry · <b>' + pot + ' CLU pot</b></span>'
+      + '<span class="d-id">' + esc(shortId(ch.id)) + '</span>'
     + '</div>'
-    + '<div class="row" style="margin-bottom:12px">'
-      + claimBox('Creator', 'creator', ch)
-      + claimBox('Opponent', 'opponent', ch)
+    + '<div class="claims">'
+      + claimBox('creator', 'Creator', 'creator', ch.creatorUserId, reportOf(ch, 'creator'))
+      + '<div class="vs">VS</div>'
+      + claimBox('opponent', 'Opponent', 'opponent', ch.opponentUserId, reportOf(ch, 'opponent'))
     + '</div>'
-    + '<div class="kv"><span class="k">Condition</span><span class="v">'+esc(typeof ch.condition==='object'?(ch.condition.text||JSON.stringify(ch.condition)):(ch.condition||'—'))+'</span></div>'
-    + '<div class="kv"><span class="k">Disputed at</span><span class="v">'+esc(when)+'</span></div>'
-    + '<div style="margin-top:12px"><label>Note (optional, logged on the duel)</label><textarea id="note-'+esc(ch.id)+'" placeholder="e.g. Creator\'s screenshot confirms 3–1 win"></textarea></div>'
-    + '<div class="row" style="margin-top:10px">'
-      + '<button class="btn btn-acc" onclick="resolve(\''+esc(ch.id)+'\',\'creator\')">Award Creator</button>'
-      + '<button class="btn btn-purple" onclick="resolve(\''+esc(ch.id)+'\',\'opponent\')">Award Opponent</button>'
-      + '<button class="btn btn-gold" onclick="resolve(\''+esc(ch.id)+'\',\'draw\')">Draw · refund both</button>'
+    + '<div class="meta-rows">'
+      + '<div class="mrow">' + icon('i-doc') + '<span class="k">Condition</span><span class="v">' + esc(cond) + '</span></div>'
+      + '<div class="mrow">' + icon('i-clock') + '<span class="k">Disputed at</span><span class="v">' + esc(when) + '</span></div>'
     + '</div>'
-    + '<div class="err" id="err-'+esc(ch.id)+'"></div>'
+    + '<div class="note-wrap"><label for="note-' + id + '">Referee note (optional · logged on the duel)</label>'
+      + '<textarea id="note-' + id + '" placeholder="e.g. Creator&#39;s clip confirms a 3–1 win"></textarea></div>'
+    + '<div class="actions-row">'
+      + '<button class="btn btn-acc" onclick="resolve(\'' + id + '\',\'creator\')">' + icon('i-trophy') + 'Award Creator</button>'
+      + '<button class="btn btn-purple" onclick="resolve(\'' + id + '\',\'opponent\')">' + icon('i-trophy') + 'Award Opponent</button>'
+      + '<button class="btn btn-gold" onclick="resolve(\'' + id + '\',\'draw\')">' + icon('i-equal') + 'Draw · refund</button>'
+    + '</div>'
+    + '<div class="row-err" id="err-' + id + '"></div>'
   + '</div>';
 }
 
 async function resolve(id, resolution){
-  var label = resolution==='draw' ? 'refund both as a draw' : ('award the '+resolution);
-  if (!confirm('Resolve '+id+': '+label+'? This moves escrow and cannot be undone.')) return;
-  var note = (document.getElementById('note-'+id)||{}).value || '';
-  var errEl = document.getElementById('err-'+id);
-  if (errEl) errEl.textContent = 'Resolving…';
+  var label = resolution === 'draw' ? 'refund both as a draw' : ('award the ' + resolution);
+  if (!confirm('Resolve ' + id + ': ' + label + '?\nThis moves escrow and cannot be undone.')) return;
+  var note = (document.getElementById('note-' + id) || {}).value || '';
+  var errEl = document.getElementById('err-' + id);
+  if (errEl) errEl.innerHTML = icon('i-clock') + ' Resolving…';
   var res = await api('/api/challenges/resolve', {
-    method:'POST', headers:{'Content-Type':'application/json'},
-    body: JSON.stringify({ challengeId:id, resolution:resolution, note:note })
+    method: 'POST', headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ challengeId: id, resolution: resolution, note: note })
   });
-  if (!res.ok) { if (errEl) errEl.textContent = res.data.error || ('Error '+res.status); return; }
-  toast('Resolved — ' + (resolution==='draw'?'refunded both':('awarded '+resolution)), 'success');
-  var card = document.getElementById('ch-'+id); if (card) card.style.opacity = '.4';
-  setTimeout(loadQueue, 600);
+  if (!res.ok){ if (errEl) errEl.innerHTML = icon('i-alert') + ' ' + esc(res.data.error || ('Error ' + res.status)); return; }
+  toast('Resolved — ' + (resolution === 'draw' ? 'refunded both' : ('awarded ' + resolution)), 'success');
+  var card = document.getElementById('ch-' + id); if (card) card.classList.add('fade');
+  setTimeout(loadQueue, 650);
 }
 
-// Auto-load if a secret is already stored this session.
-if (SECRET) {
+if (SECRET){
   document.getElementById('secret').value = SECRET;
   connectAdmin();
 }
