@@ -205,18 +205,17 @@ button:disabled,[aria-disabled="true"]{opacity:.55;cursor:not-allowed}
 .lah-icon{width:24px;height:24px;flex-shrink:0;display:flex;align-items:center;justify-content:center;background:var(--l2);border-radius:7px;border:1px solid var(--b)}
 
 /* ── HORIZONTAL SCROLLING FIND-A-CONTENDER ───────── */
-/* Find a Contender - GRID responsive (plus de flex débordant) */
-.fac-horizontal-scroll{display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:20px;padding:8px 0 18px;overflow:visible}
-/* Forcer 3 colonnes sur grand écran */
-@media (min-width:1024px){.fac-horizontal-scroll{grid-template-columns:repeat(3,1fr)}}
-/* Mobile : scroll horizontal si nécessaire */
-@media (max-width:640px){
-  .fac-horizontal-scroll{display:flex;overflow-x:auto;scroll-snap-type:x mandatory;padding:8px 4px 18px;gap:16px}
-  .fac-card{flex:0 0 85vw;min-width:280px;max-width:400px;scroll-snap-align:start}
+/* Find a Contender — horizontal carousel, 3 cards per page so the pagination
+   dots (scrollFac) actually navigate. It was a wrapping grid on desktop, which
+   showed every card at once and left nothing to scroll — the dots were dead. */
+.fac-horizontal-scroll{display:flex;flex-wrap:nowrap;gap:20px;padding:8px 4px 18px;overflow-x:auto;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;scrollbar-width:thin}
+.fac-card{flex:0 0 calc((100% - 40px) / 3);min-width:280px;box-sizing:border-box;display:flex;scroll-snap-align:start}
+/* Below 3-up, fall back to one card at a time */
+@media (max-width:900px){
+  .fac-card{flex:0 0 85vw;max-width:400px}
 }
 .fac-horizontal-scroll::-webkit-scrollbar{height:7px}
 .fac-horizontal-scroll::-webkit-scrollbar-thumb{background:var(--purple);border-radius:4px}
-.fac-card{width:100%;min-width:auto;max-width:none;box-sizing:border-box;display:flex;scroll-snap-align:start}
 .fac-scroll-indicator{display:flex;justify-content:center;gap:7px;margin-top:10px;padding-bottom:4px}
 .fac-scroll-dot{width:9px;height:9px;border-radius:50%;background:var(--b);cursor:pointer;transition:all .18s;border:1px solid var(--bh)}
 .fac-scroll-dot.active{background:var(--purple);width:26px;border-radius:5px;border-color:var(--purple-txt);box-shadow:0 0 8px rgba(112,0,255,.4)}
@@ -374,6 +373,10 @@ button:disabled,[aria-disabled="true"]{opacity:.55;cursor:not-allowed}
 @keyframes badgeBounce{0%{transform:translateY(0) scale(1)}30%{transform:translateY(-7px) scale(1.03)}55%{transform:translateY(2px) scale(.99)}80%{transform:translateY(-2px) scale(1.01)}100%{transform:translateY(0) scale(1)}}
 .game-badge-img{position:relative;z-index:2;filter:drop-shadow(0 6px 14px rgba(0,0,0,.55));transition:transform .25s var(--ease),filter .25s}
 .pick-game-btn:hover .game-badge-img{transform:scale(1.08) rotate(-2deg);filter:drop-shadow(0 10px 22px rgba(0,0,0,.7))}
+/* Selected game state (toggled by pickLandingGame) + the check badge */
+.pick-game-btn.gsel{background:rgba(0,255,135,.12);border-color:rgba(0,255,135,.5);box-shadow:0 0 0 1px rgba(0,255,135,.3),0 10px 26px rgba(0,255,135,.14)}
+.pick-game-btn .pg-check{position:absolute;top:8px;right:8px;z-index:4;width:20px;height:20px;border-radius:50%;background:rgba(0,255,135,.16);border:1px solid rgba(0,255,135,.6);display:none;align-items:center;justify-content:center;box-shadow:0 0 12px rgba(0,255,135,.4) inset}
+.pick-game-btn.gsel .pg-check{display:flex}
 .pick-game-icon{width:16px;height:16px;display:flex;align-items:center;justify-content:center;font-size:13px;flex-shrink:0}
 .pick-game-icon.v{color:#FF4D5E}
 .pick-game-icon.l{color:#C89B3C}

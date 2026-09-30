@@ -378,6 +378,20 @@ function quickConnect() {
   document.getElementById('connect-modal').classList.remove('hidden');
 }
 
+// Landing "Pick Your Game" selector — toggles the selected tile and remembers
+// the choice so the duel wizard can preselect it. (The tiles had no click
+// handler, so selecting a game did nothing.)
+function pickLandingGame(el, game) {
+  try {
+    document.querySelectorAll('.pick-game-btn').forEach(function (b) { b.classList.remove('gsel'); });
+    if (el) el.classList.add('gsel');
+    window._landingGame = game;
+    try { sessionStorage.setItem('clutch_landing_game', game); } catch (e) {}
+    if (typeof CREATE !== 'undefined') CREATE.game = game;
+  } catch (e) {}
+}
+window.pickLandingGame = pickLandingGame;
+
 function scrollFac(pageIndex) {
   var scroller = document.getElementById('fac-scroll');
   if (!scroller) return;

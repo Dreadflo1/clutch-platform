@@ -15,7 +15,13 @@ function _esc(s) {
 // Only allow http(s) image URLs into CSS url(...) and strip characters that could
 // break out of the url() / attribute.
 function _safeImg(u) {
-  return /^https?:\/\//i.test(u || '') ? String(u).replace(/["'()<>\\]/g, '') : '';
+  u = String(u || '');
+  if (/["'()<>\\]/.test(u)) return '';
+  if (/^https?:\/\//i.test(u)) return u;
+  // Also allow the app's own same-origin image assets (relative paths) — the
+  // fallback clip/news thumbnails live in Photos_Gamers/ and logos/.
+  if (/^[\w./-]+\.(?:jpg|jpeg|png|webp|gif|avif)$/i.test(u) && !u.includes('..')) return u;
+  return '';
 }
 
 /* ════════════════════════════════════════════════════════════
