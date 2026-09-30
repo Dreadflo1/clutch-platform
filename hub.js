@@ -302,19 +302,24 @@ function renderNews(articles, containerId) {
     var cat = (article.category || article.cat || 'NEWS').toUpperCase().slice(0, 15);
     var color = CATEGORY_COLORS[cat] || article.accent || '#229ed9';
     var icon = CATEGORY_ICONS[cat] || '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 22h16a2 2 0 002-2V4a2 2 0 00-2-2H8a2 2 0 00-2 2v16a2 2 0 01-2 2zm0 0a2 2 0 01-2-2v-9c0-1.1.9-2 2-2h2"/></svg>';
-    var hidden = idx >= SHOW_LIMIT ? ' style="display:none" data-news-extra' : '';
+    var isExtra = idx >= SHOW_LIMIT;
 
     var imgHtml = '';
     if (article.image && /^https?:\/\//.test(article.image) && !/[<>"']/.test(article.image)) {
       imgHtml = '<div class="nc-img"><img src="' + encodeURI(article.image) + '" alt="" loading="lazy" onerror="this.parentElement.style.display=\'none\'"/></div>';
     }
 
-    var safeLink = (article.link && /^https?:\/\//.test(article.link)) ? article.link.replace(/'/g,'') : null;
-    var hrefAttr = safeLink ? ' data-href="' + safeLink + '" onclick="window.open(this.dataset.href,\'_blank\',\'noopener,noreferrer\')" style="cursor:pointer"' : '';
-    if (article.description) {
-      var shortDesc = String(article.description).slice(0, 95) + (article.description.length > 95 ? '…' : '');
-    }
-    html += '<div class="news-card"' + hidden + ' style="--nc-accent:' + color + '"' + hrefAttr + '>' +
+    // Render each card as a REAL anchor when we have a valid link — real <a>
+    // links are never blocked by popup blockers (unlike window.open with a
+    // features string) and support middle-click / ctrl-click / keyboard.
+    var safeLink = (article.link && /^https?:\/\//.test(article.link) && !/[<>"']/.test(article.link)) ? article.link : null;
+    var tag = safeLink ? 'a' : 'div';
+    var linkAttr = safeLink ? ' href="' + encodeURI(safeLink) + '" target="_blank" rel="noopener noreferrer"' : '';
+    var styleVal = '--nc-accent:' + color + (isExtra ? ';display:none' : '');
+    var extraAttr = isExtra ? ' data-news-extra' : '';
+    var shortDesc = article.description ? (String(article.description).slice(0, 95) + (article.description.length > 95 ? '…' : '')) : '';
+
+    html += '<' + tag + ' class="news-card"' + extraAttr + ' style="' + styleVal + '"' + linkAttr + '>' +
       imgHtml +
       '<div class="nc-head">' +
         '<div class="nc-icon" style="background:' + color + '22">' + icon + '</div>' +
@@ -328,7 +333,7 @@ function renderNews(articles, containerId) {
         '<span class="nc-src">' + _esc(article.source || 'News') + '</span>' +
         '<span>' + timeAgo(article.date || article.publishedAt || article.createdAt) + '</span>' +
       '</div>' +
-    '</div>';
+    '</' + tag + '>';
   });
 
   if (articles.length > SHOW_LIMIT) {
