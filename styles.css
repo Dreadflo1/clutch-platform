@@ -208,14 +208,14 @@ button:disabled,[aria-disabled="true"]{opacity:.55;cursor:not-allowed}
 /* Find a Contender — horizontal carousel, 3 cards per page so the pagination
    dots (scrollFac) actually navigate. It was a wrapping grid on desktop, which
    showed every card at once and left nothing to scroll — the dots were dead. */
-.fac-horizontal-scroll{display:flex;flex-wrap:nowrap;gap:20px;padding:8px 4px 18px;overflow-x:auto;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;scrollbar-width:thin}
+.fac-horizontal-scroll{display:flex;flex-wrap:nowrap;gap:20px;padding:8px 4px 18px;overflow-x:auto;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;scrollbar-width:none;-ms-overflow-style:none}
 .fac-card{flex:0 0 calc((100% - 40px) / 3);min-width:280px;box-sizing:border-box;display:flex;scroll-snap-align:start}
 /* Below 3-up, fall back to one card at a time */
 @media (max-width:900px){
   .fac-card{flex:0 0 85vw;max-width:400px}
 }
-.fac-horizontal-scroll::-webkit-scrollbar{height:7px}
-.fac-horizontal-scroll::-webkit-scrollbar-thumb{background:var(--purple);border-radius:4px}
+/* Hide the native scrollbar entirely — navigation is the clean dot control below */
+.fac-horizontal-scroll::-webkit-scrollbar{display:none;width:0;height:0}
 .fac-scroll-indicator{display:flex;justify-content:center;gap:7px;margin-top:10px;padding-bottom:4px}
 .fac-scroll-dot{width:9px;height:9px;border-radius:50%;background:var(--b);cursor:pointer;transition:all .18s;border:1px solid var(--bh)}
 .fac-scroll-dot.active{background:var(--purple);width:26px;border-radius:5px;border-color:var(--purple-txt);box-shadow:0 0 8px rgba(112,0,255,.4)}
