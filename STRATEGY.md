@@ -71,12 +71,11 @@ Goal: deposits and withdrawals open in cleared jurisdictions only.
 - Fee 2.5%, charged on any accepted duel that resolves (win, draw, dispute or no-show); a never-accepted duel cancels fully refunded.
 - Terminology: **Challenge** = the open offer, **Duel** = the match. Never "bet", "wager", "odds", "stakes", "winner takes all", "casino".
 - Main domain: clutch.best.
+- Launch market: **Europe first**, free beta before real money (confirmed by Flavien 2026-10-05).
 
 ## Open questions only Flavien can answer
 
-1. Target launch market (default assumed: EU first, France-speaking + English).
-2. Real-money timing: free beta first (default) or real money as soon as legal is cleared.
-3. Incorporation country.
+1. Incorporation country (Bulgaria / Estonia / Malta).
 
 ## Weekly review (every Monday)
 
