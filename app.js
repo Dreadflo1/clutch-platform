@@ -139,16 +139,13 @@ var STREAK = (function(){
 })();
 function saveStreak(){ try { localStorage.setItem('clutch_streak', JSON.stringify(STREAK)); } catch(e){} }
 
-var FIRST_BUY_DONE = (function(){
-  return localStorage.getItem('clutch_firstbuy')==='1';
-})();
-
+// Packs are just preset amounts for the deposit form. The CLU shown is exactly
+// what the server credits (usd / CLU_USD_RATE); there are no bonus amounts.
 var BUNDLES = [
-  {id:'starter',   icon:'S', name:'STARTER',   clu:500,    bonus:0,     price:'$4.99',  badge:null,      cls:''},
-  {id:'challenger',icon:'C', name:'CHALLENGER', clu:2000,   bonus:200,   price:'$19.99', badge:'NEW',     cls:'new'},
-  {id:'pro',       icon:'P', name:'PRO',        clu:5000,   bonus:750,   price:'$49.99', badge:'POPULAR', cls:'pop'},
-  {id:'whale',     icon:'W', name:'WHALE',      clu:15000,  bonus:3000,  price:'$129.99',badge:'VALUE',   cls:'val'},
-  {id:'legend',    icon:'L', name:'LEGEND',     clu:50000,  bonus:12500, price:'$399.99',badge:null,      cls:''},
+  {id:'p5',   usd:5},
+  {id:'p10',  usd:10, badge:'POPULAR', cls:'pop'},
+  {id:'p25',  usd:25},
+  {id:'p50',  usd:50},
 ];
 
 var STARTING_BALANCE = 500;
@@ -183,6 +180,12 @@ var _proofDataUrl   = null; // last uploaded screenshot (data URL) for AI verifi
 function loadDuels(){ try { var arr = JSON.parse(localStorage.getItem('clutch_duels')||'[]'); return arr.map(function(d){ if(d && !d.challengeType) d.challengeType = d.betType || 'outcome'; return d; }); } catch(e){ return []; } }
 function saveDuels(){ try { localStorage.setItem('clutch_duels', JSON.stringify(DUELS)); } catch(e){} }
 var DUELS = loadDuels();
+
+/* HTML-escape any text that came from a player or the server. */
+function _escAcc(x) {
+  return String(x == null ? '' : x).replace(/[&<>"']/g, function(c){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; });
+}
+window._escAcc = _escAcc;
 
 function saveProfile(){
   var data = {addr:U.addr,name:U.name,via:U.via,avatar:U.avatar,streak:U.streak};
@@ -233,8 +236,11 @@ function updDepPreview() {
   var e = document.getElementById('dep-equiv');
   if (e) e.innerHTML = 'You receive: <strong>' + clu + ' CLU</strong>';
 }
-function openDepositModal() {
+function openDepositModal(bundleId) {
   if (!_authToken) { toast('Sign in first', 'error'); return; }
+  var b = (BUNDLES || []).find(function(x){ return x.id === bundleId; });
+  var inp = document.getElementById('dep-usd');
+  if (b && inp) inp.value = b.usd;
   updDepPreview(); openModal('deposit-modal');
 }
 async function submitDeposit(method) {
@@ -307,15 +313,15 @@ var GAME_PRESETS = {
   valorant: { label:'Valorant', presets:[
     {name:'Casual 1v1', desc:'Deathmatch, first to win', stake:50, mode:'1v1 Deathmatch'},
     {name:'Ranked Match', desc:'Competitive match outcome', stake:250, mode:'Ranked Win'},
-    {name:'Big Flex', desc:'Best of 3, winner takes all', stake:1000, mode:'Best of 3'},
+    {name:'Big Flex', desc:'Best of 3, the better player wins the pot', stake:1000, mode:'Best of 3'},
   ]},
   lol: { label:'League of Legends', presets:[
-    {name:'Solo Queue', desc:'Next ranked game, winner takes pot', stake:100, mode:'Ranked Solo'},
+    {name:'Solo Queue', desc:'Next ranked game, the better result wins the pot', stake:100, mode:'Ranked Solo'},
     {name:'1v1 Mid', desc:'Custom 1v1 mid lane, first blood wins', stake:250, mode:'1v1 Mid First Blood'},
     {name:'Bo3 Series', desc:'Best of 3 ranked games', stake:500, mode:'Best of 3'},
   ]},
   cs2: { label:'CS2', presets:[
-    {name:'Quick Match', desc:'Next competitive map, winner takes it', stake:100, mode:'Competitive Win'},
+    {name:'Quick Match', desc:'Next competitive map, the better result wins the pot', stake:100, mode:'Competitive Win'},
     {name:'Aim Duel', desc:'1v1 aim map, first to 16 kills', stake:250, mode:'1v1 Aim Duel'},
     {name:'Premier', desc:'Premier mode, rating on the line', stake:500, mode:'Premier Match'},
   ]},
@@ -330,7 +336,7 @@ var GAME_PRESETS = {
     {name:'Ranked Grind', desc:'Most RP gained in 3 games', stake:500, mode:'Ranked RP Race'},
   ]},
   dota2: { label:'Dota 2', presets:[
-    {name:'Pub Match', desc:'Next pub game, winner takes pot', stake:100, mode:'Pub Win'},
+    {name:'Pub Match', desc:'Next pub game, the better result wins the pot', stake:100, mode:'Pub Win'},
     {name:'Ranked', desc:'Ranked match outcome', stake:250, mode:'Ranked Win'},
     {name:'1v1 Mid', desc:'Solo mid, first to 2 kills or tower', stake:500, mode:'1v1 Mid'},
   ]},
@@ -1136,10 +1142,17 @@ async function restoreSession() {
 
 // ── SERVER-AUTHORITATIVE BALANCE SYNC ────────────────
 // Periodic + visibility-triggered sync. The server is always the source of truth.
+function _isMe(id) {
+  if (!id) return false;
+  id = String(id).toLowerCase();
+  return (!!U.userId && id === String(U.userId).toLowerCase()) || (!!U.addr && id === String(U.addr).toLowerCase());
+}
 (function setupBalanceSync() {
+  // Every poll is a serverless call plus a KV read, so poll slowly and only
+  // while the tab is visible; returning to the tab syncs immediately.
   setInterval(function() {
-    if (_authToken) syncBalance();
-  }, 15000);
+    if (_authToken && document.visibilityState === 'visible') syncBalance();
+  }, 60000);
   document.addEventListener('visibilitychange', function() {
     if (document.visibilityState === 'visible' && _authToken) syncBalance();
   });
@@ -1325,7 +1338,7 @@ function buildGameGrids() {
     var logo = GAME_LOGOS[g.id] || '<svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="2" y="6" width="20" height="12" rx="2"/></svg>';
     var badge = g.api
       ? '<div class="go-verify api"><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" style="display:inline;vertical-align:-1px"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg> '+g.apiName+'</div>'
-      : '<div class="go-verify manual">Screenshot</div>';
+      : '<div class="go-verify manual">Both report</div>';
     return '<div class="go'+(CREATE.game===g.id?' sel':'')+'" data-game="'+g.id+'" onclick="selGame(\''+g.id+'\',this)">'
       + '<div class="go-icon" style="background:'+g.color+'15;color:'+g.color+'">'+logo+'</div>'
       + '<div class="go-name">'+g.name+'</div>'
@@ -1560,7 +1573,8 @@ function showQRModal(duel, code){
   var cond = condLabel(duel);
   var qrUrl = generateQRUrl(code);
   var shareLink = location.origin + '/?join=' + encodeURIComponent(code);
-  var expH = duel.expiry ? Math.max(1, Math.round((duel.expiry - Date.now()) / 3600000)) : 24;
+  var expAt = duel.expiresAt || duel.expiry;
+  var expH = expAt ? Math.max(1, Math.round((expAt - Date.now()) / 3600000)) : 24;
 
   window._lastDuelCode = code;
   window._lastDuelLink = shareLink;
@@ -1584,7 +1598,7 @@ function showQRModal(duel, code){
       + row('Game', g.name)
       + row('Entry', isFree ? 'Free (bragging rights)' : (stake.toLocaleString() + ' CLU'))
       + row('Condition', cond)
-      + (isFree ? '' : row('Winner takes', win.toLocaleString() + ' CLU'))
+      + (isFree ? '' : row('Prize to the winner', win.toLocaleString() + ' CLU'))
       + row('Expires', expH + 'h')
     + '</div>'
     + '<div style="display:flex;flex-direction:column;gap:8px">'
@@ -1606,7 +1620,12 @@ function _copyText(txt, okMsg){
     } else { fb(); }
   } catch(e){ fb(); }
 }
-function copyDuelCode(){ _copyText(window._lastDuelCode || '', 'Duel code copied — send it to your friend'); }
+function copyDuelCode(duelId){
+  var code = window._lastDuelCode || '';
+  var d = duelId && DUELS.find(function(x){ return x.id === duelId; });
+  if (d && d.sig) code = btoa(JSON.stringify({ id: d.id, sig: d.sig })).replace(/\+/g,'-').replace(/\//g,'_').replace(/=+$/,'');
+  _copyText(code, 'Duel code copied, send it to your friend');
+}
 function copyDuelLink(){ _copyText(window._lastDuelLink || '', 'Share link copied'); }
 
 function condLabel(d) {
@@ -1623,7 +1642,7 @@ function updPreview() {
   var g = GAMES.find(function(x){ return x.id===CREATE.game; });
   setText('prev-game',  g ? g.name : '—');
   setText('prev-type',  {outcome:'Match Outcome',target:'Performance Target',custom:'Custom'}[CREATE.challengeType]||'—');
-  setText('prev-verify', g ? (g.api ? '✓ '+g.apiName : 'Screenshot proof') : '—');
+  setText('prev-verify', g ? (g.api ? 'Auto-verified via '+g.apiName : 'Both players report') : '—');
   var condEl = document.getElementById('c-out')||document.getElementById('c-tval')||document.getElementById('c-cust');
   setText('prev-cond', (condEl&&condEl.value) ? condEl.value : '—');
   var stake = parseInt((document.getElementById('stake-input')||{}).value)||0;
@@ -1672,28 +1691,18 @@ async function createDuel() {
   var expiry = parseInt(document.getElementById('expiry-sel').value);
   var expiryHours = Math.round(expiry / 3600000) || 24;
 
-  if (_authToken) {
-    try {
-      var res = await authFetch('/api/challenges', {
-        method:'POST', headers:{'Content-Type':'application/json'},
-        body: JSON.stringify({game:CREATE.game, mode:cond.text||cond, stake:stake, challengeType:CREATE.challengeType, condition:cond.text||cond, expiryHours:expiryHours, creatorWins:0})
-      });
-      var data = await res.json();
-      if (data.error || data.errors) { toast(data.error || data.errors.join(', '),'error'); return; }
-      await syncBalance();
-      DUELS.push(data.challenge); saveDuels();
-      showQRModal(data.challenge, data.code);
-      toast('Duel locked on server!','success');
-    } catch(e) { toast('Server error','error'); }
-  } else {
-    var duel = {id:'D'+Date.now(), creator:U.addr, opponent:null, game:CREATE.game, challengeType:CREATE.challengeType, condition:cond, stake:stake, totalPot:stake*2, expiry:Date.now()+expiry, createdAt:Date.now(), status:'pending', creatorResult:null, opponentResult:null, winner:null};
-    DUELS.push(duel); saveDuels();
-    U.balance -= stake; U.escrow += stake; saveProfile();
-    var code = btoa(JSON.stringify({id:duel.id,creator:duel.creator,game:duel.game,challengeType:duel.challengeType,condition:duel.condition,stake:duel.stake,expiry:duel.expiry,createdAt:duel.createdAt}));
-    refreshAll();
-    showQRModal(duel, code);
-    toast('Duel locked (local mode).','info');
-  }
+  try {
+    var res = await authFetch('/api/challenges', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({game:CREATE.game, mode:cond.text||cond, stake:stake, challengeType:CREATE.challengeType, condition:cond.text||cond, expiryHours:expiryHours, creatorWins:0})
+    });
+    var data = await res.json();
+    if (data.error || data.errors) { toast(data.error || data.errors.join(', '),'error'); return; }
+    await syncBalance();
+    DUELS.push(data.challenge); saveDuels();
+    showQRModal(data.challenge, data.code);
+    toast('Duel posted. Your entry is in escrow.','success');
+  } catch(e) { toast('Server error','error'); }
 }
 
 function copyCode() {
@@ -1710,113 +1719,74 @@ function copyCode() {
 }
 
 // ── ACCEPT ────────────────────────────────────────────
-function renderAcceptFairness(them) {
-  var me = buildMyProfile();
-  var fair = calcFairness(me, them);
-  var fp = document.getElementById('ap-fair-predict');
-  if (fp) {
-    fp.innerHTML = '<div style="text-align:left"><div style="font-size:10px;letter-spacing:.08em;color:var(--txt3);font-weight:700">' + (U.name || 'YOU') + '</div><div style="font-size:26px;font-weight:900;color:#00FF87;margin-top:2px">'+fair.pctYou+'%</div></div>'
-      + '<div style="text-align:center;padding:4px 12px;background:#13141a;border:1px solid #262a36;border-radius:999px"><div style="font-size:10px;font-weight:800;color:#fff;padding:2px 8px;background:#7000FF;border-radius:999px;letter-spacing:.04em;margin-bottom:4px">'+fair.diff+'</div><div style="font-size:10px;color:var(--txt3)">vs</div></div>'
-      + '<div style="text-align:right"><div style="font-size:10px;letter-spacing:.08em;color:var(--txt3);font-weight:700">' + (them && them.name || 'OPPONENT') + '</div><div style="font-size:26px;font-weight:900;color:var(--purple-txt);margin-top:2px">'+fair.pctThem+'%</div></div>';
-  }
-  var fs = document.getElementById('ap-fair-score');
-  if (fs) {
-    var fcls = fair.overall >= 85 ? 'hi' : (fair.overall >= 65 ? 'lo' : 'very-lo');
-    var numCls = (fcls === 'hi') ? '#00FF87' : (fcls === 'lo' ? '#f0c832' : '#FF4D5E');
-    fs.innerHTML = '<div><span style="font-size:10px;color:var(--txt3);letter-spacing:.1em;font-weight:700">OVERALL FAIRNESS</span> <span style="font-size:18px;font-weight:900;color:'+numCls+';margin-left:6px">'+fair.overall+'%</span></div>'
-      + '<div style="font-size:11px;color:#8692ad;max-width:60%;text-align:right;line-height:1.3">'+fair.rec+'</div>';
-  }
-  var fbk = document.getElementById('ap-fair-breakdown');
-  if (fbk) {
-    fbk.innerHTML = fair.breakdown.map(function(b){
-      var cls = b.v >= 85 ? 'color:#00FF87' : (b.v >= 65 ? 'color:#f0c832' : 'color:#FF4D5E');
-      return '<div style="background:#13141a;border:1px solid #262a36;border-radius:8px;padding:8px 10px">'
-        + '<div style="font-size:9px;color:var(--txt3);font-weight:700;letter-spacing:.06em;margin-bottom:4px">'+b.k+'</div>'
-        + '<div style="font-size:14px;font-weight:900;'+cls+'">'+b.v+'%</div>'
-        + '<div style="height:3px;background:#262a36;border-radius:999px;margin-top:6px;overflow:hidden"><div style="height:100%;width:'+Math.min(100,b.v)+'%;background:linear-gradient(90deg,#00FF87,#7000FF);border-radius:999px"></div></div>'
-        + '</div>';
-    }).join('');
-  }
+/* Read a challenge code (base64url of {id,sig}, as /api/challenges returns it)
+   or a bare challenge id, then show the real open challenge from the server. */
+function _codeToId(raw) {
+  raw = String(raw || '').trim();
+  if (/^CH_[\w]+$/.test(raw)) return raw;
+  try {
+    var b64 = raw.replace(/-/g, '+').replace(/_/g, '/');
+    while (b64.length % 4) b64 += '=';
+    var d = JSON.parse(atob(b64));
+    return d && d.id ? String(d.id) : null;
+  } catch (e) { return null; }
 }
 
-function previewAccept() {
-  var raw = document.getElementById('accept-input').value.trim();
-  if (!raw) { toast('Paste a code first','error'); return; }
-  var data; try { data=JSON.parse(atob(raw)); } catch(e){ toast('Invalid code','error'); return; }
-  if (Date.now()>data.expiry) { toast('This duel has expired','error'); return; }
-  if (U.addr && data.creator.toLowerCase()===U.addr.toLowerCase()) { toast("That's your own duel!",'error'); return; }
-  PENDING_ACCEPT = data;
-  var g = GAMES.find(function(x){ return x.id===data.game; })||{name:data.game,api:false};
+async function previewAccept(challengeId) {
+  var id = challengeId || _codeToId(document.getElementById('accept-input').value);
+  if (!id) { toast('Paste a challenge code first','error'); return; }
+  var c = (_boardCache || []).find(function(x){ return x.id === id; });
+  if (!c) {
+    try {
+      var r = await fetch((ARENA_CONFIG.API_BASE || '') + '/api/challenges');
+      var list = (await r.json()).challenges || [];
+      c = list.find(function(x){ return x.id === id; });
+    } catch (e) {}
+  }
+  if (!c) { toast('This challenge is no longer open','error'); return; }
+  if (U.userId && c.creatorUserId === U.userId) { toast('That is your own challenge','error'); return; }
+  PENDING_ACCEPT = c;
+  var esc = window._escAcc || function(x){ return String(x == null ? '' : x); };
+  var g = GAMES.find(function(x){ return x.id===c.game; })||{name:c.game};
   var rows = [
-    ['Game', g.name + (g.api?' <span style="color:var(--acc);font-size:11px">✓ API verified</span>':'')],
-    ['Duel type', {outcome:'Match Outcome',target:'Performance Target',custom:'Custom Condition'}[data.challengeType]||data.challengeType],
-    ['Condition', condLabel(data)],
-    ['Duelist', '<span style="font-family:monospace;font-size:12px">'+data.creator+'</span>'],
-    ['Expires', timeUntil(data.expiry)],
+    ['Game', esc(g.name)],
+    ['Mode', esc(c.modeLabel || 'Duel') + (c.modeVerifiable ? ' <span style="color:var(--acc);font-size:11px">auto-verified</span>' : '')],
+    ['Terms', esc(c.condition || c.mode || '')],
+    ['Opponent', esc(c.creatorName || 'Player')],
+    ['Expires', timeUntil(c.expiresAt)],
   ];
   document.getElementById('accept-preview-rows').innerHTML = rows.map(function(r){
     return '<div class="preview-row"><span class="preview-lbl">'+r[0]+'</span><span class="preview-val">'+r[1]+'</span></div>';
   }).join('');
-  var isFree = !!data.free || (data.stake||0)===0;
-  var pot = document.getElementById('ap-pot');
+  document.getElementById('ap-stake').style.color = '';
+  document.getElementById('ap-stake').textContent = c.stake.toLocaleString() + ' CLU';
+  document.getElementById('ap-usd').textContent = 'Pot ' + (c.stake*2).toLocaleString() + ' CLU, 2.5% fee on the pot';
   var potLabel = document.getElementById('ap-pot-label');
-  if (pot) pot.classList.toggle('free', isFree);
-  if (isFree) {
-    document.getElementById('ap-stake').textContent = 'FREE · No stake';
-    document.getElementById('ap-stake').style.color = '#b88aff';
-    document.getElementById('ap-usd').textContent = 'Bragging rights only';
-    if (potLabel) potLabel.textContent = 'Friendly duel · escrow is waived, verification is kept';
-  } else {
-    document.getElementById('ap-stake').style.color = '';
-    document.getElementById('ap-stake').textContent = data.stake.toLocaleString() + ' CLU';
-    document.getElementById('ap-usd').textContent = '≈ $'+(data.stake*CLU_USD).toFixed(2);
-    if (potLabel) potLabel.textContent = 'Your Entry (locked in neutral escrow)';
-  }
-  try {
-    var them = PLAYER_PROFILES[data.creator] || { name: data.creator, game: data.game, official:{ wr:50, matches:0 }, clutch:{ rating:700, form:50, opponentQ:50, consistency:50, pressure:50 }, dna:[], recentForm:['W','L','W','L','W','W','L','L','W','W'], opponent:{ wrRaw:'Unknown',avgTier:'Unknown',difficulty:'Unknown'} };
-    them.name = data.creator;
-    renderAcceptFairness(them);
-  } catch(e) { console.warn(e); }
+  if (potLabel) potLabel.textContent = 'Your entry (held in escrow until the result)';
   document.getElementById('accept-preview-panel').style.display = 'block';
   document.getElementById('accept-preview-panel').scrollIntoView({behavior:'smooth'});
 }
 
 async function confirmAccept() {
   var d = PENDING_ACCEPT; if (!d) return;
-  var isFree = !!d.free || (d.stake||0)===0;
-  if (!isFree) {
-    if (!_authToken) { toast('Sign in to play for real','info'); return; }
-    if (!U.addr||U.via==='guest') { toast('Sign in to accept paid duels','error'); return; }
-    if (d.stake > U.balance) { toast('Not enough CLU — get tokens first','error'); goTo('tokens'); return; }
-  } else {
-    if (!U.addr) { toast('Please sign in (or browse as guest) to accept free duels','info'); return; }
-  }
-
-  if (_authToken && d.id) {
-    try {
-      var res = await authFetch('/api/challenges?accept', {
-        method:'POST', headers:{'Content-Type':'application/json'},
-        body: JSON.stringify({challengeId: d.id})
-      });
-      var data = await res.json();
-      if (data.error) { toast(data.error,'error'); return; }
-      await syncBalance();
-      DUELS.push(data.challenge || {id:d.id,creator:d.creator,opponent:U.addr,game:d.game,challengeType:d.challengeType,condition:d.condition,stake:d.stake,totalPot:d.stake*2,status:'active',acceptedAt:Date.now()});
-      saveDuels();
-    } catch(e) { toast('Server error','error'); return; }
-  } else {
-    var ex = DUELS.find(function(x){ return x.id===d.id; });
-    if (ex) { ex.opponent=U.addr; ex.status='active'; ex.acceptedAt=Date.now(); }
-    else { DUELS.push({id:d.id,creator:d.creator,opponent:U.addr,game:d.game,challengeType:d.challengeType,condition:d.condition,stake:d.stake,totalPot:d.stake*2,expiry:d.expiry,createdAt:d.createdAt,acceptedAt:Date.now(),status:'active',creatorResult:null,opponentResult:null,winner:null}); }
-    saveDuels();
-    U.balance -= d.stake; U.escrow += d.stake; saveProfile();
-  }
+  if (!_authToken || !U.addr || U.via === 'guest') { toast('Sign in to accept a duel','info'); return; }
+  if (d.stake > U.balance) { toast('Not enough CLU, get tokens first','error'); goTo('tokens'); return; }
+  try {
+    var res = await authFetch('/api/challenges?accept', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({challengeId: d.id})
+    });
+    var data = await res.json();
+    if (!res.ok || data.error) { toast(data.error || 'Could not accept','error'); return; }
+    await syncBalance();
+    if (data.challenge) { DUELS.push(data.challenge); saveDuels(); }
+  } catch(e) { toast('Server error','error'); return; }
 
   PENDING_ACCEPT = null;
   document.getElementById('accept-input').value = '';
   document.getElementById('accept-preview-panel').style.display = 'none';
   refreshAll();
-  toast('Duel accepted! Tokens locked. Go play!','success');
+  toast('Duel accepted. Your entry is in escrow, go play.','success');
   goTo('duels');
 }
 
@@ -1833,13 +1803,18 @@ function _pinHash(s) {
   var h = 5381; for (var i=0;i<s.length;i++) h = (((h<<5)+h)+s.charCodeAt(i)) & 0x7fffffff;
   return h.toString(36) + '_' + s.split('').reverse().map(function(c){return String.fromCharCode((c.charCodeAt(0)+17)%127);}).join('').replace(/\W/g,'x').slice(0,8);
 }
-function _hasPinSet(){ try { return !!localStorage.getItem('clutch_pin_hash'); } catch(e){ return false; } }
+// The passcode was a client-side gate (a hash in localStorage) presented as
+// protecting the wallet. The server never checked it, so it protected nothing,
+// and it blocked a new player's first duel behind an extra setup step. The real
+// gates are server-side: the session token, age and ban checks, and escrow.
+// These two stubs keep every older caller on the direct path.
+function _hasPinSet(){ return true; }
 function _setPin(digits){ try { localStorage.setItem('clutch_pin_hash',_pinHash(digits)); localStorage.setItem('clutch_pin_created', String(Date.now())); return true; } catch(e){ return false; } }
 function _verifyPin(digits){ try { return localStorage.getItem('clutch_pin_hash') === _pinHash(digits); } catch(e){ return false; } }
 function _clearPin(){ try { localStorage.removeItem('clutch_pin_hash'); localStorage.removeItem('clutch_pin_created'); } catch(e){} }
 
 var _pinUnlockUntil = 0;
-function _isPinUnlocked(){ return Date.now() < _pinUnlockUntil; }
+function _isPinUnlocked(){ return true; }
 function _pinUnlockSession(ms){ _pinUnlockUntil = Date.now() + (ms||120000); }
 
 /* ===== PIN Setup (2-step: create + confirm) ===== */
@@ -2043,11 +2018,6 @@ function pcmSetMode(mode, el){
   }
 }
 
-/* Patch seedBoardChallenges + renderBoard to include paid/free flag */
-if (typeof _boardSeed !== 'undefined') {
-  _boardSeed.forEach(function(c){ if (c.stake===0) c.free = true; else c.free = false; });
-}
-
 /* Patch openPostChallengeModal to set default */
 if (typeof openPostChallengeModal === 'function') {
   var _origOPCM = openPostChallengeModal;
@@ -2060,42 +2030,6 @@ if (typeof openPostChallengeModal === 'function') {
       var inp = document.getElementById('board-stake'); if (inp) inp.disabled=false;
       CREATE.postMode = 'paid';
     }, 40);
-  };
-}
-
-/* Patch postChallenge to honor free */
-if (typeof postChallenge === 'function') {
-  var _origPC = postChallenge;
-  postChallenge = function(){
-    if (CREATE.postMode === 'free') {
-      CREATE.stake = 0;
-      var g = document.getElementById('board-game');
-      var mode = document.getElementById('board-mode') || {value:'1v1 friendly'};
-      var exp = document.getElementById('board-expiry') || {value:'24'};
-      var ch = { id:'CB'+(Date.now().toString(36)).toUpperCase(),
-        game: (g&&g.value) || 'valorant',
-        challengeType: 'outcome',
-        condition:{ type:'outcome', value:(mode&&mode.value)||'Free friendly duel' },
-        stake: 0,
-        free: true,
-        creator: (U&&U.addr) || 'You',
-        created: Date.now(),
-        expiresAt: Date.now() + (parseInt((exp&&exp.value)||'24',10)*3600000),
-        title: (mode&&mode.value) || 'Friendly warm-up',
-        description: 'No-stake bragging-rights duel · both sides play for pride.',
-        format: 'Best of 1',
-        participants: 1,
-        maxParticipants: 2,
-        isNew: true
-      };
-      _boardCache.unshift(ch);
-      try { localStorage.setItem('clutch_board_cache', JSON.stringify(_boardCache)); } catch(e){}
-      closeModal('post-challenge-modal');
-      renderBoard();
-      toast('Free duel posted on the Duel Board','success');
-      return;
-    }
-    _origPC.apply(this, arguments);
   };
 }
 
@@ -2178,96 +2112,6 @@ if (typeof wizCustomStake === 'function') {
     document.getElementById('wiz-pot-calc').style.display = 'grid';
     document.getElementById('fee-dropdown').style.display = 'block';
     _origWCS(v);
-  };
-}
-
-/* ===== BOARD PAID/FREE FILTER ===== */
-var _boardPaidFilter = 'all';
-/* Inject filter buttons HTML into cb-toolbar */
-(function injectToolbarFilters(){
-  function doInject(){
-    var left = document.querySelector('.cb-tb-left');
-    if (!left || left.querySelector('.cb-mode-group')) return;
-    var wrap = document.createElement('div');
-    wrap.className = 'cb-mode-group';
-    wrap.innerHTML =
-      '<button class="cb-mode-pill active all" data-mode="all" onclick="setBoardPaidFilter(\'all\',this)"><span class="d"></span>All</button>' +
-      '<button class="cb-mode-pill paid" data-mode="paid" onclick="setBoardPaidFilter(\'paid\',this)"><span class="d"></span>Paid</button>' +
-      '<button class="cb-mode-pill free" data-mode="free" onclick="setBoardPaidFilter(\'free\',this)"><span class="d"></span>Free</button>';
-    left.insertBefore(wrap, left.firstChild);
-  }
-  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', doInject);
-  else setTimeout(doInject, 200);
-})();
-function setBoardPaidFilter(mode, el){
-  _boardPaidFilter = mode;
-  var all = document.querySelectorAll('.cb-mode-pill');
-  all.forEach(function(b){ b.classList.remove('active','all','paid','free'); b.classList.add(b.dataset.mode); });
-  if (el) { el.classList.add('active'); el.classList.add(el.dataset.mode); }
-  applyBoardFilters();
-}
-
-/* ===== Patch applyBoardFilters & renderBoard to honor free tag + visual mark ===== */
-if (typeof applyBoardFilters === 'function') {
-  var _origABF = applyBoardFilters;
-  applyBoardFilters = function(){
-    if (typeof _origABF === 'function') _origABF();
-  };
-}
-/* Patch applyBoardFilters POST: use _origABF + inject paid/free filter + pass list explicitly */
-(function patchABFPaidFree(){
-  if (typeof _origABF !== 'function' || typeof _origABF === 'undefined') return;
-  var originalPost = applyBoardFilters;
-  applyBoardFilters = function(){
-    _origABF();
-    // Re-derive filter output from _boardCache the same way original ABF did
-    var out = _boardCache.slice();
-    if (_boardFilter !== 'all') out = out.filter(function(c){ return c.game === _boardFilter; });
-    var vOnly = document.getElementById('cb-verified');
-    if (vOnly && vOnly.checked) out = out.filter(function(c){ return PLAYER_PROFILES[c.creator] && PLAYER_PROFILES[c.creator].verified; });
-    var sortSel = document.getElementById('cb-sort');
-    var sortBy = (sortSel && sortSel.value) || 'newest';
-    if (sortBy === 'highest') out.sort(function(a,b){ return b.stake - a.stake; });
-    else if (sortBy === 'expiring') out.sort(function(a,b){ return a.expiresAt - b.expiresAt; });
-    else out.sort(function(a,b){ return (b.created||0)-(a.created||0); });
-    if (_boardPaidFilter === 'paid') out = out.filter(function(c){ return !c.free && (c.stake||0)>0; });
-    else if (_boardPaidFilter === 'free') out = out.filter(function(c){ return !!c.free || (c.stake||0)===0; });
-    renderBoard(out);
-  };
-})();
-
-/* Patch seedBoardChallenges to include 2x free duels in seed */
-if (typeof _seedBoardChallenges === 'function') {
-  var _origSeed = _seedBoardChallenges;
-  _seedBoardChallenges = function(){
-    var r = _origSeed();
-    if (Array.isArray(r) && r.length) {
-      // Mark first two as free examples (shadowtitan + cyberghost) and add dedicated free entries
-      var free1 = Object.assign({}, r[2] || r[0], { id: 'CBF'+Date.now().toString(36).slice(-6).toUpperCase()+'1', free:true, stake:0,
-        title:'Warm-up session · no stake', description:'Bragging rights only. First to 2 wins in VALORANT unrated.',
-        creator:'ShadowTitan', participants:1, maxParticipants:2, isNew:false });
-      var free2 = Object.assign({}, r[6] || r[1], { id: 'CBF'+Date.now().toString(36).slice(-6).toUpperCase()+'2', free:true, stake:0,
-        title:'Friendly 1v1 · pride only', description:'No CLU. No pressure. Just let\'s see who plays better.',
-        creator:'CyberGhost', game:'cs2', participants:1, maxParticipants:2, isNew:true });
-      r.push(free1); r.push(free2);
-    }
-    return r;
-  };
-  if (typeof _boardSeed !== 'undefined') {
-    try {
-      var x = _seedBoardChallenges();
-      if (Array.isArray(x) && x.length) { _boardCache = x; }
-    } catch(e){}
-  }
-}
-
-/* Patch enterApp() to prompt PIN setup if not set */
-if (typeof enterApp === 'function') {
-  var _origEA = enterApp;
-  enterApp = function(){
-    _origEA.apply(this, arguments);
-    if (!_hasPinSet() && U.via !== 'guest') { setTimeout(openPinSetup, 900); }
-    if (!_hasPinSet() && U.via === 'guest') { /* guests can skip */ }
   };
 }
 
@@ -2398,7 +2242,6 @@ function calcFairness(you, them) {
 // -- CLUTCH V2: BOARD STATE + MOCK DATA -----------------
 var _boardFilter = 'all';
 var _boardView = 'grid';
-var _boardSeed = null;
 var _myCohort = null; // fetched lazily, see _ensureMyCohort()
 
 // Skill cohort colors — soft sort/display only, not a hard rank.
@@ -2412,19 +2255,6 @@ function _ensureMyCohort() {
     .catch(function(){ return null; });
 }
 
-function _seedBoardChallenges() {
-  var now = Date.now();
-  return [
-    { id:'cb-nova',     game:'valorant',   isNew:true,  creator:'NovaStriker',     crRankShort:'Diamond II',   stake:5000,  format:'Best of 3', modeShort:'Bo3', title:'5 kills in a row? Prove it.',   desc:'First to get 5 kills in a row wins.',                       created:now-120000,    expiresAt:now+86400000,  participants:'1 / 2' },
-    { id:'cb-frag',     game:'cs2',        isNew:true,  creator:'FragMaster',      crRankShort:'Gold Nova III',stake:2500,  format:'Best of 1', modeShort:'Bo1', title:'AWP only, no scopes only.',   desc:'No scope AWP kills only. Most kills in 10 rounds.',        created:now-300000,    expiresAt:now+82800000,  participants:'1 / 2' },
-    { id:'cb-shadow',   game:'lol',        isNew:true,  creator:'ShadowTitan',     crRankShort:'Platinum I',   stake:3000,  format:'Best of 1', modeShort:'Bo1', title:'1v1 Mid lane. No excuses.',    desc:'First blood + 100 CS by 10 min wins.',                      created:now-600000,    expiresAt:now+79200000,  participants:'1 / 2' },
-    { id:'cb-viper',    game:'fortnite',   isNew:false, creator:'ViperLynx',       crRankShort:'Elite',        stake:1000,  format:'First to 3', modeShort:'Ft3', title:'Build fight to the death.',    desc:'Box fight 1v1. First to 3 wins.',                          created:now-720000,    expiresAt:now+75600000,  participants:'1 / 2' },
-    { id:'cb-kii',      game:'apex',       isNew:false, creator:'KiiTheorem',      crRankShort:'Diamond IV',   stake:2000,  format:'Best of 3', modeShort:'Bo3', title:'2v2 Arenas duel.',        desc:'You + a friend vs us. Best of 3. Let\'s see it.',           created:now-1080000,   expiresAt:now+72000000,  participants:'2 / 4' },
-    { id:'cb-wiz',      game:'rl',         isNew:false, creator:'ClutchWizard',    crRankShort:'Champion II',  stake:1500,  format:'Best of 3', modeShort:'Bo3', title:'1v1 for the rank.',            desc:'Winner takes the rank. No rematches.',                      created:now-1500000,   expiresAt:now+68400000,  participants:'1 / 2' },
-    { id:'cb-ghost',    game:'dota2',      isNew:false, creator:'CyberGhost',      crRankShort:'Ancient II',   stake:2000,  format:'Best of 1', modeShort:'Bo1', title:'Mid only or lose.',            desc:'Mid lane only. 1v1. No jungle, no help.',                   created:now-1920000,   expiresAt:now+64800000,  participants:'1 / 2' },
-    { id:'cb-owl',      game:'cod',        isNew:false, creator:'NightOwl_X',      crRankShort:'Crimson I',    stake:1000,  format:'Best of 1', modeShort:'Bo1', title:'Sniper only. Quickscopes.',    desc:'First to 20 kills wins. Search & Destroy.',                 created:now-2400000,   expiresAt:now+61200000,  participants:'1 / 2' }
-  ];
-}
 function _initToPillsColor(g) {
   var map = { valorant:'#ff4655', lol:'#5687c7', dota2:'#e68c80', clashroyale:'#7cbcf0', brawlstars:'#f2d768',
               cs2:'#e7b877', fortnite:'#ff6aac', apex:'#ff8591', ow2:'#ffbd55', rl:'#6ab0ff',
@@ -2478,19 +2308,8 @@ function initBoard() {
 function loadBoard() {
   var base = ARENA_CONFIG.API_BASE || '';
   var done = function(data) {
-    if (data && data.challenges && data.challenges.length) {
-      _boardCache = data.challenges;
-    } else {
-      var stored = [];
-      try { stored = JSON.parse(localStorage.getItem('clutch_board') || '[]'); } catch(e) { stored = []; }
-      stored = stored.filter(function(c) { return c.expiresAt > Date.now() && c.status === 'open'; });
-      if (stored.length) {
-        _boardCache = stored;
-      } else {
-        if (!_boardSeed) _boardSeed = _seedBoardChallenges();
-        _boardCache = _boardSeed.slice();
-      }
-    }
+    // Only real open challenges from the server. An empty board says so.
+    _boardCache = (data && data.challenges) || [];
     applyBoardFilters();
     // Skill cohort loads lazily/async; re-render once known so same-cohort
     // duels can move up without blocking the initial board paint.
@@ -2505,14 +2324,14 @@ function applyBoardFilters() {
   }
   var vOnly = document.getElementById('cb-verified');
   if (vOnly && vOnly.checked) {
-    out = out.filter(function(c){ return PLAYER_PROFILES[c.creator] && PLAYER_PROFILES[c.creator].verified; });
+    out = out.filter(function(c){ return !!c.modeVerifiable; });
   }
   var sortSel = document.getElementById('cb-sort');
   var sortBy = (sortSel && sortSel.value) || 'newest';
   var within = function(a,b) {
     if (sortBy === 'highest') return b.stake - a.stake;
     if (sortBy === 'expiring') return a.expiresAt - b.expiresAt;
-    return (b.created||0) - (a.created||0);
+    return (b.createdAt||b.created||0) - (a.createdAt||a.created||0);
   };
   // Soft bias: same-cohort-as-you duels float up first (never hides others —
   // it's a sort preference, not a matchmaking restriction).
@@ -2557,31 +2376,27 @@ function renderBoard(challenges) {
   var perPage = 8;
   var totalPages = Math.max(1, Math.ceil(challenges.length / perPage));
   challenges = challenges.slice(0, perPage);
+  var esc = window._escAcc || function(x){ return String(x == null ? '' : x).replace(/[&<>"']/g, function(ch){ return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]; }); };
   list.innerHTML = challenges.map(function(c) {
-    var prof = PLAYER_PROFILES[c.creator] || { verified:false };
-    var init = (c.creator || '?').charAt(0);
+    var name = c.creatorName || 'Player';
+    var init = esc(name.charAt(0).toUpperCase());
     var avVar = 'v-' + c.game;
     var pillClr = _initToPillsColor(c.game);
     var gameDisp = _initToDisplayName(c.game);
     var shortG = _initToShortName(c.game);
-    var isOwn = U.addr && c.creator === U.addr;
+    var isOwn = !!(U.userId && c.creatorUserId === U.userId);
     var cohort = c.creatorCohort || 'Unranked';
     var cohortClr = COHORT_COLORS[cohort] || 'var(--txt3)';
     var cohortSameAsMe = _myCohort && cohort === _myCohort;
-    var cohortTag = '<span style="color:'+cohortClr+';font-weight:700'+(cohortSameAsMe?';text-decoration:underline':'')+'" title="Skill cohort — activity-based, not a hard match requirement">'+cohort+'</span>';
-    var time = _timeAgo(c.created || Date.now());
-    var parts = c.participants || '1 / 2';
-    var verifiedBadge = prof.verified ? '<div class="cb-avatar-check">✓</div>' : '';
-    var isNew = c.isNew ? '<div class="cb-new-badge">New</div>' : '';
-    var rankShort = c.crRankShort || '';
-    var free = !!c.free || (c.stake||0)===0;
-    var typeTag = free
-      ? '<div class="cb-type-tag free"><span class="ico">★</span>FREE</div>'
-      : '<div class="cb-type-tag paid"><span class="ico">$</span>CLU STAKE</div>';
-    var stakeBlock = free
-      ? '<div class="cb-stake" style="color:#b88aff"><span class="clu-ico" style="background:#7000FF;color:#fff">★</span> <span style="color:#b88aff">0</span> <span style="color:var(--txt3);font-weight:700">· No escrow</span></div>'
-      : '<div class="cb-stake"><span class="clu-ico">◈</span> '+(c.stake||0).toLocaleString()+' <span style="color:var(--txt3);font-weight:700">CLU</span></div>';
-    return '<div class="cb-card '+(free?'free':'paid')+'" data-id="'+c.id+'">'
+    var cohortTag = '<span style="color:'+cohortClr+';font-weight:700'+(cohortSameAsMe?';text-decoration:underline':'')+'" title="Skill cohort, activity-based, not a hard match requirement">'+cohort+'</span>';
+    var time = _timeAgo(c.createdAt || Date.now());
+    var left = Math.max(0, (c.expiresAt||0) - Date.now());
+    var hoursLeft = Math.floor(left / 3600000);
+    var expires = hoursLeft >= 1 ? hoursLeft + 'h left' : 'under 1h left';
+    var title = c.modeLabel || 'Duel';
+    var desc = (c.condition && c.condition !== c.modeLabel) ? c.condition : (c.modeVerifiable ? 'Result read from the game API.' : 'Both players report the score.');
+    var checkSvg = '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 12l5 5L20 7"/></svg>';
+    return '<div class="cb-card paid" data-id="'+esc(c.id)+'">'
       + '<div class="cb-card-bg"></div>'
       + '<div class="cb-card-inner">'
       +   '<div class="cb-card-hdr">'
@@ -2589,40 +2404,29 @@ function renderBoard(challenges) {
       +       '<div class="cb-game-dot" style="background:'+pillClr+'">'+shortG+'</div> '
       +       gameDisp
       +     '</div>'
-      +     isNew
-      +     typeTag
+      +     (c.modeVerifiable ? '<div class="cb-type-tag paid" title="Result read from the game API">'+checkSvg+' Auto-verified</div>' : '')
       +   '</div>'
       +   '<div class="cb-player-row">'
-      +     '<div class="cb-avatar '+avVar+'">'+init+verifiedBadge+'</div>'
+      +     '<div class="cb-avatar '+avVar+'">'+init+'</div>'
       +     '<div class="cb-player-info">'
-      +       '<div class="cb-player-name">'+c.creator
-      +         (prof.verified ? ' <svg width="12" height="12" viewBox="0 0 24 24" fill="#00FF87"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>' : '')
-      +       '</div>'
-      +       '<div class="cb-player-rank"><span class="rnk-gem" style="color:'+pillClr+'">'+_rankIcon(c.game)+'</span> '+rankShort+(rankShort?' · ':'')+cohortTag+'</div>'
+      +       '<div class="cb-player-name">'+esc(name)+'</div>'
+      +       '<div class="cb-player-rank"><span class="rnk-gem" style="color:'+pillClr+'">'+_rankIcon(c.game)+'</span> '+cohortTag+'</div>'
       +     '</div>'
       +   '</div>'
-      +   '<div class="cb-title-row">'+c.title+'</div>'
-      +   '<div class="cb-desc-row">'+(c.desc || '')+'</div>'
+      +   '<div class="cb-title-row">'+esc(title)+'</div>'
+      +   '<div class="cb-desc-row">'+esc(desc)+'</div>'
       +   '<div class="cb-meta-row">'
       +     '<div class="cb-meta-left">'
-      +       stakeBlock
-      +       '<div class="cb-format">'+((window._escAcc||String)(c.format || c.modeLabel || c.modeShort || c.mode || ''))
-      +         (c.modeVerifiable ? ' <span style="color:var(--acc);font-size:10px;font-weight:800" title="Result auto-verified via game API">✓ VERIFIED</span>' : '')
-      +       '</div>'
+      +       '<div class="cb-stake">'+(c.stake||0).toLocaleString()+' <span style="color:var(--txt3);font-weight:700">CLU entry</span></div>'
+      +       '<div class="cb-format">Pot '+((c.stake||0)*2).toLocaleString()+' CLU</div>'
       +     '</div>'
       +   '</div>'
       +   '<div class="cb-action-row">'
       +     (isOwn
-        ? '<button class="cb-accept-btn c-'+c.game+'" onclick="cancelChallenge(\''+c.id+'\')" style="filter:grayscale(.6)">Cancel</button>'
-        : '<button class="cb-accept-btn c-'+c.game+'" onclick="acceptBoardChallenge(\''+c.id+'\')">Accept Duel</button>')
-      +     '<button class="cb-chat-btn" onclick="toast(\'Direct chat coming soon\',\'info\')" title="Message player">'
-      +       '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>'
-      +     '</button>'
+        ? '<button class="cb-accept-btn c-'+c.game+'" onclick="cancelChallenge(\''+esc(c.id)+'\')" style="filter:grayscale(.6)">Cancel</button>'
+        : '<button class="cb-accept-btn c-'+c.game+'" onclick="acceptBoardChallenge(\''+esc(c.id)+'\')">Accept duel</button>')
       +   '</div>'
-      +   '<div class="cb-foot">'
-      +     '<span>'+time+'</span>'
-      +     '<span class="cb-part"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg> '+parts+'</span>'
-      +   '</div>'
+      +   '<div class="cb-foot"><span>'+time+'</span><span>'+expires+'</span></div>'
       + '</div></div>';
   }).join('');
   if (pag) {
@@ -2836,153 +2640,33 @@ async function renderProfileStats() {
   }
 }
 
+// Profile record: only what the server counted from settled duels.
+var _profStatsAt = 0;
 function renderProfile() {
   var card = document.getElementById('profile-stat-card');
   if (!card) return;
-
-  var prof = buildMyProfile();
   var nameEl = document.getElementById('prof-name-input');
   if (nameEl && !nameEl.value && U.name) nameEl.value = U.name;
-
   var vBadge = document.getElementById('prof-verified-badge');
-  if (vBadge) vBadge.style.display = prof.verified ? 'inline-flex' : 'none';
-  var gd = document.getElementById('prof-game-dot');
-  if (gd) { gd.style.background = _initToPillsColor(prof.game); }
-  var gn = document.getElementById('prof-game-name');
-  if (gn) gn.textContent = _initToDisplayName(prof.game);
-  var ri = document.getElementById('prof-rank-inline');
-  if (ri) ri.textContent = prof.official.rank;
-
-  var st = document.getElementById('prof-status-el');
-  if (st) {
-    st.textContent = prof.online ? prof.status : 'Offline';
-    st.className = 'ps-status ' + (prof.online ? 'online' : '');
-    if (!prof.online) { st.style.background='rgba(134,146,173,.08)'; st.style.color='#8692ad'; st.style.border='1px solid #262a36'; }
-  }
-
-  var cs = document.getElementById('pr-clutch-score');
-  if (cs) cs.innerHTML = prof.clutch.rating + '<span class="ps-rn-max"> / 1000</span>';
-  var pp = document.getElementById('pr-pct');
-  if (pp) pp.textContent = prof.clutch.percentile;
-
-  var conf = prof.clutch.conf || 'medium';
-  var confLabel = ({high:'HIGH CONFIDENCE', medium:'MEDIUM CONFIDENCE', low:'LOW CONFIDENCE', insuf:'INSUFFICIENT DATA'})[conf] || 'MEDIUM CONFIDENCE';
-  var confMatches = (prof.clutch.confMatches||0).toLocaleString() + ' VERIFIED MATCHES';
-  var csEl = document.getElementById('pr-conf-state');
-  if (csEl) { csEl.className = 'ps-conf-state ' + (conf === 'insuf' ? 'insuf' : conf); csEl.textContent = confLabel; }
-  var ccEl = document.getElementById('pr-conf-count');
-  if (ccEl) ccEl.textContent = confMatches;
-  var cfEl = document.getElementById('pr-conf-fill');
-  if (cfEl) cfEl.className = 'ps-conf-fill ' + (conf === 'insuf' ? 'low' : conf);
-
-  var p1 = document.getElementById('pr-off-rank'); if (p1) p1.textContent = prof.official.rank;
-  var p2 = document.getElementById('pr-off-season'); if (p2) p2.textContent = prof.official.seasonAct || 'Season';
-  var p3 = document.getElementById('pr-wr-off'); if (p3) p3.textContent = prof.official.wr + '%';
-  var p4 = document.getElementById('pr-matches-off'); if (p4) p4.textContent = (prof.official.matches||0).toLocaleString();
-
-  var rrTxt = (prof.official.rr!=null?'RR':prof.official.lp!=null?'LP':'MMR');
-  var rrVal = (prof.official.rr!=null?prof.official.rr:prof.official.lp!=null?prof.official.lp:prof.official.mmr||0);
-  var o5 = document.getElementById('oc-off-rank'); if (o5) o5.textContent = prof.official.rank + ' · ' + rrVal + ' ' + rrTxt;
-  var o1 = document.getElementById('oc-off-wr'); if (o1) o1.textContent = prof.official.wr + '%';
-  var o2 = document.getElementById('oc-off-matches'); if (o2) o2.textContent = (prof.official.matches||0).toLocaleString();
-  var streakEl = document.getElementById('oc-off-streak');
-  try {
-    var wins = prof.recentForm.slice(0,3).filter(function(r){return r==='W'}).length;
-    var losses = prof.recentForm.slice(0,3).filter(function(r){return r==='L'}).length;
-    if (streakEl) streakEl.textContent = (wins>losses ? wins+'W' : losses + 'L');
-  } catch(e) {}
-  var c1 = document.getElementById('oc-clutch-rank'); if (c1) c1.textContent = prof.clutch.rating + ' / 1000 · ' + prof.clutch.percentile;
-  var c2 = document.getElementById('oc-clutch-wr'); if (c2) c2.textContent = prof.clutch.adjWr + '%';
-  var c3 = document.getElementById('oc-clutch-form'); if (c3) c3.textContent = prof.clutch.form + ' / 100';
-  var c4 = document.getElementById('oc-clutch-opp'); if (c4) c4.textContent = prof.clutch.opponentQ + ' / 100';
-  var c5 = document.getElementById('oc-clutch-pres'); if (c5) c5.textContent = prof.clutch.pressure + ' / 100';
-
-  var dims = _buildDims(prof.game, prof);
-  var dimsGrid = document.getElementById('pr-dims-grid');
-  if (dimsGrid) {
-    dimsGrid.innerHTML = dims.slice(0,8).map(function(d){
-      return '<div class="ps-dim"><div class="ps-dim-k">' + d.k + '</div>'
-        + '<div class="ps-dim-v">' + d.v + '</div>'
-        + '<div class="ps-dim-bar"><div class="ps-dim-fill" style="width:'+Math.min(100,d.v)+'%"></div></div></div>';
-    }).join('');
-  }
-
-  var dnaGrid = document.getElementById('pr-dna-grid');
-  if (dnaGrid) {
-    dnaGrid.innerHTML = prof.dna.map(function(d){
-      return '<div class="ps-dna-row"><div class="ps-dna-k">' + d.k + '</div>'
-        + '<div class="ps-dna-track"><div class="ps-dna-fill" style="width:'+Math.min(100,d.v)+'%"></div></div>'
-        + '<div class="ps-dna-v">' + d.v + '</div></div>';
-    }).join('');
-  }
-
-  var formStrip = document.getElementById('pr-form-strip');
-  if (formStrip) {
-    formStrip.innerHTML = prof.recentForm.map(function(r,i){
-      var letter = r;
-      return '<div class="ps-result ' + r.toLowerCase() + '" title="Match ' + (i+1) + ': ' + (r==='W'?'Win':r==='L'?'Loss':'Draw') + '">' + letter + '</div>';
-    }).join('');
-  }
-  var formTrend = document.getElementById('pr-form-trend');
-  if (formTrend) {
-    var last5 = prof.recentForm.slice(-5);
-    var w5 = last5.filter(function(r){return r==='W'}).length;
-    var l5 = last5.filter(function(r){return r==='L'}).length;
-    var delta = w5 - l5;
-    formTrend.textContent = (delta >=0 ? '▲ ' : '▼ ') + Math.abs(delta) + ' net W/L over last 5 · trend ' + (delta>=0?'UP':'DOWN');
-    formTrend.style.color = (delta >=0 ? '#00FF87' : '#FF4D5E');
-  }
-
-  var oppGrid = document.getElementById('pr-opp-grid');
-  if (oppGrid) {
-    oppGrid.innerHTML = [
-      { lbl:'RAW WIN RATE', val: prof.official.wr + '%', sub:prof.opponent.wrRaw },
-      { lbl:'AVERAGE OPPONENT', val: prof.opponent.avgTier, sub: prof.opponent.difficulty },
-      { lbl:'OPPONENT-ADJ',   val: prof.clutch.adjWr + '%', sub:'Adjusted for quality' }
-    ].map(function(o){
-      return '<div class="ps-opp-cell"><div class="ps-opp-lbl">' + o.lbl + '</div>'
-        + '<div class="ps-opp-val">' + o.val + '</div>'
-        + '<div class="ps-opp-sub">' + o.sub + '</div></div>';
-    }).join('');
-  }
-
-  var them = PLAYER_PROFILES['NovaStriker'];
-  var fair = calcFairness(prof, them);
-  var fp = document.getElementById('pr-fair-predict');
-  if (fp) {
-    fp.innerHTML = '<div class="ps-fp-you"><div class="ps-fp-name">' + (U.name || 'YOU') + '</div><div class="ps-fp-val">' + fair.pctYou + '%</div></div>'
-      + '<div class="ps-fp-vs"><div class="ps-fp-diff">' + fair.diff + '</div><div style="font-size:10px;color:var(--txt3)">50%</div></div>'
-      + '<div class="ps-fp-them"><div class="ps-fp-name">NOVASTRIKER</div><div class="ps-fp-val">' + fair.pctThem + '%</div></div>';
-  }
-  var fs = document.getElementById('pr-fair-score');
-  if (fs) {
-    var fairClass = fair.overall >= 85 ? 'hi' : (fair.overall >= 65 ? 'lo' : 'very-lo');
-    fs.innerHTML = '<div class="ps-fair-pct">FAIRNESS <span class="'+fairClass+'">' + fair.overall + '%</span></div>'
-      + '<div class="ps-fair-label">' + fair.rec + '</div>';
-  }
-  var fbk = document.getElementById('pr-fair-brk');
-  if (fbk) {
-    fbk.innerHTML = fair.breakdown.map(function(b){
-      return '<div class="ps-fair-item"><div class="ps-fair-k">' + b.k + '</div>'
-        + '<div class="ps-fair-v"><span class="pct">' + b.v + '%</span></div>'
-        + '<div class="ps-fair-mini"><div class="ps-fair-mini-fill" style="width:'+Math.min(100,b.v)+'%"></div></div></div>';
-    }).join('');
-  }
-
-  try {
-    var winEl = document.getElementById('pr-wins');
-    var loseEl = document.getElementById('pr-losses');
-    var rateEl = document.getElementById('pr-rate');
-    if (winEl && winEl.textContent === '0') {
-      var m = prof.official.matches || 0;
-      var wr = prof.official.wr || 0;
-      var w = Math.round(m * wr / 100);
-      var l = m - w;
-      winEl.textContent = w.toLocaleString();
-      loseEl.textContent = l.toLocaleString();
-      if (rateEl) rateEl.textContent = wr + '%';
-    }
-  } catch(e) {}
+  if (vBadge) vBadge.style.display = 'none';
+  var gd = document.getElementById('prof-game-dot'); if (gd) gd.style.display = 'none';
+  var gn = document.getElementById('prof-game-name'); if (gn) gn.textContent = 'CLUTCH player';
+  if (!_authToken || Date.now() - _profStatsAt < 30000) return;
+  _profStatsAt = Date.now();
+  authFetch('/api/profile/achievements').then(function(r){ return r.ok ? r.json() : null; }).then(function(d){
+    if (!d || !d.stats) return;
+    var st = d.stats;
+    var set = function(id, v){ var el = document.getElementById(id); if (el) el.textContent = v; };
+    set('pr-played', (st.played||0).toLocaleString());
+    set('pr-wins', (st.wins||0).toLocaleString());
+    set('pr-losses', (st.losses||0).toLocaleString());
+    set('pr-rate', st.played ? st.winRate + '%' : '\u2013');
+    set('pr-best', (st.bestStreak||0).toLocaleString());
+    set('pr-verified', (st.verifiedWins||0).toLocaleString());
+    set('pr-note', st.played
+      ? 'Counted from your ' + st.played + ' settled duel' + (st.played === 1 ? '' : 's') + '. Verified wins were checked against official match data.'
+      : 'Your record counts settled duels only. Play your first duel to start it.');
+  }).catch(function(){});
 }
 (function patchRefreshProfile(){
   try {
@@ -3004,10 +2688,10 @@ function boardGameChanged() {
   if (g.api) {
     verifyEl.innerHTML = '<div style="background:rgba(0,212,110,.05);border:1px solid rgba(0,212,110,.15);border-radius:8px;padding:10px 12px;font-size:11px;color:var(--acc)">'
       + '<svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="display:inline;vertical-align:-1px"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg> '
-      + g.name+' results are auto-verified via '+g.apiName+'. No screenshots needed.</div>';
+      + g.name+' results are auto-verified via '+g.apiName+'.</div>';
   } else {
     verifyEl.innerHTML = '<div style="background:rgba(232,160,32,.05);border:1px solid rgba(232,160,32,.15);border-radius:8px;padding:10px 12px;font-size:11px;color:var(--gold)">'
-      + g.name+' requires screenshot verification. Both players must agree on outcome.</div>';
+      + g.name+' results are confirmed when both players report the same score.</div>';
   }
 }
 
@@ -3124,15 +2808,8 @@ async function acceptBoardChallenge(challengeId) {
   var integrity = getIntegrity();
   if (integrity.banned) { toast('Account suspended','error'); return; }
 
-  // Navigate to accept preview with fairness
-  var codePayload = { id:c.id, game:c.game, challengeType:'outcome', condition:{type:'outcome',value:c.format||'bo1'}, stake:c.stake, creator:c.creator, created:c.created||Date.now(), expiry:c.expiresAt||Date.now()+86400000 };
-  try { document.getElementById('accept-input').value = btoa(JSON.stringify(codePayload)); } catch(e){}
   goTo('accept');
-  setTimeout(function(){
-    try { previewAccept(); } catch(e) {}
-  }, 60);
-  // Immediate legacy push as backup (will save to DUELS if confirmed)
-  PENDING_ACCEPT = codePayload;
+  previewAccept(c.id);
 }
 
 // ── INTEGRITY SYSTEM ──────────────────────────────────
@@ -3169,7 +2846,7 @@ function openResultModal(duelId) {
     return;
   }
 
-  var role = U.addr && d.creator.toLowerCase()===U.addr.toLowerCase() ? 'creator' : 'opponent';
+  var role = _isMe(d.creatorUserId || d.creator) ? 'creator' : 'opponent';
   if (role==='creator'?d.creatorResult:d.opponentResult) { toast('Already submitted','info'); return; }
   var g = GAMES.find(function(x){ return x.id===d.game; })||{};
   _selectedResult = null; _resultDuelId = duelId; _proofDataUrl = null;
@@ -3531,7 +3208,7 @@ async function submitResult() {
   }
 
   // Fallback: local settlement for guests
-  var role = U.addr&&d.creator.toLowerCase()===U.addr.toLowerCase()?'creator':'opponent';
+  var role = _isMe(d.creatorUserId || d.creator) ? 'creator' : 'opponent';
   if (role==='creator') d.creatorResult=_selectedResult; else d.opponentResult=_selectedResult;
 
   if (d.creatorResult&&d.opponentResult) {
@@ -3558,7 +3235,7 @@ async function submitResult() {
 function settleDuelLocal(d, winnerAddr) {
   d.status='settled'; d.winner=winnerAddr; d.settledAt=Date.now();
   var net = Math.floor(d.totalPot*(1-PLATFORM_FEE));
-  var isWinner = U.addr && winnerAddr.toLowerCase()===U.addr.toLowerCase();
+  var isWinner = _isMe(winnerAddr);
   if (isWinner) {
     U.escrow -= d.stake; U.balance += net;
     saveProfile(); refreshAll();
@@ -3726,29 +3403,19 @@ function renderTokens() {
   var tpbBal = document.getElementById('tok-balance'); if (tpbBal) tpbBal.textContent = bal.toLocaleString();
   var tpbEscrow = document.getElementById('tok-escrow'); if (tpbEscrow) tpbEscrow.textContent = escrow.toLocaleString();
   var tpbPrice = document.getElementById('tpb-price'); if (tpbPrice) tpbPrice.textContent = '$' + rate.toFixed(2);
-  var tpbChange = document.getElementById('tpb-change'); if (tpbChange) tpbChange.textContent = '+2.4%';
   var tpbPortfolio = document.getElementById('tok-portfolio'); if (tpbPortfolio) tpbPortfolio.textContent = '$' + (bal*rate).toFixed(2);
-  var firstBanner = document.getElementById('first-buy-banner');
-  if (firstBanner) {
-    firstBanner.style.display = FIRST_BUY_DONE ? 'none' : 'flex';
-  }
   var br = document.getElementById('bundle-row');
   if (!br) return;
   if (typeof BUNDLES === 'undefined') { br.innerHTML = '<div style="padding:32px;color:var(--txt3)">Loading bundles…</div>'; return; }
   br.innerHTML = BUNDLES.map(function(b) {
-    var bonus = b.bonus || 0;
-    var bonusTxt = bonus > 0 ? ('+ ' + bonus.toLocaleString() + ' bonus') : ' ';
-    var badgeHtml = b.badge ? ('<div class="bc-badge ' + (b.cls||'').replace('pop','popular').replace('val','value') + '">' + b.badge + '</div>') : '';
-    var totalClu = (b.clu||0) + bonus;
+    var clu = Math.floor(b.usd / rate);
+    var badgeHtml = b.badge ? ('<div class="bc-badge popular">' + b.badge + '</div>') : '';
     return '<div class="bundle-card ' + (b.cls||'') + '" onclick="openDepositModal(\''+b.id+'\')">'
       + badgeHtml
-      + '<div class="bc-icon">' + b.icon + '</div>'
-      + '<div class="bc-name">' + b.name + '</div>'
-      + '<div class="bc-clu">' + totalClu.toLocaleString() + ' <span style="font-size:10px;font-weight:600;color:var(--txt3)">CLU</span></div>'
-      + '<div class="bc-bonus">' + bonusTxt + '</div>'
-      + '<div class="bc-price">' + b.price + '</div>'
-      + '<div class="bc-eth">Instant · Card or Crypto</div>'
-      + '<button type="button" class="bc-cta" onclick="event.stopPropagation();openDepositModal(\''+b.id+'\')">Buy now</button>'
+      + '<div class="bc-clu">' + clu.toLocaleString() + ' <span style="font-size:10px;font-weight:600;color:var(--txt3)">CLU</span></div>'
+      + '<div class="bc-price">$' + b.usd + '</div>'
+      + '<div class="bc-eth">Card or crypto</div>'
+      + '<button type="button" class="bc-cta" onclick="event.stopPropagation();openDepositModal(\''+b.id+'\')">Add $' + b.usd + '</button>'
       + '</div>';
   }).join('');
 }
@@ -3961,24 +3628,52 @@ async function runAdminMaintenance() {
 }
 
 // ── RENDER: DASHBOARD ─────────────────────────────────
-// Activity data for ticker
-var ACTIVITY_FEED = [
-  {msg:'xZerO dueled SpeedRunner on Valorant', t:'2m ago'},
-  {msg:'NightHawk vs CryptoKing — LoL match settled', t:'7m ago'},
-  {msg:'Fr0st locked 200 CLU vs Apex_Legend', t:'15m ago'},
-  {msg:'Bolt claimed 400 CLU from CS2 match', t:'23m ago'},
-  {msg:'GG_Wolf dueled ShadowByte on Fortnite', t:'31m ago'},
-];
 
 function isMyDuel(d) {
-  if (!d || !U.addr) return false;
-  var me = String(U.addr).toLowerCase();
-  return String(d.creator||'').toLowerCase() === me || String(d.opponent||'').toLowerCase() === me;
+  if (!d) return false;
+  _normDuel(d);
+  return _isMe(d.creatorUserId || d.creator) || _isMe(d.opponentUserId || d.opponent);
+}
+
+/* Server challenges and older local duels use different field names; give the
+   renderers one shape. Mutates in place so later reads see the same record. */
+function _normDuel(d) {
+  if (!d || d._norm) return d;
+  if (d.totalPot == null) d.totalPot = (d.stake || 0) * 2;
+  if (d.expiry == null && d.expiresAt) d.expiry = d.expiresAt;
+  if (d.createdAt == null && d.created) d.createdAt = d.created;
+  if (typeof d.condition === 'string') d.condition = { text: d.condition };
+  if (!d.challengeType) d.challengeType = 'outcome';
+  Object.defineProperty(d, '_norm', { value: true, enumerable: false });
+  return d;
+}
+
+/* Display name for a duel side: the chosen name, never a raw id or address. */
+function shortAddr(v) {
+  v = String(v || '');
+  if (/^0x[0-9a-f]{40}$/i.test(v)) return v.slice(0, 6) + '…' + v.slice(-4);
+  return v;
+}
+
+var _lastDuelSync = 0;
+/* Pull the player's own challenges from the server so accepted, settled and
+   refunded duels show up without relying on this browser's local copy. */
+function syncMyDuels(force) {
+  if (!_authToken || (!force && Date.now() - _lastDuelSync < 30000)) return Promise.resolve();
+  _lastDuelSync = Date.now();
+  return authFetch('/api/challenges?mine').then(function(r){ return r.ok ? r.json() : null; }).then(function(data){
+    if (!data || !data.challenges) return;
+    var byId = {};
+    data.challenges.forEach(function(c){ byId[c.id] = c; });
+    DUELS = DUELS.filter(function(d){ return !byId[d.id]; }).concat(data.challenges);
+    saveDuels();
+    if (typeof renderDuels === 'function') { try { renderDuels(); } catch(e){} }
+  }).catch(function(){});
 }
 
 function renderDashboard() {
   var my = DUELS.filter(isMyDuel);
-  var won = my.filter(function(d){ return d.status==='settled'&&U.addr&&(d.winner||'').toLowerCase()===U.addr.toLowerCase(); });
+  var won = my.filter(function(d){ return d.status==='settled'&&_isMe(d.winner); });
   var active = my.filter(function(d){ return d.status!=='settled'; });
   document.getElementById('st-wins').textContent  = won.length;
   document.getElementById('st-tokens').textContent = (U.balance||0).toLocaleString();
@@ -4006,12 +3701,12 @@ function renderDashboard() {
 function duelListItem(d) {
   var g=GAMES.find(function(x){return x.id===d.game;})||{name:d.game,color:'#8a95b3'};
   var statusMap={pending:'pending',open:'pending',cancelled:'settled',active:'active',awaiting_result:'active',disputed:'disputed',settled:'settled'};
-  var iWon=d.status==='settled'&&U.addr&&(d.winner||'').toLowerCase()===U.addr.toLowerCase();
+  var iWon=d.status==='settled'&&_isMe(d.winner);
   return '<div class="duel-item">'
     +'<div class="di-status '+(statusMap[d.status]||d.status)+'"></div>'
     +'<div class="di-info">'
     +'<div class="di-title" style="color:'+g.color+'">'+g.name+' · '+condLabel(d)+'</div>'
-    +'<div class="di-meta">vs '+shortAddr(d.opponent||'No opponent')+'</div>'
+    +'<div class="di-meta">vs '+(window._escAcc||String)(d.opponentName||shortAddr(d.opponent)||'No opponent yet')+'</div>'
     +'</div>'
     +'<div class="di-right">'
     +'<div class="di-stake">'+d.stake.toLocaleString()+' CLU</div>'
@@ -4021,6 +3716,7 @@ function duelListItem(d) {
 
 // ── RENDER: ACTIVE DUELS ─────────────────────────────
 function renderDuels() {
+  syncMyDuels();
   var el=document.getElementById('duels-list');
   var emptyEl=document.getElementById('duels-empty');
   var my=DUELS.filter(isMyDuel).sort(function(a,b){return (b.createdAt||0)-(a.createdAt||0);});
@@ -4035,9 +3731,9 @@ function renderDuels() {
 
 function duelFullCard(d) {
   var g=GAMES.find(function(x){return x.id===d.game;})||{name:d.game,color:'#8a95b3',api:false};
-  var role=U.addr&&d.creator.toLowerCase()===U.addr.toLowerCase()?'creator':(U.addr&&(d.opponent||'').toLowerCase()===U.addr.toLowerCase()?'opponent':null);
+  var role=_isMe(d.creatorUserId||d.creator)?'creator':(_isMe(d.opponentUserId||d.opponent)?'opponent':null);
   var myRes=role==='creator'?d.creatorResult:d.opponentResult;
-  var iWon=d.status==='settled'&&U.addr&&(d.winner||'').toLowerCase()===U.addr.toLowerCase();
+  var iWon=d.status==='settled'&&_isMe(d.winner);
   var net=Math.floor(d.totalPot*(1-PLATFORM_FEE));
   var slbl=statusLabel(d.status);
 
@@ -4048,8 +3744,9 @@ function duelFullCard(d) {
     else footerBtns='<span style="font-size:12px;color:var(--txt3)">Result submitted ✓</span>';
     footerBtns+=' <button class="btn btn-d btn-sm" onclick="disputeDuel(\''+d.id+'\')">Dispute</button>';
   }
-  if (d.status==='settled') footerBtns='<span style="font-size:14px;font-weight:800;color:'+(iWon?'var(--acc)':'var(--red)')+'">'+( iWon?'+'+net+' CLU':'Lost')+'</span>';
-  if ((d.status==='pending'||d.status==='open') && !d.opponent && role==='creator') {
+  if (d.status==='settled') footerBtns='<span style="font-size:14px;font-weight:800;color:'+(iWon?'var(--acc)':'var(--red)')+'">'+( iWon?'+'+net+' CLU':'Lost')+'</span>'
+    + (/^CH_/.test(d.id||'') && d.winner ? ' <a class="btn btn-g btn-sm" href="/r/'+encodeURIComponent(d.id)+'" target="_blank" rel="noopener">Share result</a>' : '');
+  if ((d.status==='pending'||d.status==='open') && !d.opponent && !d.opponentUserId && role==='creator') {
     footerBtns='<button class="btn btn-o btn-sm" onclick="copyDuelCode(\''+d.id+'\')">Copy Code</button>'
       +' <button class="btn btn-d btn-sm" onclick="cancelChallenge(\''+d.id+'\')">Cancel</button>';
   }
@@ -4057,7 +3754,7 @@ function duelFullCard(d) {
   return '<div class="panel" style="margin-bottom:16px;border-left:3px solid var(--'+badgeCls+')" >'
     +'<div class="panel-hdr">'
     +'<span class="outcome-badge '+badgeCls+'">'+slbl+'</span>'
-    +(g.api?'<span style="font-size:11px;color:var(--acc);margin-left:8px">✓ API</span>':'<span style="font-size:11px;color:var(--txt3);margin-left:8px">Screenshot</span>')
+    +(g.api?'<span style="font-size:11px;color:var(--acc);margin-left:8px">Auto-verified</span>':'<span style="font-size:11px;color:var(--txt3);margin-left:8px">Both report</span>')
     +'</div>'
     +'<div class="panel-body">'
     +'<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">'
@@ -4067,27 +3764,21 @@ function duelFullCard(d) {
     +'<div style="background:var(--l2);border:1px solid var(--b);border-radius:var(--r);padding:12px;margin-bottom:14px;font-size:13px;font-style:italic;color:var(--txt2)">"'+condLabel(d)+'"</div>'
     +'<div style="display:flex;align-items:center;justify-content:space-between;font-size:12px">'
     +'<div style="display:flex;align-items:center;gap:20px">'
-    +'<div><div style="font-weight:700">'+(role==='creator'?'<span style="color:var(--acc)">You</span>':'Duelist')+'</div><div style="color:var(--txt3);font-family:monospace">'+shortAddr(d.creator)+'</div></div>'
+    +'<div><div style="font-weight:700">'+(role==='creator'?'<span style="color:var(--acc)">You</span>':'Duelist')+'</div><div style="color:var(--txt3);font-family:monospace">'+(window._escAcc||String)(d.creatorName||shortAddr(d.creator))+'</div></div>'
     +'<div style="color:var(--txt3);font-weight:800;font-size:11px;letter-spacing:.1em">VS</div>'
-    +'<div><div style="font-weight:700">'+(role==='opponent'?'<span style="color:var(--acc)">You</span>':'Opponent')+'</div><div style="color:var(--txt3);font-family:monospace">'+(d.opponent?shortAddr(d.opponent):'Waiting…')+'</div></div>'
+    +'<div><div style="font-weight:700">'+(role==='opponent'?'<span style="color:var(--acc)">You</span>':'Opponent')+'</div><div style="color:var(--txt3);font-family:monospace">'+((d.opponentName||d.opponent)?(window._escAcc||String)(d.opponentName||shortAddr(d.opponent)):'Waiting…')+'</div></div>'
     +'</div>'
-    +'<div style="color:var(--txt3)">'+timeUntil(d.expiry)+'</div>'
+    +'<div style="color:var(--txt3)">'+((d.status==='open'||d.status==='pending')?timeUntil(d.expiry):'')+'</div>'
     +'</div>'
     +(footerBtns?'<div style="display:flex;align-items:center;gap:10px;margin-top:14px;padding-top:14px;border-top:1px solid var(--b)">'+footerBtns+'</div>':'')
     +'</div></div>';
 }
 
-function copyDuelCode(duelId) {
-  var d=DUELS.find(function(x){return x.id===duelId;});
-  if(!d)return;
-  var code=btoa(JSON.stringify({id:d.id,creator:d.creator,game:d.game,challengeType:d.challengeType,condition:d.condition,stake:d.stake,expiry:d.expiry,createdAt:d.createdAt}));
-  navigator.clipboard.writeText(code).then(function(){toast('Duel code copied!','success');});
-}
 
 // ── RENDER: HISTORY ───────────────────────────────────
 function renderHistory() {
   var my=DUELS.filter(isMyDuel);
-  var won=my.filter(function(d){return d.status==='settled'&&U.addr&&(d.winner||'').toLowerCase()===U.addr.toLowerCase();});
+  var won=my.filter(function(d){return d.status==='settled'&&_isMe(d.winner);});
   var lost=my.filter(function(d){return d.status==='settled'&&(!U.addr||(d.winner||'').toLowerCase()!==U.addr.toLowerCase());});
   var earned=won.reduce(function(a,d){return a+Math.floor(d.totalPot*(1-PLATFORM_FEE));},0);
   document.getElementById('h-total').textContent  = my.length;
@@ -4103,7 +3794,7 @@ function renderHistory() {
   }
   tbody.innerHTML=sorted.map(function(d){
     var g=GAMES.find(function(x){return x.id===d.game;})||{name:d.game};
-    var iWon=d.status==='settled'&&U.addr&&(d.winner||'').toLowerCase()===U.addr.toLowerCase();
+    var iWon=d.status==='settled'&&_isMe(d.winner);
     var isCancelled = d.status === 'cancelled' || d.status === 'refunded';
     var resCls=d.status==='settled'?(iWon?'won':'lost'):(d.status==='disputed'?'disputed':(isCancelled?'settled':'pending'));
     var resLbl=d.status==='settled'?(iWon?'Won':'Lost'):(d.status==='disputed'?'Disputed':statusLabel(d.status));
@@ -4112,7 +3803,7 @@ function renderHistory() {
     return '<tr>'
       +'<td style="color:'+g.color+';font-weight:700">'+g.name+'</td>'
       +'<td style="max-width:200px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">'+condLabel(d)+'</td>'
-      +'<td style="font-family:monospace;font-size:12px">'+shortAddr(d.opponent||'—')+'</td>'
+      +'<td style="font-family:monospace;font-size:12px">'+_escAcc(d.opponentName||shortAddr(d.opponent)||'—')+'</td>'
       +'<td style="font-weight:700">'+d.stake.toLocaleString()+' CLU</td>'
       +'<td><span class="outcome-badge '+resCls+'">'+resLbl+'</span>'+(netLabel?' <span style="font-size:11px;color:'+(iWon||isCancelled?'var(--acc)':(d.status==='disputed'?'var(--gold)':'var(--red)'))+'">'+netLabel+'</span>':'')+'</td>'
       +'<td style="color:var(--txt3)">'+timeAgo(d.createdAt)+'</td>'
@@ -4267,65 +3958,8 @@ function wizGoTo(step) {
 }
 
 /* ====== PAID/FREE + PIN HELPERS (POST-INJECT) ====== */
-function tryCreateDuelWithPin(){
-  var mode = (typeof _wizMode !== "undefined") ? _wizMode : 'paid';
-  var isFree = mode === 'free';
-  var proceed = function(){
-    // Free mode: patch createDuel stake check + set pot to bragging rights
-    var origCreate = window.createDuel;
-    var tempStake = parseInt((document.getElementById('stake-input')||{}).value)||0;
-    if (isFree) {
-      var inp = document.getElementById('stake-input');
-      if (inp) { inp.value = 0; inp.disabled = false; }
-    }
-    try {
-      if (isFree) {
-        // bypass auth for free friendly games on guest
-        return createDuelFree();
-      }
-      createDuel();
-    } finally {
-      // restore
-      if (isFree) {
-        var inp2 = document.getElementById('stake-input');
-        if (inp2) { inp2.disabled = (mode==='free'); }
-      }
-    }
-  };
-  if (!_hasPinSet() && !isFree) {
-    if (confirm('Set a 6-digit CLUTCH Passcode first. It protects your wallet, stakes and duels. Set now?')) { openPinSetup(true); return; }
-    toast('Passcode required for paid actions','info'); return;
-  }
-  if (!isFree && !_isPinUnlocked()) {
-    openPinVerify({ title:'Lock Stake · Passcode Required', sub: 'Confirm your 6-digit code to escrow this CLU stake.', onSuccess: proceed });
-    return;
-  }
-  proceed();
-}
-function createDuelFree(){
-  if (!U.addr) { toast('Sign in first (even guest works for free)','info'); return; }
-  if (!CREATE.game) { toast('Pick a game first','error'); return; }
-  var cond = gatherCond(); if (!cond) return;
-  var exp = parseInt(document.getElementById('expiry-sel').value);
-  var expHours = Math.round(exp/3600000) || 24;
-  var duel = { id:'D'+Date.now(), creator:U.addr, opponent:null, game:CREATE.game, challengeType:CREATE.challengeType||'outcome',
-    condition:cond, stake:0, free:true, totalPot:0, expiry:Date.now()+exp, createdAt:Date.now(),
-    status:'pending', creatorResult:null, opponentResult:null, winner:null, mode:'free' };
-  DUELS.push(duel); saveDuels();
-  var code = btoa(JSON.stringify({id:duel.id,creator:duel.creator,game:duel.game,challengeType:duel.challengeType,condition:duel.condition,stake:0,free:true,expiry:duel.expiry,createdAt:duel.createdAt}));
-  refreshAll();
-  showQRModal(duel, code);
-  toast('Free duel created · no stake, verified result.','success');
-}
-function tryWithdrawWithPin(){
-  var cb = function(){ openWithdrawModal(); };
-  if (!_hasPinSet()) {
-    if (confirm('Protect your wallet with a 6-digit passcode first. Set now?')) { openPinSetup(true); return; }
-    toast('Passcode required for wallet access','info'); return;
-  }
-  if (!_isPinUnlocked()) { openPinVerify({ title:'Unlock Wallet', sub:'Required before any withdrawal or sensitive access.', onSuccess: cb }); return; }
-  cb();
-}
+function tryCreateDuelWithPin(){ createDuel(); }
+function tryWithdrawWithPin(){ openWithdrawModal(); }
 
 /* ====== WIZARD: minimum stake check free mode bypass ====== */
 var _origWizNextBeforeInjectPINFREE = window.wizNext;
@@ -4357,7 +3991,7 @@ window.wizPopulateReview = function(){
     var lbl = document.querySelector('.wiz-pot-hero-lbl'); if(lbl) lbl.textContent = 'PRIZE';
     return;
   } else {
-    var lbl2 = document.querySelector('.wiz-pot-hero-lbl'); if(lbl2) lbl2.textContent = 'Winner takes';
+    var lbl2 = document.querySelector('.wiz-pot-hero-lbl'); if(lbl2) lbl2.textContent = 'Prize to the winner';
   }
   return _origWizPopReviewBeforePin.apply(this, arguments);
 };
@@ -4383,9 +4017,6 @@ window.confirmAccept = function(){
 var _origEA_beforePINfree = window.enterApp;
 window.enterApp = function(){
   var r = _origEA_beforePINfree ? _origEA_beforePINfree.apply(this, arguments) : undefined;
-  if (window.U && window.U.via && window.U.via !== 'guest' && !_hasPinSet()) {
-    setTimeout(function(){ openPinSetup(false); }, 900);
-  }
   return r;
 };
 
@@ -4404,7 +4035,7 @@ function wizSetStake(val,el){
 function wizCustomStake(val){
   document.querySelectorAll('.wiz-sk').forEach(function(b){ b.classList.remove('sel'); });
   var v=parseInt(val)||0; wizUpdatePotCalc(v); setSt(v);
-  var nb=document.getElementById('wiz-next-2'); if(nb) nb.disabled=(v<1);
+  var nb=document.getElementById('wiz-next-2'); if(nb) nb.disabled=(v<10);
 }
 function wizUpdatePotCalc(stake){
   var pot=stake*2; var win=Math.floor(pot*(1-PLATFORM_FEE)); var usd=CLU_USD||1;

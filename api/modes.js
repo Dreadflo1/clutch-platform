@@ -10,6 +10,7 @@ import { GAME_MODES, getModes } from './_modes.js';
 export default function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'GET') return res.status(405).json({ error: 'GET only' });
+  res.setHeader('Cache-Control', 'public, s-maxage=86400, stale-while-revalidate=604800');
 
   const game = String(req.query.game || '').toLowerCase();
   if (game) return res.status(200).json({ game, modes: getModes(game) });

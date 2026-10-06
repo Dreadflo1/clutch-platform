@@ -16,13 +16,13 @@
  */
 import crypto from 'crypto';
 import { kvGet, kvSet } from '../_kv.js';
-import { registerAccount } from '../_registry.js';
+import { ensureRegistered } from '../_registry.js';
+import { createAccount } from '../_account.js';
 import { verifyJwt, signJwt } from '../_jwt.js';
 
 // New Discord-login accounts start with the same play balance as every other
 // signup (non-cashable until real deposits — see _payments.js). Kept in sync
 // with api/auth/telegram.js and api/auth/email.js.
-const STARTING_BALANCE = 500;
 
 const PLATFORMS = {
   twitch: {
@@ -361,10 +361,9 @@ export default async function handler(req, res) {
           createdAt: Date.now(),
           ...(gathered.email ? { email: gathered.email } : {}),
         };
-        await kvSet(userId, acct);
-        await kvSet(`bal:${userId}`, { available: STARTING_BALANCE, escrow: 0, version: 1 });
-        await kvSet(`txlog:${userId}`, []);
-        await registerAccount(userId, { via: platform, req, ref: readCookie(req, 'clutch_oauth_ref') });
+        await createAccount(userId, acct, { via: platform, req, ref: readCookie(req, 'clutch_oauth_ref') });
+      } else {
+        await ensureRegistered(userId); // backfill accounts that predate the registry
       }
       const token = signJwt({ sub: userId, addr: acct.addr, via: acct.via, name: acct.name });
       return finish(res, platform, { name: acct.name, displayName: acct.name }, false, null, { token, login: '1' });

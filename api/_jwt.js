@@ -3,8 +3,10 @@
  * HS256 (HMAC-SHA256) signing and verification
  */
 import crypto from 'crypto';
+import { requireSecret } from './_secrets.js';
 
-const SECRET = process.env.JWT_SECRET || crypto.randomBytes(32).toString('hex');
+// Read at use time: production without JWT_SECRET fails loudly (see _secrets.js).
+const secret = () => requireSecret('JWT_SECRET', 'dev-jwt-secret-change-me');
 
 function base64url(str) {
   return Buffer.from(str).toString('base64url');
@@ -23,7 +25,7 @@ export function signJwt(payload, expiresInSec = 86400) {
     exp: now + expiresInSec,
     jti: crypto.randomBytes(8).toString('hex'),
   }));
-  const sig = crypto.createHmac('sha256', SECRET).update(`${header}.${body}`).digest('base64url');
+  const sig = crypto.createHmac('sha256', secret()).update(`${header}.${body}`).digest('base64url');
   return `${header}.${body}.${sig}`;
 }
 
@@ -33,8 +35,9 @@ export function verifyJwt(token) {
   if (parts.length !== 3) return null;
 
   const [header, body, sig] = parts;
-  const expected = crypto.createHmac('sha256', SECRET).update(`${header}.${body}`).digest('base64url');
-  if (sig !== expected) return null;
+  const expected = Buffer.from(crypto.createHmac('sha256', secret()).update(`${header}.${body}`).digest('base64url'));
+  const got = Buffer.from(sig);
+  if (got.length !== expected.length || !crypto.timingSafeEqual(got, expected)) return null;
 
   try {
     const payload = JSON.parse(base64urlDecode(body));

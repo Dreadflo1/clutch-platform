@@ -8,29 +8,38 @@
  * POST /api/challenges?cancel  — creator cancels an unaccepted challenge (refund)
  */
 import crypto from 'crypto';
-import { kvGet, kvSet, kvLock, kvUnlock } from '../_kv.js';
+import { kvGet, kvLock, kvUnlock } from '../_kv.js';
 import { authenticate, requireAuth } from '../_auth.js';
 import { mutateBalance, BalanceError } from '../_balance.js';
 import {
-  getOpenList, saveOpenList, addActive, persist, cancelOpen, SETTLE_WINDOW_MS,
+  getOpenList, addOpen, removeOpen, addActive, persist, cancelOpen, SETTLE_WINDOW_MS,
   addUserChallenge, getUserChallengeIds,
 } from '../_challenges.js';
+import { appendTx, newTxId } from '../_payments.js';
+import { requireSecret } from '../_secrets.js';
 import { findMode } from '../_modes.js';
 import { isBanned } from '../_integrity.js';
 import { isAgeConfirmed } from '../_age.js';
 import { getUserStats, cohortFromStats } from '../_userstats.js';
 import { limit } from '../_ratelimit.js';
 
-const CHALLENGE_SECRET = process.env.CHALLENGE_SECRET || 'dev-challenge-secret-change-me';
+const challengeSecret = () => requireSecret('CHALLENGE_SECRET', 'dev-challenge-secret-change-me');
 const VALID_GAMES = ['valorant','lol','dota2','clashroyale','brawlstars','cs2','fortnite','apex','ow2','rl','fifa','cod'];
 
 function signChallenge(ch) {
   const canonical = JSON.stringify({ id: ch.id, game: ch.game, stake: ch.stake, creator: ch.creatorUserId, createdAt: ch.createdAt });
-  return crypto.createHmac('sha256', CHALLENGE_SECRET).update(canonical).digest('hex');
+  return crypto.createHmac('sha256', challengeSecret()).update(canonical).digest('hex');
 }
 
 function verifyChallengeSig(ch) {
-  return ch.sig === signChallenge(ch);
+  const expected = Buffer.from(signChallenge(ch));
+  const got = Buffer.from(String(ch.sig || ''));
+  return got.length === expected.length && crypto.timingSafeEqual(got, expected);
+}
+
+/** Public display name: the name the player chose, never an email or wallet address. */
+function displayName(user) {
+  return String(user.name || '').replace(/[<>"']/g, '').slice(0, 22) || 'Player';
 }
 
 function validateChallenge(body) {
@@ -79,9 +88,12 @@ export default async function handler(req, res) {
   if (!(await limit(req, res, 'challenge', { limit: 20, windowSec: 60, id: user.userId }))) return;
 
   const body = typeof req.body === 'string' ? JSON.parse(req.body) : req.body;
+  // The app sends a bare flag (`?accept`, `?cancel`), which parses to ''. Test
+  // for presence, not truthiness, or the request falls through to "create".
+  const has = (k) => req.query[k] !== undefined;
 
   // ── CANCEL FLOW ── creator reclaims the stake of an unaccepted challenge
-  if (req.query.cancel && body.challengeId) {
+  if (has('cancel') && body.challengeId) {
     // Share the accept lock so cancel and accept are mutually exclusive.
     const lockKey = `lock:accept:${body.challengeId}`;
     const gotLock = await kvLock(lockKey, 10);
@@ -100,11 +112,7 @@ export default async function handler(req, res) {
 
       // Log refund transaction
       const bal = await kvGet(`bal:${user.userId}`);
-      const txId = `tx_${Date.now()}_${crypto.randomBytes(4).toString('hex')}`;
-      await kvSet(`tx:${txId}`, { id: txId, userId: user.userId, type: 'refund', amount: ch.stake, ref: ch.id, ts: Date.now(), balAfter: bal?.available }, 7776000);
-      const txlog = (await kvGet(`txlog:${user.userId}`)) || [];
-      txlog.unshift(txId);
-      await kvSet(`txlog:${user.userId}`, txlog.slice(0, 200));
+      await appendTx(user.userId, { id: newTxId(), userId: user.userId, type: 'refund', amount: ch.stake, ref: ch.id, ts: Date.now(), balAfter: bal?.available });
 
       return res.status(200).json({
         status: 'cancelled',
@@ -128,27 +136,28 @@ export default async function handler(req, res) {
   }
 
   // ── ACCEPT FLOW ──
-  if (req.query.accept && body.challengeId) {
-    const challenges = await getOpenList();
-    const idx = challenges.findIndex(c => c.id === body.challengeId);
-    if (idx === -1) return res.status(404).json({ error: 'Challenge not found or expired' });
-
-    const ch = challenges[idx];
-
-    if (ch.creatorUserId === user.userId) {
-      return res.status(400).json({ error: 'Cannot accept your own challenge' });
-    }
-    if (ch.status !== 'open') {
-      return res.status(409).json({ error: 'Challenge is no longer open' });
-    }
-
-    // Prevent double-accept with an atomic lock (SET NX) — two concurrent
-    // acceptors can never both pass this gate.
-    const lockKey = `lock:accept:${ch.id}`;
+  if (has('accept') && body.challengeId) {
+    // Take the lock FIRST, then read the authoritative record. Reading the board
+    // before locking let a second acceptor (or a cancel that ran in between)
+    // act on a stale "open" copy: it locked the second player's entry and
+    // overwrote the first opponent, trapping the first player's escrow.
+    const lockKey = `lock:accept:${body.challengeId}`;
     const gotLock = await kvLock(lockKey, 10);
     if (!gotLock) return res.status(409).json({ error: 'Challenge is being accepted by another player' });
 
     try {
+      const ch = await kvGet(`ch:${body.challengeId}`);
+      if (!ch || !verifyChallengeSig(ch)) return res.status(404).json({ error: 'Challenge not found or expired' });
+      if (ch.creatorUserId === user.userId) {
+        return res.status(400).json({ error: 'Cannot accept your own challenge' });
+      }
+      if (ch.status !== 'open') {
+        return res.status(409).json({ error: 'Challenge is no longer open' });
+      }
+      if (ch.expiresAt <= Date.now()) {
+        return res.status(409).json({ error: 'Challenge has expired' });
+      }
+
       // Lock acceptor's escrow atomically: available -> escrow, only if funded.
       let bal;
       try {
@@ -166,27 +175,20 @@ export default async function handler(req, res) {
         throw e;
       }
 
-      // Update challenge
       ch.status = 'active';
       ch.opponentUserId = user.userId;
-      ch.opponentName = user.addr ? (user.addr.slice(0, 6) + '...' + user.addr.slice(-4)) : 'Player';
+      ch.opponentName = displayName(user);
       ch.acceptedAt = Date.now();
       ch.settleDeadline = ch.acceptedAt + SETTLE_WINDOW_MS;
 
-      // Drop from the open board, track in the active list, persist without TTL
-      // (the record must never expire while it still holds escrow).
-      challenges.splice(idx, 1);
-      await saveOpenList(challenges);
+      // Persist first (no TTL: the record must never expire while it holds
+      // escrow), then move it from the open board to the active list.
+      await persist(ch);
+      await removeOpen(ch.id);
       await addActive(ch.id);
       await addUserChallenge(user.userId, ch.id); // index the opponent
-      await persist(ch);
 
-      // Log transaction
-      const txId = `tx_${Date.now()}_${crypto.randomBytes(4).toString('hex')}`;
-      await kvSet(`tx:${txId}`, { id: txId, userId: user.userId, type: 'escrow_lock', amount: -ch.stake, ref: ch.id, ts: Date.now(), balAfter: bal.available }, 7776000);
-      const txlog = (await kvGet(`txlog:${user.userId}`)) || [];
-      txlog.unshift(txId);
-      await kvSet(`txlog:${user.userId}`, txlog.slice(0, 200));
+      await appendTx(user.userId, { id: newTxId(), userId: user.userId, type: 'escrow_lock', amount: -ch.stake, ref: ch.id, ts: Date.now(), balAfter: bal.available });
 
       return res.status(200).json({ challenge: ch, message: 'Challenge accepted — escrow locked' });
     } finally {
@@ -225,7 +227,7 @@ export default async function handler(req, res) {
     condition: (body.condition || body.mode || '').replace(/[<>"']/g, '').slice(0, 200),
     stake,
     creatorUserId: user.userId,
-    creatorName: user.addr ? (user.addr.slice(0, 6) + '...' + user.addr.slice(-4)) : 'Player',
+    creatorName: displayName(user),
     creatorWins: parseInt(body.creatorWins) || 0,
     creatorCohort,
     status: 'open',
@@ -262,16 +264,9 @@ export default async function handler(req, res) {
   await addUserChallenge(user.userId, challenge.id); // index the creator
 
   // Add to open board
-  const challenges = await getOpenList();
-  challenges.unshift(challenge);
-  await saveOpenList(challenges);
+  await addOpen(challenge);
 
-  // Log transaction
-  const txId = `tx_${Date.now()}_${crypto.randomBytes(4).toString('hex')}`;
-  await kvSet(`tx:${txId}`, { id: txId, userId: user.userId, type: 'escrow_lock', amount: -stake, ref: challenge.id, ts: Date.now(), balAfter: bal.available }, 7776000);
-  const txlog = (await kvGet(`txlog:${user.userId}`)) || [];
-  txlog.unshift(txId);
-  await kvSet(`txlog:${user.userId}`, txlog.slice(0, 200));
+  await appendTx(user.userId, { id: newTxId(), userId: user.userId, type: 'escrow_lock', amount: -stake, ref: challenge.id, ts: Date.now(), balAfter: bal.available });
 
   // Return signed challenge code (short — just id + sig)
   const code = Buffer.from(JSON.stringify({ id: challenge.id, sig: challenge.sig })).toString('base64url');

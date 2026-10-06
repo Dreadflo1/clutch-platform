@@ -12,8 +12,8 @@
  *      submits are safe.
  */
 import crypto from 'crypto';
-import { kvGet, kvSet, kvSetNx } from './_kv.js';
-import { mutateBalance, BalanceError } from './_balance.js';
+import { kvGet, kvSet, kvSetNx, kvIncrBy, kvListPush, kvListRemove } from './_kv.js';
+import { mutateBalance, debitWithdrawal, BalanceError } from './_balance.js';
 
 // USD value of 1 CLU (display + conversion). Matches config.js TOKEN_USD_RATE.
 const CLU_USD_RATE = parseFloat(process.env.CLU_USD_RATE || '0.10');
@@ -29,11 +29,14 @@ export function getCluUsdRate() {
   return CLU_USD_RATE;
 }
 
-async function appendTx(userId, tx) {
+/** Record a transaction and index it in the user's history (newest first, last 200). */
+export async function appendTx(userId, tx) {
   await kvSet(`tx:${tx.id}`, tx, 7776000); // 90 days
-  const log = (await kvGet(`txlog:${userId}`)) || [];
-  log.unshift(tx.id);
-  await kvSet(`txlog:${userId}`, log.slice(0, 200));
+  await kvListPush(`txlog:${userId}`, tx.id, { max: 200 });
+}
+
+export function newTxId() {
+  return `tx_${Date.now()}_${crypto.randomBytes(4).toString('hex')}`;
 }
 
 /**
@@ -63,15 +66,11 @@ export async function creditDeposit({ userId, provider, ref, clu, meta = {} }) {
     // human reconciliation rather than silently retrying (a lost KV response
     // could otherwise double-credit).
     console.error(`[creditDeposit] RECONCILE ${payKey}: claimed but credit failed (${e.code || e.message})`);
-    const list = (await kvGet('deposits:reconcile')) || [];
-    if (!list.includes(payKey)) {
-      list.unshift(payKey);
-      await kvSet('deposits:reconcile', list.slice(0, 1000));
-    }
+    await kvListPush('deposits:reconcile', payKey, { max: 1000 });
     throw e;
   }
 
-  const txId = `tx_${Date.now()}_${crypto.randomBytes(4).toString('hex')}`;
+  const txId = newTxId();
   await appendTx(userId, {
     id: txId, userId, type: 'deposit', provider, ref, amount: clu,
     balAfter: bal.available, ts: Date.now(), meta,
@@ -80,7 +79,7 @@ export async function creditDeposit({ userId, provider, ref, clu, meta = {} }) {
 
   // Track lifetime real deposits — this is what caps how much can be withdrawn
   // (the free starting balance / un-deposited winnings are never cashable).
-  await kvSet(`deposited:${userId}`, ((await kvGet(`deposited:${userId}`)) || 0) + clu);
+  await kvIncrBy(`deposited:${userId}`, clu);
 
   return { credited: true, clu, available: bal.available, txId };
 }
@@ -100,28 +99,22 @@ export async function withdrawableCap(userId) {
  * are queued for payout.
  * @returns {Promise<{payoutId:string, clu:number, available:number}>}
  */
-export async function createPayoutRequest({ userId, clu, rail, destination, meta = {} }) {
+export async function createPayoutRequest({ userId, clu, rail, destination, meta = {}, dailyKey, dailyCap }) {
   if (!Number.isInteger(clu) || clu <= 0) throw new Error('createPayoutRequest: clu must be a positive integer');
 
   // Anti-faucet: a user can only cash out real money they've actually put in.
   // Lifetime withdrawals are capped at lifetime deposits, so the free starting
   // balance and un-deposited winnings are never withdrawable (this also keeps
-  // real-money payout gated until KYC/compliance is in place).
-  const withdrawnSoFar = (await kvGet(`withdrawn:${userId}`)) || 0;
-  const cap = Math.max(0, ((await kvGet(`deposited:${userId}`)) || 0) - withdrawnSoFar);
-  if (clu > cap) {
-    const e = new Error('WITHDRAW_CAP');
-    e.code = 'WITHDRAW_CAP';
-    e.cap = cap;
+  // real-money payout gated until KYC/compliance is in place). The cap check,
+  // the daily cap and the debit happen atomically (see debitWithdrawal).
+  const bal = await debitWithdrawal(userId, clu, { dailyKey, dailyCap });
+  if (bal.err) {
+    const e = new Error(bal.err);
+    e.code = bal.err;
+    e.cap = bal.cap;
+    e.used = bal.used;
     throw e;
   }
-
-  // Debit first — fails (throws BalanceError) if underfunded; never overdraws.
-  const bal = await mutateBalance(userId, { dAvailable: -clu, minAvailable: clu });
-
-  // Count it toward the lifetime withdrawal total (advisory; small races here
-  // are bounded by the daily cap and are not fund-critical).
-  await kvSet(`withdrawn:${userId}`, withdrawnSoFar + clu);
 
   const payoutId = `po_${Date.now()}_${crypto.randomBytes(5).toString('hex')}`;
   const payout = {
@@ -129,11 +122,9 @@ export async function createPayoutRequest({ userId, clu, rail, destination, meta
     status: 'pending', createdAt: Date.now(), meta,
   };
   await kvSet(`payout:${payoutId}`, payout, 7776000);
-  const queue = (await kvGet('payouts:pending')) || [];
-  queue.unshift(payoutId);
-  await kvSet('payouts:pending', queue.slice(0, 5000));
+  await kvListPush('payouts:pending', payoutId, { max: 5000 });
 
-  const txId = `tx_${Date.now()}_${crypto.randomBytes(4).toString('hex')}`;
+  const txId = newTxId();
   await appendTx(userId, {
     id: txId, userId, type: 'withdraw', amount: -clu, rail,
     ref: payoutId, balAfter: bal.available, ts: Date.now(),
@@ -151,9 +142,7 @@ export async function getPayout(id) {
   return kvGet(`payout:${id}`);
 }
 async function dequeuePending(id) {
-  const q = (await kvGet('payouts:pending')) || [];
-  const n = q.filter(x => x !== id);
-  if (n.length !== q.length) await kvSet('payouts:pending', n);
+  await kvListRemove('payouts:pending', id);
 }
 
 /** Claim a pending payout for processing. Returns true if this call claimed it. */
@@ -191,7 +180,9 @@ export async function markPayoutManual(payout, note) {
 export async function failPayoutAndRefund(payout, reason) {
   if (payout.status === 'failed' || payout.status === 'sent') return; // already terminal
   const bal = await mutateBalance(payout.userId, { dAvailable: payout.clu });
-  const txId = `tx_${Date.now()}_${crypto.randomBytes(4).toString('hex')}`;
+  // The money never left, so it counts as withdrawable again.
+  await kvIncrBy(`withdrawn:${payout.userId}`, -payout.clu);
+  const txId = newTxId();
   await appendTx(payout.userId, {
     id: txId, userId: payout.userId, type: 'refund', amount: payout.clu,
     reason: `payout_failed:${reason || 'unknown'}`, ref: payout.id,
@@ -209,9 +200,7 @@ export async function getReconcileList() {
   return (await kvGet('deposits:reconcile')) || [];
 }
 async function removeReconcile(payKey) {
-  const list = (await kvGet('deposits:reconcile')) || [];
-  const n = list.filter(k => k !== payKey);
-  if (n.length !== list.length) await kvSet('deposits:reconcile', n);
+  await kvListRemove('deposits:reconcile', payKey);
 }
 /**
  * Resolve a stuck deposit. 'credit' completes the credit (only if the record is
@@ -226,7 +215,7 @@ export async function resolveReconcile(payKey, action) {
 
   if (action === 'credit') {
     const bal = await mutateBalance(rec.userId, { dAvailable: rec.clu });
-    const txId = `tx_${Date.now()}_${crypto.randomBytes(4).toString('hex')}`;
+    const txId = newTxId();
     await appendTx(rec.userId, {
       id: txId, userId: rec.userId, type: 'deposit', provider: rec.provider,
       ref: rec.ref, amount: rec.clu, balAfter: bal.available, ts: Date.now(),

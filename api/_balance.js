@@ -28,6 +28,23 @@ function throwFromResult(str) {
   throw new Error(`Balance op failed: ${str}`);
 }
 
+// Real Redis reports redis.error_reply() as an error RESPONSE ("ERR NO_ACCOUNT"),
+// which the REST client raises as a plain Error. Map it back to a BalanceError so
+// callers' `instanceof BalanceError` guards (insufficient funds -> 400, double
+// refund/settle -> safe no-op) work in production, not only in the memory store.
+async function evalBalance(script, keys, args) {
+  let res;
+  try {
+    res = await kvEval(script, keys, args);
+  } catch (e) {
+    const code = KNOWN_CODES.find(c => String(e.message).includes(c));
+    if (code) throw new BalanceError(code);
+    throw e;
+  }
+  if (typeof res === 'string' && res.startsWith('{')) return JSON.parse(res);
+  return throwFromResult(res);
+}
+
 // ── mutateBalance: single-account atomic delta ──────────────────
 // Applies dAvailable / dEscrow. Guards: minAvailable / minEscrow are the minimum
 // values required BEFORE the mutation (-1 to skip). Result may not go negative.
@@ -58,14 +75,12 @@ export async function mutateBalance(
   const key = `bal:${userId}`;
 
   if (kvActive()) {
-    const res = await kvEval(MUTATE_LUA, [key], [
+    return evalBalance(MUTATE_LUA, [key], [
       String(dAvailable),
       String(dEscrow),
       String(minAvailable),
       String(minEscrow),
     ]);
-    if (typeof res === 'string' && res.startsWith('{')) return JSON.parse(res);
-    return throwFromResult(res);
   }
 
   // Dev in-memory path — synchronous, no await between read and write.
@@ -119,9 +134,7 @@ export async function settleEscrow(winnerId, loserId, stake, payout) {
   const lKey = `bal:${loserId}`;
 
   if (kvActive()) {
-    const res = await kvEval(SETTLE_LUA, [wKey, lKey], [String(stake), String(payout)]);
-    if (typeof res === 'string' && res.startsWith('{')) return JSON.parse(res);
-    return throwFromResult(res);
+    return evalBalance(SETTLE_LUA, [wKey, lKey], [String(stake), String(payout)]);
   }
 
   // Dev in-memory path — synchronous.
@@ -137,4 +150,55 @@ export async function settleEscrow(winnerId, loserId, stake, payout) {
   memSetSync(wKey, wb);
   memSetSync(lKey, lb);
   return { winner: wb, loser: lb };
+}
+
+// ── debitWithdrawal: cash-out debit with the anti-faucet caps, atomically ──
+// Lifetime withdrawals may never exceed lifetime real deposits (free CLU and
+// un-deposited winnings are never cashable), and a daily cap applies. Checking
+// those caps in one request and debiting in another let two parallel withdrawals
+// both pass the check and cash out more than was deposited. Here the checks,
+// the debit and both counters move in one Lua EVAL.
+// Returns the new balance, or { err: 'WITHDRAW_CAP'|'DAILY_CAP', cap|used }.
+const WITHDRAW_LUA = `
+local raw = redis.call('GET', KEYS[1])
+if not raw then return redis.error_reply('NO_ACCOUNT') end
+local b = cjson.decode(raw)
+local dep = tonumber(redis.call('GET', KEYS[2]) or '0') or 0
+local wd = tonumber(redis.call('GET', KEYS[3]) or '0') or 0
+local day = tonumber(redis.call('GET', KEYS[4]) or '0') or 0
+local clu = tonumber(ARGV[1])
+local cap = math.max(0, dep - wd)
+if clu > cap then return cjson.encode({ err = 'WITHDRAW_CAP', cap = cap }) end
+if day + clu > tonumber(ARGV[2]) then return cjson.encode({ err = 'DAILY_CAP', used = day }) end
+b.available = b.available or 0
+if b.available < clu then return redis.error_reply('INSUFFICIENT_AVAILABLE') end
+b.available = b.available - clu
+b.version = (b.version or 0) + 1
+redis.call('SET', KEYS[1], cjson.encode(b))
+redis.call('SET', KEYS[3], tostring(wd + clu))
+redis.call('SET', KEYS[4], tostring(day + clu), 'EX', tonumber(ARGV[3]))
+return cjson.encode(b)
+`;
+
+export async function debitWithdrawal(userId, clu, { dailyKey, dailyCap, dailyTtl = 86400 }) {
+  const keys = [`bal:${userId}`, `deposited:${userId}`, `withdrawn:${userId}`, dailyKey];
+  if (kvActive()) return evalBalance(WITHDRAW_LUA, keys, [String(clu), String(dailyCap), String(dailyTtl)]);
+
+  // Dev in-memory path — synchronous.
+  const b = memGetSync(keys[0]);
+  if (!b) throw new BalanceError('NO_ACCOUNT');
+  const dep = Number(memGetSync(keys[1])) || 0;
+  const wd = Number(memGetSync(keys[2])) || 0;
+  const day = Number(memGetSync(keys[3])) || 0;
+  const cap = Math.max(0, dep - wd);
+  if (clu > cap) return { err: 'WITHDRAW_CAP', cap };
+  if (day + clu > dailyCap) return { err: 'DAILY_CAP', used: day };
+  b.available = b.available || 0;
+  if (b.available < clu) throw new BalanceError('INSUFFICIENT_AVAILABLE');
+  b.available -= clu;
+  b.version = (b.version || 0) + 1;
+  memSetSync(keys[0], b);
+  memSetSync(keys[2], wd + clu);
+  memSetSync(keys[3], day + clu, dailyTtl);
+  return b;
 }

@@ -15,7 +15,7 @@
  *     Both submit; agreement settles, conflict disputes.
  */
 import { requireAuth } from '../_auth.js';
-import { kvGet, kvSet, kvLock, kvUnlock } from '../_kv.js';
+import { kvGet, kvSetNx, kvLock, kvUnlock } from '../_kv.js';
 import { BalanceError } from '../_balance.js';
 import { isVerifiable, resolveOutcome } from '../_verify.js';
 import { persist, saveChallenge, settleToWinner, refundDraw } from '../_challenges.js';
@@ -122,11 +122,11 @@ export default async function handler(req, res) {
       // *identity*. Cryptographic proof of ownership is the OAuth path.)
       const normHandle = String(handle).trim().toLowerCase();
       const claimKey = `ghandle:${ch.game}:${normHandle}`;
-      const claimedBy = await kvGet(claimKey);
-      if (claimedBy && claimedBy !== user.userId) {
+      // SET NX: two accounts submitting the same handle at once can't both claim it.
+      await kvSetNx(claimKey, user.userId);
+      if ((await kvGet(claimKey)) !== user.userId) {
         return res.status(403).json({ error: 'That game handle is already linked to another CLUTCH account.' });
       }
-      if (!claimedBy) await kvSet(claimKey, user.userId);
       await markHandle(user.userId, ch.game, normHandle);
 
       const submission = { matchId: String(matchId), handle: String(handle), region: region || null };

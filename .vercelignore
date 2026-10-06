@@ -1,0 +1,12 @@
+# Not part of the website. Without this, outputDirectory "." publishes every
+# file in the repo at clutch.best/<path>, including internal strategy and
+# security notes.
+*.md
+.env.example
+tests/
+scripts/
+sources/
+extension/
+Egaming-ambassador/
+Clutch_Legal_Terms_of_Use.docx
+package-lock.json

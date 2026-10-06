@@ -8,30 +8,14 @@
  * dispute is never a way to dodge the fee). Gated by ADMIN_SECRET (Bearer);
  * money-moving, so in production it refuses to run unless the secret matches.
  */
+import { authorizeBearer } from '../_secrets.js';
 import { kvGet, kvLock, kvUnlock } from '../_kv.js';
 import { BalanceError } from '../_balance.js';
 import { saveChallenge, settleToWinner, refundDraw } from '../_challenges.js';
 import { applyRuling, exonerateBoth } from '../_integrity.js';
 import { auditLog } from '../_log.js';
 
-const IS_PROD =
-  process.env.VERCEL_ENV === 'production' || process.env.NODE_ENV === 'production';
-
-function authorize(req, res) {
-  const secret = process.env.ADMIN_SECRET;
-  if (!secret) {
-    if (IS_PROD) {
-      res.status(503).json({ error: 'Admin resolution not configured (ADMIN_SECRET unset)' });
-      return false;
-    }
-    return true; // dev convenience
-  }
-  if (req.headers.authorization !== `Bearer ${secret}`) {
-    res.status(401).json({ error: 'Unauthorized' });
-    return false;
-  }
-  return true;
-}
+const authorize = (req, res) => authorizeBearer(req, res, 'ADMIN_SECRET', 'Admin resolution');
 
 export default async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(200).end();
