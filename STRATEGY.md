@@ -83,14 +83,22 @@ Still missing, to build in week 0:
 - [ ] **Multi-account flags**: more than 3 accounts from one IP hash in a week; two accounts that only ever duel each other; an account with no game handle after 7 days.
 - [ ] **Qualified-player counter** in the admin console: new qualified this week, total, flagged (excluded).
 
+### Acquisition rules (Flavien, 2026-10-06)
+
+**Organic only.** Allowed: word of mouth, SEO, smart targeted social ads, GDPR-compliant email. No bought lists, no scraped contacts, no cold DM blasts, no fake reviews or bot traffic.
+- **Email**: opt-in only (double opt-in), clear purpose, one-click unsubscribe, no list ever bought or scraped.
+- **Social ads**: small budgets, tightly targeted (age 18+ only for ads, EU, LoL/Valorant interests), creative from the existing ad pages; every claim true; never betting vocabulary.
+- **Communities**: follow each server's rules, post where promotion is allowed, partner with admins rather than spam.
+- **Tone**: fun, bold, direct. Challenge people ("Think you're better than your duo? Prove it."), never casino hype.
+
 ### Week by week
 
 | Week | Dates | Channel | New qualified | Total |
 |---|---|---|---|---|
-| 0 | Oct 6 to 12 | Build the registry, flags and counter; Tier 1 env live. Founders' 20: Flavien invites 20 people he knows who play LoL or Valorant, paired up so each has an opponent. | 20 | 20 |
-| 1 | Oct 13 to 19 | **Bring a rival**: each player sends a duel link (the `?join=` QR share already exists) to one friend. A duel needs two people, so this is the built-in loop. | 20 | 40 |
-| 2 | Oct 20 to 26 | **Communities**: 3 French/EU gaming Discords and 2 student esports clubs, using the Telegram/Instagram ad pages; one hosted duel night per community. | 20 | 60 |
-| 3 | Oct 27 to Nov 2 | **Ambassadors**: first 5 ambassadors open the HQ apply flow; each brings 4 players with a tracked invite link. | 20 | 80 |
+| 0 | Oct 6 to 12 | **Word of mouth, founders**: Flavien personally challenges 20 LoL/Valorant players he knows, in pairs. Meanwhile build the registry, flags and counter. | 20 | 20 |
+| 1 | Oct 13 to 19 | **Bring a rival**: every player gets a bold "call out your rival" duel link (the `?join=` QR share exists). Start an opt-in waitlist/newsletter on the landing (double opt-in). | 20 | 40 |
+| 2 | Oct 20 to 26 | **Communities + SEO**: duel nights with 3 EU gaming Discords and 2 student esports clubs (partnered with admins). Ship SEO pages per game ("LoL 1v1 duel", "défi Valorant 1v1") and fix meta/sitemap. | 20 | 60 |
+| 3 | Oct 27 to Nov 2 | **Smart social ads + ambassadors**: first small targeted test (Instagram/TikTok, 18+, EU, LoL/Valorant) measured per qualified player; first 5 ambassadors with tracked invite links. | 20 | 80 |
 
 Focus games: LoL and Valorant first, because they are auto-verified, so results are trusted and disputes stay low.
 
