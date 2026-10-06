@@ -1,4 +1,4 @@
 User-agent: *
 Allow: /
 Disallow: /api/
-Sitemap: https://clutch-wine.vercel.app/sitemap.xml
+Sitemap: https://www.clutch.best/sitemap.xml
