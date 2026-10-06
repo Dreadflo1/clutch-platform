@@ -95,7 +95,7 @@ Still missing, to build in week 0:
 
 | Week | Dates | Channel | New qualified | Total |
 |---|---|---|---|---|
-| 0 | Oct 6 to 12 | **Word of mouth, founders**: Flavien personally challenges 20 LoL/Valorant players he knows, in pairs. Meanwhile build the registry, flags and counter. | 20 | 20 |
+| 0 | Oct 6 to 12 | **First checkpoint: 3 real players by Tue 2026-10-07 08:00** (Flavien). **Word of mouth, founders**: Flavien personally challenges 20 LoL/Valorant players he knows, in pairs. Meanwhile build the registry, flags and counter. | 20 | 20 |
 | 1 | Oct 13 to 19 | **Bring a rival**: every player gets a bold "call out your rival" duel link (the `?join=` QR share exists). Start an opt-in waitlist/newsletter on the landing (double opt-in). | 20 | 40 |
 | 2 | Oct 20 to 26 | **Communities + SEO**: duel nights with 3 EU gaming Discords and 2 student esports clubs (partnered with admins). Ship SEO pages per game ("LoL 1v1 duel", "défi Valorant 1v1") and fix meta/sitemap. | 20 | 60 |
 | 3 | Oct 27 to Nov 2 | **Smart social ads + ambassadors**: first small targeted test (Instagram/TikTok, 18+, EU, LoL/Valorant) measured per qualified player; first 5 ambassadors with tracked invite links. | 20 | 80 |
@@ -127,7 +127,8 @@ Focus games: LoL and Valorant first, because they are auto-verified, so results 
 
 ## This week
 
-1. Confirm Tier 1 env on Vercel + run the balance/escrow scripts against real Upstash.
+1. **By Tue Oct 7 08:00: 3 real players.** Merge PR #1 tonight, confirm `RIOT_API_KEY` is set (a player only counts after an auto-verified LoL/Valorant duel), and get 3 friends to play 2 duels.
+1b. Confirm Tier 1 env on Vercel + run the balance/escrow scripts against real Upstash.
 2. Merge PR #1 so the player counter is live, and set `ADMIN_TELEGRAM_CHAT_ID` in Vercel for the every-3-players ping.
 3. Founders' 20: Flavien invites 20 LoL/Valorant players he knows, in pairs.
 
