@@ -478,7 +478,7 @@ function submitAuth(e, mode) {
   }
   fetch((ARENA_CONFIG.API_BASE || '') + '/api/auth/email', {
     method: 'POST', headers: {'Content-Type':'application/json'},
-    body: JSON.stringify({ mode: mode, email: email, password: password, name: name, dob: dob })
+    body: JSON.stringify({ mode: mode, email: email, password: password, name: name, dob: dob, ref: _campaignRef() })
   }).then(function(res){ return res.json().catch(function(){ return {}; }).then(function(data){ return { ok: res.ok, data: data }; }); })
     .then(async function(r){
       if (!r.ok || !r.data.token) { toast(r.data.error || 'Sign-in failed', 'error'); restore(); return; }
@@ -870,7 +870,7 @@ async function connectMeta() {
     var authRes = await fetch((ARENA_CONFIG.API_BASE || '') + '/api/auth/metamask', {
       method: 'POST',
       headers: {'Content-Type':'application/json'},
-      body: JSON.stringify({ addr: addr, signature: signature })
+      body: JSON.stringify({ addr: addr, signature: signature, ref: _campaignRef() })
     });
     var authData = await authRes.json();
     if (!authData.token) { toast(authData.error || 'Auth failed','error'); return; }
@@ -926,7 +926,7 @@ async function onTelegramAuth(user) {
   if (!user || !user.id || !user.hash) { toast('Invalid Telegram auth', 'error'); return; }
   closeModal('telegram-login-modal');
   try {
-    var res = await fetch((ARENA_CONFIG.API_BASE || '') + '/api/auth/telegram', {
+    var res = await fetch((ARENA_CONFIG.API_BASE || '') + '/api/auth/telegram' + (_campaignRef() ? '?ref=' + encodeURIComponent(_campaignRef()) : ''), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(user)
@@ -961,6 +961,9 @@ function connectWC() { toast('WalletConnect coming soon','info'); }
 // ── DISCORD SIGN-IN ───────────────────────────────────────────────
 // Opens the Discord OAuth popup in login mode. When it completes, the server
 // mints a CLUTCH JWT and /authed.html posts it back — see the listener below.
+// Campaign tag captured at boot (see boot()); '' when none.
+function _campaignRef() { try { return sessionStorage.getItem('clutch_ref') || ''; } catch(e) { return ''; } }
+
 async function loginWithDiscord() {
   try {
     var probeRes = await fetch((ARENA_CONFIG.API_BASE || '') + '/api/oauth/discord');
@@ -975,7 +978,7 @@ async function loginWithDiscord() {
   }
   var w = 520, h = 760;
   var left = Math.max(0, (screen.width - w) / 2), top = Math.max(0, (screen.height - h) / 2);
-  window.open((ARENA_CONFIG.API_BASE || '') + '/api/oauth/discord?mode=authorize&login=1',
+  window.open((ARENA_CONFIG.API_BASE || '') + '/api/oauth/discord?mode=authorize&login=1' + (_campaignRef() ? '&ref=' + encodeURIComponent(_campaignRef()) : ''),
     'clutch_oauth', 'width=' + w + ',height=' + h + ',left=' + left + ',top=' + top);
   toast('Opening Discord sign-in…', 'info');
 }
@@ -1107,6 +1110,10 @@ async function restoreSession() {
     // inside restoreSession when a session exists) can pick it up and open Accept.
     var join = params.get('join');
     if (join) { try { sessionStorage.setItem('clutch_pending_join', join); } catch(e){} }
+    // Campaign tag for player attribution (first-party, no cookie): ?ref= or
+    // utm_source[:utm_campaign]; a shared duel link counts as a duel invite.
+    var ref = params.get('ref') || (params.get('utm_source') ? params.get('utm_source') + (params.get('utm_campaign') ? ':' + params.get('utm_campaign') : '') : '') || (join ? 'duel-invite' : '');
+    if (ref) { try { sessionStorage.setItem('clutch_ref', ref.slice(0, 64)); } catch(e){} }
     restoreSession().then(function(ok){
       var dep = params.get('deposit');
       if (dep === 'success') {

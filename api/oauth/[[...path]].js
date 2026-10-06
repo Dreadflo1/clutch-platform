@@ -16,6 +16,7 @@
  */
 import crypto from 'crypto';
 import { kvGet, kvSet } from '../_kv.js';
+import { registerAccount } from '../_registry.js';
 import { verifyJwt, signJwt } from '../_jwt.js';
 
 // New Discord-login accounts start with the same play balance as every other
@@ -259,6 +260,9 @@ export default async function handler(req, res) {
     if (!jwt && def.login && url.searchParams.get('login') === '1') {
       cookies.push('clutch_oauth_login=1; Path=/; SameSite=Lax; HttpOnly; Secure; Max-Age=900');
     }
+    // Campaign tag for attribution (registry), sanitized server-side on use.
+    const ref = (url.searchParams.get('ref') || '').replace(/[^A-Za-z0-9_.:-]/g, '').slice(0, 64);
+    if (ref) cookies.push(`clutch_oauth_ref=${ref}; Path=/; SameSite=Lax; HttpOnly; Secure; Max-Age=900`);
     try { res.setHeader('Set-Cookie', cookies); } catch(e){}
     const qp = new URLSearchParams({
       response_type: 'code',
@@ -286,7 +290,7 @@ export default async function handler(req, res) {
     return finish(res, platform, null, true, 'state mismatch (possible CSRF)');
   }
   // one-time use — clear both flow cookies
-  try { res.setHeader('Set-Cookie', ['clutch_oauth_state=; Path=/; Max-Age=0; SameSite=Lax', 'clutch_oauth_uid=; Path=/; Max-Age=0; SameSite=Lax', 'clutch_oauth_login=; Path=/; Max-Age=0; SameSite=Lax']); } catch (e) {}
+  try { res.setHeader('Set-Cookie', ['clutch_oauth_state=; Path=/; Max-Age=0; SameSite=Lax', 'clutch_oauth_uid=; Path=/; Max-Age=0; SameSite=Lax', 'clutch_oauth_login=; Path=/; Max-Age=0; SameSite=Lax', 'clutch_oauth_ref=; Path=/; Max-Age=0; SameSite=Lax']); } catch (e) {}
 
   let data = null;
   try {
@@ -360,6 +364,7 @@ export default async function handler(req, res) {
         await kvSet(userId, acct);
         await kvSet(`bal:${userId}`, { available: STARTING_BALANCE, escrow: 0, version: 1 });
         await kvSet(`txlog:${userId}`, []);
+        await registerAccount(userId, { via: platform, req, ref: readCookie(req, 'clutch_oauth_ref') });
       }
       const token = signJwt({ sub: userId, addr: acct.addr, via: acct.via, name: acct.name });
       return finish(res, platform, { name: acct.name, displayName: acct.name }, false, null, { token, login: '1' });

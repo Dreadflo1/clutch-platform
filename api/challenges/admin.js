@@ -7,9 +7,13 @@
  * if unset. Read-only (mutations go through resolve / payouts-admin / reconcile).
  *
  * Query: ?status=disputed|active|awaiting_result|all (default: all)
+ *        ?view=players  -> player registry report (qualified players vs the
+ *                          weekly target, fraud flags, cost per player, retention)
  */
 import { kvGet } from '../_kv.js';
 import { getActiveList, getOpenList } from '../_challenges.js';
+import { loadReport } from '../_registry.js';
+import { isBanned } from '../_integrity.js';
 
 const IS_PROD =
   process.env.VERCEL_ENV === 'production' || process.env.NODE_ENV === 'production';
@@ -43,6 +47,10 @@ export default async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'GET') return res.status(405).json({ error: 'GET only' });
   if (!authorize(req, res)) return;
+
+  if ((req.query && req.query.view) === 'players') {
+    return res.status(200).json(await loadReport({ isBanned }));
+  }
 
   // Active list holds every accepted-but-unsettled challenge (incl. disputed).
   const activeIds = await getActiveList();

@@ -19,6 +19,7 @@ import { kvGet, kvSet, kvLock, kvUnlock } from '../_kv.js';
 import { BalanceError } from '../_balance.js';
 import { isVerifiable, resolveOutcome } from '../_verify.js';
 import { persist, saveChallenge, settleToWinner, refundDraw } from '../_challenges.js';
+import { markHandle } from '../_registry.js';
 import { recordDisputeBoth } from '../_integrity.js';
 import { limit } from '../_ratelimit.js';
 
@@ -126,6 +127,7 @@ export default async function handler(req, res) {
         return res.status(403).json({ error: 'That game handle is already linked to another CLUTCH account.' });
       }
       if (!claimedBy) await kvSet(claimKey, user.userId);
+      await markHandle(user.userId, ch.game, normHandle);
 
       const submission = { matchId: String(matchId), handle: String(handle), region: region || null };
       // Record the submission. A resubmission with the SAME match id is allowed

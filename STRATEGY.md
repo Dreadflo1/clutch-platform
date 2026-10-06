@@ -45,7 +45,7 @@ Goal: duels happen without Flavien personally recruiting each player.
 - [ ] Acquisition kit in use: ad pages (Instagram, Telegram, WhatsApp, teaser), share-link / QR deep links
 - [ ] Game-account ownership proof (close the self-declared handle gap, ROADMAP Phase 2)
 - [ ] Basic funnel analytics: visit → sign-up → first duel → second duel
-- **Exit numbers:** _at +20/week this lands near 230 qualified by Dec 31; 500 needs about +50/week from November (decision pending)_ · 500 registered · 150 weekly active players · **SDW ≥ 250** · 40% of new players duel twice within 7 days · 20 active ambassadors
+- **Exit numbers:** **500 qualified players minimum** (Flavien, 2026-10-06): about 80 by Nov 2, then **+50 per week** from Nov 3 · 150 weekly active players · **SDW ≥ 250** · 40% of new players duel twice within 7 days · 20 active ambassadors
 
 ### Stage 3 — Real-money launch · target **2027-Q1**
 Goal: deposits and withdrawals open in cleared jurisdictions only.
@@ -63,7 +63,7 @@ Goal: deposits and withdrawals open in cleared jurisdictions only.
 
 ## Player acquisition: 20 qualified players per week
 
-Pace set by Flavien 2026-10-06: **+20 new qualified players every week**, fraud and bots excluded.
+Pace set by Flavien 2026-10-06: **+20 new qualified players every week** through Nov 2, then **+50 per week** to reach the 500 minimum by Dec 31, fraud and bots excluded. Telegram ping to Flavien every 3 new qualified players.
 At that pace the 50 is reached in week 3 (around 2026-10-22), ahead of the Stage 1 date.
 
 ### What counts as one player
@@ -79,9 +79,9 @@ Sign-ups alone never count: one person can open an email, a wallet, a Telegram a
 
 Already in the repo: per-IP sign-up rate limit, free CLU never cashable (no money reason to farm accounts), one game handle per account, dispute strikes and auto-ban.
 Still missing, to build in week 0:
-- [ ] **Player registry**: every sign-up path (email, wallet, Telegram, Discord) writes the account to one index with method, date, a hashed IP and the campaign it came from (`ref` / `utm_source`), so cost per player and retention can be split by channel. Today there is no list of accounts at all, so nothing can be counted.
-- [ ] **Multi-account flags**: more than 3 accounts from one IP hash in a week; two accounts that only ever duel each other; an account with no game handle after 7 days.
-- [ ] **Qualified-player counter** in the admin console: new qualified this week, total, flagged (excluded).
+- [x] **Player registry** _(built 2026-10-06, live once merged)_: every sign-up path (email, wallet, Telegram, Discord) writes the account to one index with method, date, a hashed IP and the campaign it came from (`ref` / `utm_source`), so cost per player and retention can be split by channel. Today there is no list of accounts at all, so nothing can be counted.
+- [x] **Multi-account flags** _(2026-10-06)_: more than 3 accounts from one IP hash in a week; two accounts that only ever duel each other; an account with no game handle after 7 days.
+- [x] **Qualified-player counter** in the admin console _(2026-10-06, admin.html "Real players")_: new qualified this week, total, flagged (excluded).
 
 ### Acquisition rules (Flavien, 2026-10-06)
 
@@ -128,7 +128,7 @@ Focus games: LoL and Valorant first, because they are auto-verified, so results 
 ## This week
 
 1. Confirm Tier 1 env on Vercel + run the balance/escrow scripts against real Upstash.
-2. Build the player registry, multi-account flags and the qualified-player counter (nothing can be counted without them).
+2. Merge PR #1 so the player counter is live, and set `ADMIN_TELEGRAM_CHAT_ID` in Vercel for the every-3-players ping.
 3. Founders' 20: Flavien invites 20 LoL/Valorant players he knows, in pairs.
 
 Next: commit the test suites + CI with branch protection, named admin accounts with MFA (SECURITY.md #1 to #3), then `DEMO_MODE`.

@@ -7,12 +7,16 @@ import { kvGet } from '../_kv.js';
 import { integrityOf } from '../_integrity.js';
 import { withdrawableCap } from '../_payments.js';
 import { ageStatus } from '../_age.js';
+import { ensureRegistered } from '../_registry.js';
 
 export default async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(200).end();
 
   const user = requireAuth(req, res);
   if (!user) return;
+
+  // Backfill accounts created before the player registry existed (no-op after).
+  await ensureRegistered(user.userId);
 
   const [bal, integrity, withdrawable, age] = await Promise.all([
     kvGet(`bal:${user.userId}`),

@@ -98,6 +98,19 @@
 
   /* ── Section head ── */
   .sec-head{display:flex;align-items:center;gap:11px;margin-bottom:14px}
+  .players{margin-bottom:30px}
+  .players .sec-head .ic{color:var(--acc)}
+  .ptable{width:100%;border-collapse:collapse;font-size:13px}
+  .ptable th{text-align:left;font-size:10.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--txt3);padding:10px 14px;border-bottom:1px solid var(--b)}
+  .ptable td{padding:10px 14px;border-bottom:1px solid var(--b);color:var(--txt2)}
+  .ptable tr:last-child td{border-bottom:0}
+  .ptable td.num{text-align:right;font-variant-numeric:tabular-nums;color:var(--txt)}
+  .ptable th.num{text-align:right}
+  .pgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:12px;margin-top:12px}
+  .pgrid .card{padding:0;overflow:auto}
+  .pgrid h4{font-size:12px;font-weight:800;margin:0;padding:14px 14px 4px;display:flex;align-items:center;gap:8px}
+  .flagtag{display:inline-block;font-size:10.5px;font-weight:700;padding:2px 8px;border-radius:99px;background:var(--red-dim);color:var(--red);margin:0 4px 2px 0}
+  .ontrack{color:var(--acc)} .offtrack{color:var(--gold)}
   .sec-head .ic{font-size:19px;color:var(--red)}
   .sec-head h3{font-size:15px;font-weight:800;margin:0}
   .count-chip{font-size:11px;font-weight:800;color:var(--red);background:var(--red-dim);
@@ -219,6 +232,21 @@
 
   <!-- Dashboard -->
   <div id="dash" style="display:none">
+    <div class="players">
+      <div class="sec-head">
+        <svg class="ic"><use href="#i-trophy"/></svg>
+        <h3>Real players</h3>
+        <span class="count-chip" id="pweek">this week</span>
+        <div class="actions">
+          <button class="btn btn-ghost" onclick="loadPlayers()"><svg class="ic"><use href="#i-refresh"/></svg> Refresh</button>
+        </div>
+      </div>
+      <div class="stats" id="pstats"></div>
+      <div class="pgrid">
+        <div class="card"><h4><svg class="ic"><use href="#i-flag"/></svg> Channels</h4><div id="pchannels"></div></div>
+        <div class="card"><h4><svg class="ic"><use href="#i-alert"/></svg> Excluded as likely fraud</h4><div id="pflagged"></div></div>
+      </div>
+    </div>
     <div class="stats" id="stats"></div>
     <div class="sec-head">
       <svg class="ic"><use href="#i-scale"/></svg>
@@ -273,6 +301,45 @@ async function connectAdmin(){
   document.getElementById('auth').style.display = 'none';
   document.getElementById('dash').style.display = 'block';
   render(res.data);
+  loadPlayers();
+}
+
+var FLAG_LABEL = { ip_cluster: 'Many accounts, same network', closed_pair: 'Only plays one account', no_handle_7d: 'No game ID after 7 days', banned: 'Banned' };
+
+async function loadPlayers(){
+  var res = await api('/api/challenges/admin?view=players');
+  if (!res.ok){ toast(res.data.error || 'Players load failed', 'error'); return; }
+  renderPlayers(res.data);
+}
+
+function renderPlayers(p){
+  var r = p.retention || {};
+  var onTrack = (p.qualifiedThisWeek || 0) >= (p.target || 20);
+  document.getElementById('pweek').textContent = p.week || '';
+  document.getElementById('pstats').innerHTML =
+      statCard('t-acc', 'i-trophy', '<span class="' + (onTrack ? 'ontrack' : 'offtrack') + '">' + (p.qualifiedThisWeek || 0) + '</span> / ' + (p.target || 20), 'Real players this week')
+    + statCard('t-pur', 'i-check', p.qualifiedTotal || 0, 'Real players total')
+    + statCard('t-neutral', 'i-key', p.newAccountsThisWeek || 0, 'New accounts this week')
+    + statCard('t-gold', 'i-equal', p.qualifyRatePct == null ? '—' : p.qualifyRatePct + '%', 'Become real players')
+    + statCard('t-neutral', 'i-lock', p.cluPerQualifiedThisWeek == null ? '—' : p.cluPerQualifiedThisWeek.toLocaleString() + ' CLU', 'CLU per real player')
+    + statCard('t-red', 'i-alert', p.flaggedExcluded || 0, 'Excluded (fraud)')
+    + statCard('t-acc', 'i-clock', r.d7 && r.d7.returnedPct != null ? r.d7.returnedPct + '%' : '—', 'Came back within 7 days')
+    + statCard('t-pur', 'i-clock', r.medianLifetimeDays == null ? '—' : r.medianLifetimeDays + ' d', 'Median time on Clutch');
+
+  var ch = p.channels || {};
+  var keys = Object.keys(ch).sort(function(a, b){ return (ch[b].qualified - ch[a].qualified) || (ch[b].accounts - ch[a].accounts); });
+  document.getElementById('pchannels').innerHTML = keys.length
+    ? '<table class="ptable"><tr><th>Channel</th><th class="num">Accounts</th><th class="num">Real</th><th class="num">CLU / real</th></tr>'
+      + keys.map(function(k){ var c = ch[k]; return '<tr><td>' + esc(k) + '</td><td class="num">' + c.accounts + '</td><td class="num">' + c.qualified + '</td><td class="num">' + (c.cluPerQualified == null ? '—' : c.cluPerQualified.toLocaleString()) + '</td></tr>'; }).join('')
+      + '</table>'
+    : '<p style="padding:4px 14px 14px;color:var(--txt3);font-size:13px">No new accounts tracked yet.</p>';
+
+  var fl = p.flagged || [];
+  document.getElementById('pflagged').innerHTML = fl.length
+    ? '<table class="ptable"><tr><th>Account</th><th>Why</th></tr>'
+      + fl.map(function(f){ return '<tr><td>' + esc(shortId(f.userId)) + '</td><td>' + f.flags.map(function(x){ return '<span class="flagtag">' + esc(FLAG_LABEL[x] || x) + '</span>'; }).join('') + '</td></tr>'; }).join('')
+      + '</table>'
+    : '<p style="padding:4px 14px 14px;color:var(--txt3);font-size:13px">Nothing suspicious.</p>';
 }
 
 function signOut(){

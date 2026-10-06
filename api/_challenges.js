@@ -11,6 +11,7 @@ import crypto from 'crypto';
 import { kvGet, kvSet } from './_kv.js';
 import { refundEscrow, settleEscrow, BalanceError } from './_balance.js';
 import { recordSettlement } from './_userstats.js';
+import { recordDuel } from './_registry.js';
 
 const OPEN_KEY = 'challenges:open';
 const ACTIVE_KEY = 'challenges:active';
@@ -131,6 +132,8 @@ export async function settleToWinner(ch, winnerId, loserId) {
   } catch (e) {
     console.warn('[settleToWinner] stats update failed', e?.message);
   }
+  // Player registry (qualified-player counting). Best-effort, never blocks money.
+  await recordDuel(winnerId, loserId, ch.settledAt);
   return payout;
 }
 
