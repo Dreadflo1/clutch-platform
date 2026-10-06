@@ -1,7 +1,7 @@
 # Clutch — Strategy & Goals
 
 _Set 2026-10-05 · review every Monday · owner: Flavien_
-_Companion to [ROADMAP.md](ROADMAP.md) (the engineering backlog). This file says **why** and **what number we are chasing**; the roadmap says **how**._
+_Companions: [ROADMAP.md](ROADMAP.md) (engineering backlog), [GROWTH.md](GROWTH.md) (cost per player, retention, playbook, tracking), [SECURITY.md](SECURITY.md) (SOC 2 controls). This file says **why** and **what number we are chasing**; the roadmap says **how**._
 
 ## Positioning (non-negotiable)
 
@@ -79,7 +79,7 @@ Sign-ups alone never count: one person can open an email, a wallet, a Telegram a
 
 Already in the repo: per-IP sign-up rate limit, free CLU never cashable (no money reason to farm accounts), one game handle per account, dispute strikes and auto-ban.
 Still missing, to build in week 0:
-- [ ] **Player registry**: every sign-up path (email, wallet, Telegram, Discord) writes the account to one index with method, date and a hashed IP. Today there is no list of accounts at all, so nothing can be counted.
+- [ ] **Player registry**: every sign-up path (email, wallet, Telegram, Discord) writes the account to one index with method, date, a hashed IP and the campaign it came from (`ref` / `utm_source`), so cost per player and retention can be split by channel. Today there is no list of accounts at all, so nothing can be counted.
 - [ ] **Multi-account flags**: more than 3 accounts from one IP hash in a week; two accounts that only ever duel each other; an account with no game handle after 7 days.
 - [ ] **Qualified-player counter** in the admin console: new qualified this week, total, flagged (excluded).
 
@@ -120,7 +120,7 @@ Focus games: LoL and Valorant first, because they are auto-verified, so results 
 
 ## Weekly review (every Monday)
 
-1. Read the numbers: **new qualified players this week vs 20**, flagged accounts excluded, weekly active, SDW, dispute rate, integrity check.
+1. Read the numbers: **new qualified players this week vs 20**, cost per player (CLU and cash) by channel, D7/D30 retention by cohort (GROWTH.md), flagged accounts excluded, weekly active, SDW, dispute rate, integrity check.
 2. Tick what shipped in this file and in ROADMAP.md.
 3. Pick the **3 highest-leverage tasks** for the current stage (bugs and money integrity first).
 4. Write them under "This week" below.
@@ -131,4 +131,4 @@ Focus games: LoL and Valorant first, because they are auto-verified, so results 
 2. Build the player registry, multi-account flags and the qualified-player counter (nothing can be counted without them).
 3. Founders' 20: Flavien invites 20 LoL/Valorant players he knows, in pairs.
 
-Next: commit the test suites + CI, then `DEMO_MODE`.
+Next: commit the test suites + CI with branch protection, named admin accounts with MFA (SECURITY.md #1 to #3), then `DEMO_MODE`.
