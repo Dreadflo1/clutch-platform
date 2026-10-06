@@ -5,6 +5,7 @@
  */
 import { ethers } from 'ethers';
 import { kvGet, kvSet, kvDel } from '../_kv.js';
+import { registerAccount } from '../_registry.js';
 import { signJwt } from '../_jwt.js';
 import { limit } from '../_ratelimit.js';
 import { securityLog } from '../_log.js';
@@ -62,6 +63,7 @@ export default async function handler(req, res) {
     await kvSet(userId, user);
     await kvSet(`bal:${userId}`, { available: STARTING_BALANCE, escrow: 0, version: 1 });
     await kvSet(`txlog:${userId}`, []);
+    await registerAccount(userId, { via: 'metamask', req, ref: body.ref });
   }
 
   // 5. Issue JWT

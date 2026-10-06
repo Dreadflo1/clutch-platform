@@ -5,6 +5,7 @@
  */
 import crypto from 'crypto';
 import { kvGet, kvSet } from '../_kv.js';
+import { registerAccount } from '../_registry.js';
 import { signJwt } from '../_jwt.js';
 import { limit } from '../_ratelimit.js';
 import { securityLog } from '../_log.js';
@@ -82,6 +83,8 @@ export default async function handler(req, res) {
     await kvSet(userId, user);
     await kvSet(`bal:${userId}`, { available: STARTING_BALANCE, escrow: 0, version: 1 });
     await kvSet(`txlog:${userId}`, []);
+    // ref travels in the query string: every body field is covered by Telegram's hash.
+    await registerAccount(userId, { via: 'telegram', req, ref: req.query && req.query.ref });
   }
 
   const token = signJwt({
