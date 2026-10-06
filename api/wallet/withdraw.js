@@ -1,6 +1,6 @@
 /**
  * POST /api/wallet/withdraw
- * Body: { amount (CLU), rail: 'onchain' | 'stripe', destination? }
+ * Body: { amount (CLU), rail: 'crypto' | 'stripe', destination?, currency? }
  *
  * Debits the user's CLU atomically (no overdraft, no race) and enqueues a
  * PENDING payout for the chosen rail. The actual outbound transfer (an on-chain
@@ -8,7 +8,6 @@
  * inline here — so funds leave the ledger exactly once and are queued for payout.
  */
 import { requireAuth } from '../_auth.js';
-import { kvGet, kvSet } from '../_kv.js';
 import { createPayoutRequest, BalanceError } from '../_payments.js';
 import { isAdult } from '../_age.js';
 import { limit } from '../_ratelimit.js';
@@ -59,20 +58,21 @@ export default async function handler(req, res) {
   // For 'stripe', the payout target is resolved from the user's Stripe account
   // at fulfilment time; no destination needed here.
 
-  // Daily cap (advisory — small races here are not fund-critical).
-  const todayKey = `withdrawals:${user.userId}:${new Date().toISOString().slice(0, 10)}`;
-  const todayTotal = (await kvGet(todayKey)) || 0;
-  if (todayTotal + amount > DAILY_WITHDRAW_CAP) {
-    return res.status(400).json({ error: `Daily withdrawal cap: ${DAILY_WITHDRAW_CAP} CLU. Already: ${todayTotal}` });
-  }
+  const dailyKey = `withdrawals:${user.userId}:${new Date().toISOString().slice(0, 10)}`;
 
   let result;
   try {
-    result = await createPayoutRequest({ userId: user.userId, clu: amount, rail, destination, meta: payoutMeta });
+    result = await createPayoutRequest({
+      userId: user.userId, clu: amount, rail, destination, meta: payoutMeta,
+      dailyKey, dailyCap: DAILY_WITHDRAW_CAP,
+    });
   } catch (e) {
     if (e instanceof BalanceError) {
       if (e.code === 'NO_ACCOUNT') return res.status(404).json({ error: 'Account not found' });
       if (e.code === 'INSUFFICIENT_AVAILABLE') return res.status(400).json({ error: 'Insufficient available balance' });
+    }
+    if (e && e.code === 'DAILY_CAP') {
+      return res.status(400).json({ error: `Daily withdrawal cap: ${DAILY_WITHDRAW_CAP} CLU. Already: ${e.used}` });
     }
     if (e && e.code === 'WITHDRAW_CAP') {
       return res.status(400).json({
@@ -85,7 +85,6 @@ export default async function handler(req, res) {
     throw e;
   }
 
-  await kvSet(todayKey, todayTotal + amount, 86400);
   auditLog('withdraw_requested', { userId: user.userId, amount, rail, payoutId: result.payoutId });
 
   return res.status(202).json({

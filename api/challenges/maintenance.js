@@ -4,33 +4,22 @@
  * Sweeps for challenges whose escrow would otherwise be trapped and refunds it:
  *   - open + past expiresAt        → cancel, refund creator
  *   - accepted + past settleDeadline → draw, refund both players
+ *   - disputed + unreviewed for DISPUTE_REVIEW_MS → draw, refund both players
+ *     (disputes wait for an admin ruling first; they are not no-shows)
  *
  * Money-moving, so it is gated by CRON_SECRET. Vercel Cron sends
  * `Authorization: Bearer <CRON_SECRET>` automatically when that env var is set.
  * In local dev (no CRON_SECRET) it is allowed so the sweep can be exercised.
  */
+import { authorizeBearer } from '../_secrets.js';
 import { kvGet, kvLock, kvUnlock } from '../_kv.js';
 import { getOpenList, getActiveList, cancelOpen, refundDraw } from '../_challenges.js';
 
-const IS_PROD =
-  process.env.VERCEL_ENV === 'production' || process.env.NODE_ENV === 'production';
+// How long a disputed duel waits for an admin ruling before it is unwound as a
+// draw, so a dispute nobody reviews can never trap both players' entries.
+export const DISPUTE_REVIEW_MS = 7 * 24 * 3600 * 1000;
 
-function authorize(req, res) {
-  const secret = process.env.CRON_SECRET;
-  if (!secret) {
-    // Never leave a money-moving sweep open in production.
-    if (IS_PROD) {
-      res.status(503).json({ error: 'Maintenance sweep not configured (CRON_SECRET unset)' });
-      return false;
-    }
-    return true; // dev convenience
-  }
-  if (req.headers.authorization !== `Bearer ${secret}`) {
-    res.status(401).json({ error: 'Unauthorized' });
-    return false;
-  }
-  return true;
-}
+const authorize = (req, res) => authorizeBearer(req, res, 'CRON_SECRET', 'Maintenance sweep');
 
 export default async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(200).end();
@@ -64,7 +53,14 @@ export default async function handler(req, res) {
     if (!(await kvLock(lockKey, 15))) continue;
     try {
       const ch = await kvGet(`ch:${id}`);
-      if (ch && ch.settleDeadline && ch.settleDeadline < now) {
+      if (!ch) continue;
+      if (ch.status === 'disputed') {
+        // Before this, a dispute was auto-drawn as a "no-show" 24h after
+        // acceptance, often before an admin could rule on it.
+        if ((ch.disputedAt || 0) + DISPUTE_REVIEW_MS < now) {
+          if ((await refundDraw(ch, 'dispute_unreviewed')) === 'refunded') result.refunded++;
+        }
+      } else if (ch.settleDeadline && ch.settleDeadline < now) {
         if ((await refundDraw(ch, 'timeout')) === 'refunded') result.refunded++;
       }
     } catch { result.errors++; } finally {

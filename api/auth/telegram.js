@@ -4,13 +4,13 @@
  * Verifies Telegram Login Widget hash, returns JWT
  */
 import crypto from 'crypto';
-import { kvGet, kvSet } from '../_kv.js';
-import { registerAccount } from '../_registry.js';
+import { kvGet } from '../_kv.js';
+import { ensureRegistered } from '../_registry.js';
+import { createAccount } from '../_account.js';
 import { signJwt } from '../_jwt.js';
 import { limit } from '../_ratelimit.js';
 import { securityLog } from '../_log.js';
 
-const STARTING_BALANCE = 500;
 
 function verifyTelegramAuth(data) {
   const botToken = process.env.TELEGRAM_BOT_TOKEN;
@@ -80,11 +80,10 @@ export default async function handler(req, res) {
       telegramId: tgId,
       createdAt: Date.now(),
     };
-    await kvSet(userId, user);
-    await kvSet(`bal:${userId}`, { available: STARTING_BALANCE, escrow: 0, version: 1 });
-    await kvSet(`txlog:${userId}`, []);
     // ref travels in the query string: every body field is covered by Telegram's hash.
-    await registerAccount(userId, { via: 'telegram', req, ref: req.query && req.query.ref });
+    await createAccount(userId, user, { via: 'telegram', req, ref: req.query && req.query.ref });
+  } else {
+    await ensureRegistered(userId); // backfill accounts that predate the registry
   }
 
   const token = signJwt({

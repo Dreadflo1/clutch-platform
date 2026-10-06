@@ -50,3 +50,13 @@ export function isVerifiableMode(game, modeId) {
   const m = findMode(game, modeId);
   return !!(m && m.verifiable);
 }
+
+// Display names for the games CLUTCH accepts (VALID_GAMES in challenges/index.js).
+export const GAME_LABELS = {
+  valorant: 'Valorant', lol: 'League of Legends', dota2: 'Dota 2', clashroyale: 'Clash Royale',
+  brawlstars: 'Brawl Stars', cs2: 'Counter-Strike 2', fortnite: 'Fortnite', apex: 'Apex Legends',
+  ow2: 'Overwatch 2', rl: 'Rocket League', fifa: 'EA Sports FC', cod: 'Call of Duty',
+};
+export function gameLabel(game) {
+  return GAME_LABELS[game] || String(game || '').toUpperCase();
+}

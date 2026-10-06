@@ -1,6 +1,6 @@
 /**
  * Auth middleware — extracts and verifies JWT from Authorization header
- * Returns { userId, addr, via } or null
+ * Returns { userId, addr, via, name } or null
  */
 import { verifyJwt } from './_jwt.js';
 
@@ -10,7 +10,7 @@ export function authenticate(req) {
   const token = authHeader.slice(7);
   const payload = verifyJwt(token);
   if (!payload || !payload.sub) return null;
-  return { userId: payload.sub, addr: payload.addr, via: payload.via };
+  return { userId: payload.sub, addr: payload.addr, via: payload.via, name: payload.name };
 }
 
 export function requireAuth(req, res) {

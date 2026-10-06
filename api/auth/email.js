@@ -9,12 +9,12 @@
  */
 import crypto from 'crypto';
 import { kvGet, kvSet, kvSetNx } from '../_kv.js';
-import { registerAccount } from '../_registry.js';
+import { ensureRegistered } from '../_registry.js';
+import { createAccount } from '../_account.js';
 import { signJwt } from '../_jwt.js';
 import { ageFromDob, confirmAge, MIN_AGE } from '../_age.js';
 import { limit } from '../_ratelimit.js';
 
-const STARTING_BALANCE = 500;
 const MAX_ATTEMPTS = 8;          // per-account login attempts before a cooldown
 const ATTEMPT_WINDOW = 600;      // seconds
 
@@ -76,13 +76,12 @@ export default async function handler(req, res) {
     if (!created) {
       return res.status(409).json({ error: 'An account with this email already exists — sign in instead.' });
     }
-    const name = cleanName(body.name, email.split('@')[0]);
+    // The display name is public (duel board, result cards), so never default it
+    // to the email's local part.
+    const name = cleanName(body.name, 'Player-' + userId.slice(-4));
     const user = { addr: null, email, name, via: 'email', createdAt: Date.now() };
-    await kvSet(userId, user);
-    await kvSet(`bal:${userId}`, { available: STARTING_BALANCE, escrow: 0, version: 1 });
-    await kvSet(`txlog:${userId}`, []);
+    await createAccount(userId, user, { via: 'email', req, ref: body.ref });
     await confirmAge(userId, body.dob); // record the 18+ confirmation
-    await registerAccount(userId, { via: 'email', req, ref: body.ref });
 
     const token = signJwt({ sub: userId, addr: null, via: 'email', name });
     return res.status(200).json({ token, user: { id: userId, addr: null, name, via: 'email' } });
@@ -99,7 +98,17 @@ export default async function handler(req, res) {
   }
   await kvSet(throttleKey, 0, 1); // reset throttle on success
 
-  const user = (await kvGet(userId)) || { addr: null, email, name: email.split('@')[0], via: 'email' };
+  let user = await kvGet(userId);
+  if (!user) {
+    user = { addr: null, email, name: 'Player-' + userId.slice(-4), via: 'email', createdAt: Date.now() };
+    await kvSet(userId, user);
+  } else if (user.name === email.split('@')[0]) {
+    // Older sign-ups defaulted the public name to the email's local part; names
+    // now appear on the duel board and result cards, so replace that default.
+    user.name = 'Player-' + userId.slice(-4);
+    await kvSet(userId, user);
+  }
+  await ensureRegistered(userId); // backfill accounts that predate the registry
   const token = signJwt({ sub: userId, addr: null, via: 'email', name: user.name });
   return res.status(200).json({ token, user: { id: userId, addr: null, name: user.name, via: 'email' } });
 }

@@ -4,13 +4,13 @@
  * Verifies wallet signature using ethers.js, returns JWT
  */
 import { ethers } from 'ethers';
-import { kvGet, kvSet, kvDel } from '../_kv.js';
-import { registerAccount } from '../_registry.js';
+import { kvGet, kvDel } from '../_kv.js';
+import { ensureRegistered } from '../_registry.js';
+import { createAccount } from '../_account.js';
 import { signJwt } from '../_jwt.js';
 import { limit } from '../_ratelimit.js';
 import { securityLog } from '../_log.js';
 
-const STARTING_BALANCE = 500;
 
 export default async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(200).end();
@@ -60,10 +60,9 @@ export default async function handler(req, res) {
       via: 'metamask',
       createdAt: Date.now(),
     };
-    await kvSet(userId, user);
-    await kvSet(`bal:${userId}`, { available: STARTING_BALANCE, escrow: 0, version: 1 });
-    await kvSet(`txlog:${userId}`, []);
-    await registerAccount(userId, { via: 'metamask', req, ref: body.ref });
+    await createAccount(userId, user, { via: 'metamask', req, ref: body.ref });
+  } else {
+    await ensureRegistered(userId); // backfill accounts that predate the registry
   }
 
   // 5. Issue JWT

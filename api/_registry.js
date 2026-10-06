@@ -48,7 +48,7 @@ export async function sMembers(key) {
   if (kvActive()) return (await kvEval(LUA_SMEMBERS, [key], [])) || [];
   return memGetSync(key) || [];
 }
-async function sCard(key) {
+export async function sCard(key) {
   if (kvActive()) return Number(await kvEval(LUA_SCARD, [key], [])) || 0;
   return (memGetSync(key) || []).length;
 }

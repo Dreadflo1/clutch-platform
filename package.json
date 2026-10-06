@@ -3,10 +3,12 @@
   "version": "1.0.0",
   "private": true,
   "scripts": {
-    "dev": "vercel dev",
+    "dev": "node scripts/dev-server.mjs",
+    "test": "node tests/money.test.mjs && node tests/registry.test.mjs",
     "deploy": "vercel --prod"
   },
   "dependencies": {
     "ethers": "^6.17.0"
-  }
+  },
+  "type": "module"
 }

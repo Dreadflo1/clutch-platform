@@ -9,21 +9,11 @@
  * mutation landed, so a person decides rather than auto-retrying (which could
  * double-credit). Gated by ADMIN_SECRET; refuses in prod if unset.
  */
+import { authorizeBearer } from '../_secrets.js';
 import { kvGet } from '../_kv.js';
 import { getReconcileList, resolveReconcile } from '../_payments.js';
 
-const IS_PROD =
-  process.env.VERCEL_ENV === 'production' || process.env.NODE_ENV === 'production';
-
-function authorize(req, res) {
-  const secret = process.env.ADMIN_SECRET;
-  if (!secret) {
-    if (IS_PROD) { res.status(503).json({ error: 'Reconcile not configured (ADMIN_SECRET unset)' }); return false; }
-    return true;
-  }
-  if (req.headers.authorization !== `Bearer ${secret}`) { res.status(401).json({ error: 'Unauthorized' }); return false; }
-  return true;
-}
+const authorize = (req, res) => authorizeBearer(req, res, 'ADMIN_SECRET', 'Reconcile');
 
 export default async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(200).end();
