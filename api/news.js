@@ -76,6 +76,9 @@ export default async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(200).end();
 
   const limit = Math.min(parseInt(req.query.limit) || 20, 40);
+  // Let the CDN serve the feed: the function then runs about once an hour per
+  // region instead of on every page view (each cold instance refetched 5 RSS feeds).
+  res.setHeader('Cache-Control', 'public, s-maxage=3600, stale-while-revalidate=21600');
 
   // Return cache if fresh
   if (_cache && Date.now() - _cacheTime < CACHE_TTL) {
