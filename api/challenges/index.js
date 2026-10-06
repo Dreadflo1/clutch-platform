@@ -88,9 +88,12 @@ export default async function handler(req, res) {
   if (!(await limit(req, res, 'challenge', { limit: 20, windowSec: 60, id: user.userId }))) return;
 
   const body = typeof req.body === 'string' ? JSON.parse(req.body) : req.body;
+  // The app sends a bare flag (`?accept`, `?cancel`), which parses to ''. Test
+  // for presence, not truthiness, or the request falls through to "create".
+  const has = (k) => req.query[k] !== undefined;
 
   // ── CANCEL FLOW ── creator reclaims the stake of an unaccepted challenge
-  if (req.query.cancel && body.challengeId) {
+  if (has('cancel') && body.challengeId) {
     // Share the accept lock so cancel and accept are mutually exclusive.
     const lockKey = `lock:accept:${body.challengeId}`;
     const gotLock = await kvLock(lockKey, 10);
@@ -133,7 +136,7 @@ export default async function handler(req, res) {
   }
 
   // ── ACCEPT FLOW ──
-  if (req.query.accept && body.challengeId) {
+  if (has('accept') && body.challengeId) {
     // Take the lock FIRST, then read the authoritative record. Reading the board
     // before locking let a second acceptor (or a cancel that ran in between)
     // act on a stale "open" copy: it locked the second player's entry and

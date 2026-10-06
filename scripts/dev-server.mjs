@@ -62,7 +62,13 @@ function wrapRes(res) {
 async function handleApi(req, res, url) {
   const found = resolveApi(url.pathname.replace(/^\/api\/?/, '').split('/').filter(Boolean));
   if (!found) return res.status(404).json({ error: 'No such API route' });
-  const mod = await import(pathToFileURL(found.file).href);
+  let mod;
+  try {
+    mod = await import(pathToFileURL(found.file).href);
+  } catch (e) {
+    console.error('[api] cannot load', found.file, e.message);
+    return res.status(500).json({ error: 'Handler failed to load (restart the dev server after edits)' });
+  }
   const query = Object.fromEntries(url.searchParams);
   Object.assign(query, found.params);
   req.query = query;

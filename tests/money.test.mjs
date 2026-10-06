@@ -60,7 +60,8 @@ async function signup(tag, name) {
 const bal = async id => kvGet(`bal:${id}`);
 const create = (u, stake = 100, extra = {}) =>
   call(challenges, { token: u.token, body: { game: 'cs2', stake, mode: 'Aim 1v1', modeId: 'cs2_aim_1v1', ...extra } });
-const accept = (u, id) => call(challenges, { token: u.token, query: { accept: '1' }, body: { challengeId: id } });
+// Query flags are bare (`?accept`), exactly as the app sends them.
+const accept = (u, id) => call(challenges, { token: u.token, query: { accept: '' }, body: { challengeId: id } });
 
 async function suite(label) {
   const P = label + ':';
@@ -96,7 +97,7 @@ async function suite(label) {
     assert.equal(r1.body.challenge.creatorName, 'Alice');
     // clean up: both creators cancel
     for (const [u, r] of [[A, r1], [B, r2]]) {
-      const c = await call(challenges, { token: u.token, query: { cancel: '1' }, body: { challengeId: r.body.challenge.id } });
+      const c = await call(challenges, { token: u.token, query: { cancel: '' }, body: { challengeId: r.body.challenge.id } });
       assert.equal(c.status, 200);
     }
   });
@@ -123,7 +124,7 @@ async function suite(label) {
 
   await t(`${P} accepting a cancelled duel fails and locks nothing`, async () => {
     const ch = (await create(B, 40)).body.challenge;
-    await call(challenges, { token: B.token, query: { cancel: '1' }, body: { challengeId: ch.id } });
+    await call(challenges, { token: B.token, query: { cancel: '' }, body: { challengeId: ch.id } });
     const before = await bal(C.id);
     const r = await accept(C, ch.id);
     assert.equal(r.status, 409);
