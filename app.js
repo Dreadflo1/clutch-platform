@@ -1564,6 +1564,7 @@ function showQRModal(duel, code){
 
   window._lastDuelCode = code;
   window._lastDuelLink = shareLink;
+  window._lastDuelGame = g.name;
   var old = document.getElementById('qr-share-modal'); if (old && old.parentNode) old.parentNode.removeChild(old);
 
   function row(k, v){ return '<div style="display:flex;justify-content:space-between;gap:10px;padding:4px 0"><span style="color:var(--txt3)">'+k+'</span><span style="font-weight:800;text-align:right">'+String(v)+'</span></div>'; }
@@ -1592,7 +1593,13 @@ function showQRModal(duel, code){
         + '<input id="qr-code-field" readonly value="' + String(code).replace(/"/g, '&quot;') + '" style="flex:1;min-width:0;background:var(--l2);border:1px solid var(--b);border-radius:10px;padding:10px 12px;color:var(--txt);font-size:11px;font-family:monospace"/>'
         + '<button onclick="copyDuelCode()" class="btn btn-p" style="white-space:nowrap;padding:0 14px">Copy code</button>'
       + '</div>'
-      + '<button onclick="copyDuelLink()" class="btn btn-g btn-full" style="height:44px">Copy share link</button>'
+      + '<button onclick="shareDuel()" class="btn btn-p btn-full" style="height:44px">Send to a rival</button>'
+      + '<div style="display:flex;gap:8px">'
+        + '<a href="' + _duelShareHref('whatsapp') + '" target="_blank" rel="noopener" class="btn btn-g" style="flex:1;height:40px;display:flex;align-items:center;justify-content:center;text-decoration:none">WhatsApp</a>'
+        + '<a href="' + _duelShareHref('telegram') + '" target="_blank" rel="noopener" class="btn btn-g" style="flex:1;height:40px;display:flex;align-items:center;justify-content:center;text-decoration:none">Telegram</a>'
+      + '</div>'
+      + '<button onclick="copyDuelInvite()" class="btn btn-g btn-full" style="height:40px">Copy message for Discord</button>'
+      + '<button onclick="copyDuelLink()" class="btn btn-g btn-full" style="height:36px;font-size:12px">Copy link only</button>'
     + '</div>'
     + '</div>';
   document.body.appendChild(el);
@@ -1608,6 +1615,29 @@ function _copyText(txt, okMsg){
 }
 function copyDuelCode(){ _copyText(window._lastDuelCode || '', 'Duel code copied — send it to your friend'); }
 function copyDuelLink(){ _copyText(window._lastDuelLink || '', 'Share link copied'); }
+
+// Bring-a-rival loop: every duel is an invite. The message is short and bold so
+// it gets sent; the link carries ?join=, which boot() records as ref
+// 'duel-invite', so the admin panel counts the players this loop brings.
+function _duelInviteText(){
+  var game = (window._lastDuelGame || 'a game');
+  return 'I just challenged you to a 1v1 on ' + game + ' on CLUTCH. Think you can beat me? Prove it: ' + (window._lastDuelLink || location.origin);
+}
+function _duelShareHref(app){
+  var t = encodeURIComponent(_duelInviteText());
+  if (app === 'whatsapp') return 'https://wa.me/?text=' + t;
+  if (app === 'telegram') return 'https://t.me/share/url?url=' + encodeURIComponent(window._lastDuelLink || location.origin) + '&text=' + encodeURIComponent('I just challenged you to a 1v1 on CLUTCH. Prove it.');
+  return window._lastDuelLink || location.origin;
+}
+function copyDuelInvite(){ _copyText(_duelInviteText(), 'Invite copied, paste it to your rival'); }
+function shareDuel(){
+  var text = _duelInviteText();
+  if (navigator.share) {
+    navigator.share({ title: 'CLUTCH 1v1', text: text }).catch(function(){});
+  } else {
+    copyDuelInvite();
+  }
+}
 
 function condLabel(d) {
   var t=d.challengeType, c=d.condition||{};
