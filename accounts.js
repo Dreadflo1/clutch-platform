@@ -170,7 +170,7 @@ window.renderConnectedAccounts = function() {
         '<div class="aov-left"><div class="aov-label">' + meta.name + ' ' + (connected ? 'username' : 'ID') + '</div>' +
           '<input class="account-input fi" type="text" value="' + (connected ? _escAcc(con.name) : '') + '" placeholder="' + _escAcc(meta.hint) + '" onkeydown="if(event.key===String.fromCharCode(13))saveAccountFromOverlay(\''+platform+'\')"/>' +
           '<div class="aov-ver" style="color:var(--txt3)">Self-reported — or verify ownership securely:</div>' +
-          '<button class="btn btn-sm btn-s" style="margin-top:6px" onclick="connectViaOAuth(\''+platform+'\')" title="Verify ownership via the provider">&#128274; Verify with ' + meta.name + '</button>' +
+          '<button class="btn btn-sm btn-s" style="margin-top:6px" onclick="connectViaOAuth(\''+platform+'\')" title="Verify ownership via the provider"><svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" style="display:inline;vertical-align:-1px"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 018 0v4"/></svg> Verify with ' + meta.name + '</button>' +
         '</div>' +
         '<div class="aov-right">' +
           '<button class="btn btn-sm btn-s" onclick="toggleAccountOverlay(\''+platform+'\',false)">Cancel</button>' +
