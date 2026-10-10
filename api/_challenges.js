@@ -8,13 +8,16 @@
  * an archival TTL applied.
  */
 import crypto from 'crypto';
-import { kvGet, kvSet } from './_kv.js';
+import { kvGet, kvSet, kvListPush, kvListRange } from './_kv.js';
 import { refundEscrow, settleEscrow, BalanceError } from './_balance.js';
 import { recordSettlement } from './_userstats.js';
 import { recordDuel } from './_registry.js';
 
 const OPEN_KEY = 'challenges:open';
 const ACTIVE_KEY = 'challenges:active';
+// Redis LIST (LPUSH/LTRIM) of public snapshots of settled duels, newest first.
+const SETTLED_KEY = 'challenges:settled';
+const SETTLED_MAX = 50;
 const PLATFORM_FEE = 0.025;
 
 // Open-list TTL must exceed the maximum challenge lifetime (168h) so an open
@@ -134,7 +137,41 @@ export async function settleToWinner(ch, winnerId, loserId) {
   }
   // Player registry (qualified-player counting). Best-effort, never blocks money.
   await recordDuel(winnerId, loserId, ch.settledAt);
+  // Public "latest verified results" feed. Best-effort, never blocks money.
+  try {
+    await kvListPush(SETTLED_KEY, publicResult(ch), SETTLED_MAX);
+  } catch (e) {
+    console.warn('[settleToWinner] recent feed push failed', e?.message);
+  }
   return payout;
+}
+
+// ── public feed of settled duels ────────────────────────────────
+/**
+ * The public, non-sensitive view of a settled duel: only what the open board
+ * already shows (game, mode, the winner's board display name, the entry). Never
+ * user ids, emails, IPs, payouts or full addresses.
+ */
+export function publicResult(ch) {
+  const winnerName = ch.winner && ch.winner === ch.opponentUserId ? ch.opponentName : ch.creatorName;
+  return {
+    id: ch.id,
+    game: ch.game,
+    modeLabel: ch.modeLabel || 'Custom duel',
+    modeVerifiable: !!ch.modeVerifiable,
+    winnerName: String(winnerName || 'Player').slice(0, 40),
+    entry: Number(ch.stake) || 0,
+    settledAt: ch.settledAt || Date.now(),
+  };
+}
+
+/** The last `n` settled duels, newest first (public fields only). */
+export async function getRecentSettled(n = 6) {
+  const rows = await kvListRange(SETTLED_KEY, 0, Math.max(0, n - 1));
+  return rows.map(r => ({
+    id: r.id, game: r.game, modeLabel: r.modeLabel, modeVerifiable: !!r.modeVerifiable,
+    winnerName: r.winnerName, entry: r.entry, settledAt: r.settledAt,
+  }));
 }
 
 // ── refund resolvers (callers must hold the appropriate lock) ────

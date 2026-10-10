@@ -3,6 +3,7 @@
  *
  * GET  /api/challenges         — list open challenges
  * GET  /api/challenges?mine    — the authed player's own challenges (any status)
+ * GET  /api/challenges?recent  — the last settled duels, public fields only (no auth)
  * POST /api/challenges         — create (auth required, locks escrow server-side)
  * POST /api/challenges?accept  — accept (auth required, locks escrow server-side)
  * POST /api/challenges?cancel  — creator cancels an unaccepted challenge (refund)
@@ -13,7 +14,7 @@ import { authenticate, requireAuth } from '../_auth.js';
 import { mutateBalance, BalanceError } from '../_balance.js';
 import {
   getOpenList, saveOpenList, addActive, persist, cancelOpen, SETTLE_WINDOW_MS,
-  addUserChallenge, getUserChallengeIds,
+  addUserChallenge, getUserChallengeIds, getRecentSettled,
 } from '../_challenges.js';
 import { findMode } from '../_modes.js';
 import { isBanned } from '../_integrity.js';
@@ -47,6 +48,15 @@ function validateChallenge(body) {
 
 export default async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(200).end();
+
+  // GET ?recent — public feed of the latest settled duels (newest first). Only
+  // public fields (see publicResult in _challenges.js); safe to cache briefly.
+  if (req.method === 'GET' && req.query.recent !== undefined) {
+    if (!(await limit(req, res, 'recent', { limit: 60, windowSec: 60 }))) return;
+    const results = await getRecentSettled(6);
+    res.setHeader('Cache-Control', 'public, max-age=30, s-maxage=30, stale-while-revalidate=60');
+    return res.status(200).json({ results, count: results.length });
+  }
 
   // GET ?mine — the authenticated player's own challenges (any status)
   if (req.method === 'GET' && req.query.mine !== undefined) {

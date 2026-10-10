@@ -174,3 +174,41 @@ export async function kvEval(script, keys = [], args = []) {
   }
   return kvCommand(['EVAL', script, String(keys.length), ...keys, ...args]);
 }
+
+/**
+ * Push a value onto the head of a Redis list and cap it at `max` entries
+ * (LPUSH + LTRIM). Used for small public feeds, e.g. the recently settled duels.
+ * The value is JSON-encoded per element. Never use on a key that holds a plain
+ * JSON value written by kvSet (Redis would reject the type).
+ */
+export async function kvListPush(key, value, max = 50) {
+  assertConfigured();
+  if (!kvActive()) {
+    const list = memGetSync(key) || [];
+    list.unshift(value);
+    memSetSync(key, list.slice(0, max));
+    return true;
+  }
+  try {
+    await kvCommand(['LPUSH', key, JSON.stringify(value)]);
+    await kvCommand(['LTRIM', key, '0', String(max - 1)]);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+/** Read list elements [start, stop] (inclusive, Redis LRANGE semantics), parsed. */
+export async function kvListRange(key, start = 0, stop = -1) {
+  assertConfigured();
+  if (!kvActive()) {
+    const list = memGetSync(key) || [];
+    return list.slice(start, stop === -1 ? undefined : stop + 1);
+  }
+  try {
+    const raw = (await kvCommand(['LRANGE', key, String(start), String(stop)])) || [];
+    return raw.map(s => { try { return JSON.parse(s); } catch { return null; } }).filter(Boolean);
+  } catch {
+    return [];
+  }
+}

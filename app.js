@@ -572,11 +572,53 @@ function loadLandingChallenges() {
     .catch(function () { paint([], true); });
 }
 
+// Landing highlights: the latest settled duels from GET /api/challenges?recent
+// (public fields only). Empty is shown as empty, with the sign-up invitation.
+function loadLandingHighlights() {
+  var list = document.getElementById('land-recent-list');
+  if (!list) return;
+  function verifier(g) { return (g === 'lol' || g === 'valorant') ? 'Riot-verified' : 'API-verified'; }
+  function gname(g) { return ({ lol: 'LoL', valorant: 'Valorant', dota2: 'Dota 2' })[g] || _initToDisplayName(g); }
+  function paint(arr) {
+    if (!arr.length) {
+      list.innerHTML = '<div class="lo-empty hl-empty">'
+        + '<div class="lo-empty-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--acc)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 21h8M12 17v4M7 4h10v5a5 5 0 01-10 0V4zM4 4h3v4H4zM17 4h3v4h-3z"/></svg></div>'
+        + '<div class="lo-empty-h">No duels settled yet.</div>'
+        + '<div class="lo-empty-p">The first verified win lands here, with your name on it.</div>'
+        + '<button class="fd-cta" onclick="quickConnect()">Create my account</button>'
+        + '</div>';
+      return;
+    }
+    list.innerHTML = arr.slice(0, 6).map(function (r) {
+      var clr = _initToPillsColor(r.game);
+      var name = String(r.winnerName || 'Player');
+      var entry = Number(r.entry) || 0;
+      return '<div class="hl-res">'
+        + '<div class="hl-res-top">'
+        +   '<span class="hl-res-game" style="color:' + clr + ';border-color:' + clr + '55;background:' + clr + '18" title="' + _fdEsc(_initToDisplayName(r.game)) + '">' + _fdEsc(_initToShortName(r.game)) + '</span>'
+        +   '<span class="hl-res-mode">' + _fdEsc(gname(r.game)) + (r.modeLabel ? ' · ' + _fdEsc(r.modeLabel) : '') + '</span>'
+        +   '<span class="hl-res-time">' + _fdEsc(_timeAgo(Number(r.settledAt) || Date.now())) + '</span>'
+        + '</div>'
+        + '<div class="hl-res-win"><b>' + _fdEsc(name) + '</b> won</div>'
+        + '<div class="hl-res-meta">'
+        +   (r.modeVerifiable ? '<span class="hl-tag">' + verifier(r.game) + '</span>' : '<span class="hl-tag hl-tag-self">Self-reported</span>')
+        +   '<span>' + (entry ? entry.toLocaleString() + ' CLU entry' : 'Free duel') + '</span>'
+        + '</div>'
+        + '</div>';
+    }).join('');
+  }
+  fetch((ARENA_CONFIG.API_BASE || '') + '/api/challenges?recent')
+    .then(function (r) { if (!r.ok) throw new Error('http'); return r.json(); })
+    .then(function (d) { paint((d && d.results) || []); })
+    .catch(function () { paint([]); });
+}
+
 (function wireFirstDuel() {
   function run() {
     try { renderFirstDuel(); } catch (e) {}
     try { renderRivalCards(); } catch (e) {}
     try { loadLandingChallenges(); } catch (e) {}
+    try { loadLandingHighlights(); } catch (e) {}
     // Re-check step 2 whenever a Riot ID is linked or unlinked.
     if (typeof window.saveConnectedAccounts === 'function' && !window.saveConnectedAccounts.__fdPatched) {
       var orig = window.saveConnectedAccounts;
