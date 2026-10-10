@@ -87,7 +87,7 @@
       "name": "Is CLUTCH gambling?",
       "acceptedAnswer": {
         "@type": "Answer",
-        "text": "No. CLUTCH is a peer-to-peer skill-based contest platform. There is no house, no house edge, no betting lines, no random outcomes. Results are determined entirely by player skill in competitive video games. This is legally distinct from gambling in most jurisdictions."
+        "text": "No. CLUTCH is a peer-to-peer skill-based contest platform. There is no house, no house edge, no bookmaking, no random outcomes. Results are determined entirely by player skill in competitive video games. This is legally distinct from gambling in most jurisdictions."
       }
     },
     {
@@ -1072,7 +1072,7 @@
                 <div class="wiz-prog-line" id="wpl-1"></div>
               </div>
               <div class="wiz-prog-step">
-                <div class="wiz-prog-dot" id="wpd-2">2<span class="wiz-prog-label">Stakes</span></div>
+                <div class="wiz-prog-dot" id="wpd-2">2<span class="wiz-prog-label">Entry</span></div>
                 <div class="wiz-prog-line" id="wpl-2"></div>
               </div>
               <div class="wiz-prog-step">
@@ -1105,13 +1105,13 @@
             <div class="wiz-step" id="wiz-s2">
               <div class="wiz-step-eyebrow">Step 2 of 5</div>
               <div class="wiz-step-title">What's this skill contract worth?</div>
-              <div class="wiz-step-sub">Set your entry. Your friend locks in the same amount. Prefer a pure bragging-rights duel? Switch to <strong style="color:#b88aff">Free</strong> — no stake, no escrow, verified result.
+              <div class="wiz-step-sub">Set your entry. Your friend locks in the same amount. Prefer a pure bragging-rights duel? Switch to <strong style="color:#b88aff">Free</strong> — no entry, no escrow, verified result.
             </div>
 
               <div class="stake-mode-switch">
                 <button class="sm-btn active paid" id="sm-paid" onclick="wizSetStakeMode('paid',this)">
                   <span class="sm-ico">$</span>
-                  PAID · Stake CLU
+                  CLU ENTRY
                 </button>
                 <button class="sm-btn free" id="sm-free" onclick="wizSetStakeMode('free',this)">
                   <span class="sm-ico">★</span>
@@ -1179,7 +1179,7 @@
                 </div>
                 <div class="wiz-pot-op">=</div>
                 <div class="wiz-pot-winner">
-                  <div class="wiz-pot-col-lbl">Winner gets</div>
+                  <div class="wiz-pot-col-lbl">Winner earns</div>
                   <div class="wiz-pot-col-val" id="wiz-pot-win">—</div>
                 </div>
               </div>
@@ -1196,19 +1196,19 @@
                 <div class="fee-body hidden" id="fee-body">
                   <div class="fee-row">
                     <span class="fee-label">Platform fee</span>
-                    <span class="fee-value">2.5% of the pot</span>
+                    <span class="fee-value">2.5% of the duel total</span>
                   </div>
                   <div class="fee-row">
                     <span class="fee-label">Gas fee (covered)</span>
                     <span class="fee-value fee-free">Included</span>
                   </div>
                   <div class="fee-row">
-                    <span class="fee-label">Minimum stake</span>
+                    <span class="fee-label">Minimum entry</span>
                     <span class="fee-value">10 CLU (~$0.10)</span>
                   </div>
                   <div class="fee-divider"></div>
                   <div class="fee-row">
-                    <span class="fee-label" style="font-weight:800;color:var(--txt)">Winner receives</span>
+                    <span class="fee-label" style="font-weight:800;color:var(--txt)">Winner earns</span>
                     <span class="fee-value" style="font-weight:800;color:var(--acc)">97.5% of contract value</span>
                   </div>
                   <div class="fee-note">
@@ -1292,7 +1292,7 @@
               <div class="wiz-step-sub">Review your skill contract. Once your friend co-signs, entries lock into neutral smart contract escrow — no one can touch them until the outcome is verified.</div>
 
               <div class="wiz-pot-hero">
-                <div class="wiz-pot-hero-lbl">Winner receives</div>
+                <div class="wiz-pot-hero-lbl">Winner earns</div>
                 <div class="wiz-pot-hero-val" id="rev-pot">—</div>
                 <div class="wiz-pot-hero-sub" id="rev-pot-sub">CLU — 97.5% of contract value, gas covered</div>
               </div>
@@ -1325,7 +1325,7 @@
               </div>
 
               <div style="margin-top:12px;padding:12px 16px;background:var(--l2);border-radius:10px;font-size:12px;color:var(--txt3);line-height:1.7">
-                Both stakes lock in escrow the moment your friend accepts via QR code. Platform fee 2.5% covers Base L2 gas.
+                Both entries lock in escrow the moment your friend accepts via QR code. Platform fee 2.5% covers Base L2 gas.
               </div>
 
               <div style="margin-top:20px">
@@ -1373,19 +1373,19 @@
 
             <div style="background:rgba(0,212,110,.08);border:1px solid rgba(0,212,110,.2);border-radius:12px;padding:16px 20px;margin-bottom:28px">
               <div style="font-weight:800;margin-bottom:6px;color:var(--acc)">Core Legal Position</div>
-              <p style="font-size:13px;line-height:1.7;color:var(--txt2)">CLUTCH is a <strong>peer-to-peer skill contract execution platform</strong>. It is not a gambling operator, bookmaker, or gaming house. CLUTCH does not set betting lines, does not profit from outcomes, and does not participate in contests. Outcomes are determined solely by player skill. Two consenting adults agree to terms, lock equal amounts in neutral smart contract escrow, compete, and the contract releases funds to the skill winner automatically.</p>
+              <p style="font-size:13px;line-height:1.7;color:var(--txt2)">CLUTCH is a <strong>peer-to-peer skill contract execution platform</strong>. It is not a gambling operator, bookmaker, or gaming house. CLUTCH does not set lines or prices on outcomes, does not profit from outcomes, and does not participate in contests. Outcomes are determined solely by player skill. Two consenting adults agree to terms, lock equal amounts in neutral smart contract escrow, compete, and the contract releases funds to the skill winner automatically.</p>
             </div>
 
             <!-- Section 1 -->
             <div style="margin-bottom:24px">
               <div style="font-size:13px;font-weight:800;color:var(--acc);margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid var(--b)">1. What CLUTCH Is</div>
-              <p style="font-size:13px;line-height:1.8;color:var(--txt2)">CLUTCH provides infrastructure for players to create, co-sign, and settle skill-based contracts. The platform acts solely as a <strong>neutral technical escrow agent</strong> — functionally equivalent to a lawyer holding funds in a client escrow account pending completion of agreed conditions. CLUTCH has no stake in who wins, takes the same 2.5% escrow service fee regardless of outcome, and has no ability to influence match results.</p>
+              <p style="font-size:13px;line-height:1.8;color:var(--txt2)">CLUTCH provides infrastructure for players to create, co-sign, and settle skill-based contracts. The platform acts solely as a <strong>neutral technical escrow agent</strong> — functionally equivalent to a lawyer holding funds in a client escrow account pending completion of agreed conditions. CLUTCH has no interest in who wins, takes the same 2.5% escrow service fee regardless of outcome, and has no ability to influence match results.</p>
             </div>
 
             <!-- Section 2 -->
             <div style="margin-bottom:24px">
               <div style="font-size:13px;font-weight:800;color:var(--acc);margin-bottom:10px;padding-bottom:8px;border-bottom:1px solid var(--b)">2. Not Gambling — Skill-Based Competition</div>
-              <p style="font-size:13px;line-height:1.8;color:var(--txt2)">Gambling law in all major jurisdictions targets <em>operators</em> — entities that set betting lines, profit from outcomes, or hold a house edge. CLUTCH matches none of those criteria. Video game outcomes are determined by skill, not chance. This places CLUTCH in the same legal category as:</p>
+              <p style="font-size:13px;line-height:1.8;color:var(--txt2)">Gambling law in all major jurisdictions targets <em>operators</em> — entities that act as bookmakers, profit from outcomes, or hold a house edge. CLUTCH matches none of those criteria. Video game outcomes are determined by skill, not chance. This places CLUTCH in the same legal category as:</p>
               <ul style="font-size:13px;line-height:2;color:var(--txt2);padding-left:20px;margin:10px 0">
                 <li>Skill-based fantasy sports platforms (DraftKings, FanDuel)</li>
                 <li>Esports prize tournaments (ESL, FACEIT, Battlefy)</li>
@@ -1467,7 +1467,7 @@
                 </div>
                 <div style="flex:1;min-width:0">
                   <div style="font-size:12px;font-weight:800;color:var(--acc);margin-bottom:3px">Tip · How challenges work</div>
-                  <div style="font-size:11px;color:var(--txt2);line-height:1.55">Your friend creates a duel, shares a QR / code with you, and you accept here. Your stake gets locked in the match pot until both players verify the result. <span style="color:var(--acc);font-weight:700">Free duels do not require a wallet.</span></div>
+                  <div style="font-size:11px;color:var(--txt2);line-height:1.55">Your friend creates a duel, shares a QR / code with you, and you accept here. Your entry is held in the duel until both players verify the result. <span style="color:var(--acc);font-weight:700">Free duels do not require a wallet.</span></div>
                 </div>
                 <button type="button" onclick="document.getElementById('accept-intro').style.display='none'" style="background:transparent;border:none;color:var(--txt3);font-size:12px;font-weight:800;cursor:pointer;padding:2px 4px;line-height:1">✕</button>
               </div>
@@ -1668,7 +1668,7 @@
                 <span>Sort by</span>
                 <select id="cb-sort" onchange="sortBoard(this.value)">
                   <option value="newest">Newest</option>
-                  <option value="highest">Highest Stake</option>
+                  <option value="highest">Highest Entry</option>
                   <option value="closest">Closest Rank</option>
                   <option value="expiring">Expiring Soon</option>
                 </select>
@@ -1815,7 +1815,7 @@
               <span class="modal-title">Add funds</span>
               <button class="modal-close" onclick="closeModal('deposit-modal')">&#10005;</button>
             </div>
-            <div style="font-size:12px;color:var(--txt2);margin-bottom:14px;line-height:1.6">Buy CLU to enter duels. Funds are held in escrow — winner takes the pot.</div>
+            <div style="font-size:12px;color:var(--txt2);margin-bottom:14px;line-height:1.6">Buy CLU to enter duels. Entries are held in escrow — the winner earns the duel total.</div>
             <div class="field">
               <label style="font-size:12px;font-weight:700;color:var(--txt2)">Amount (USD)</label>
               <input class="fi" id="dep-usd" type="number" min="1" max="500" placeholder="10" oninput="updDepPreview()"/>
@@ -1869,7 +1869,7 @@
               <span class="modal-title">Post Open Duel</span>
               <button class="modal-close" onclick="closeModal('post-challenge-modal')">&#10005;</button>
             </div>
-            <div style="font-size:12px;color:var(--txt2);margin-bottom:16px;line-height:1.6">Anyone on the platform can accept this. Your stake is locked in escrow immediately.</div>
+            <div style="font-size:12px;color:var(--txt2);margin-bottom:16px;line-height:1.6">Anyone on the platform can accept this. Your entry is locked in escrow immediately.</div>
 
             <div class="field">
               <label style="font-size:12px;font-weight:700;color:var(--txt2)">Game</label>
@@ -1888,16 +1888,16 @@
                         <div class="stake-mode-switch" style="margin-bottom:14px">
               <button class="sm-btn active paid" id="pcm-paid" onclick="pcmSetMode('paid',this)">
                 <span class="sm-ico">$</span>
-                PAID · Stake CLU
+                CLU ENTRY
               </button>
               <button class="sm-btn free" id="pcm-free" onclick="pcmSetMode('free',this)">
                 <span class="sm-ico">★</span>
-                FREE · No Stake
+                FREE · No Entry
               </button>
             </div>
             <div class="field" id="pcm-stake-field">
-              <label style="font-size:12px;font-weight:700;color:var(--txt2)"><span id="pcm-stake-label">Stake (CLU)</span></label>
-              <label style="font-size:12px;font-weight:700;color:var(--txt2)">Stake (CLU)</label>
+              <label style="font-size:12px;font-weight:700;color:var(--txt2)"><span id="pcm-stake-label">Entry (CLU)</span></label>
+              <label style="font-size:12px;font-weight:700;color:var(--txt2)">Entry (CLU)</label>
               <input class="fi" id="board-stake" type="number" min="10" placeholder="Min 10 CLU"/>
             </div>
             <div class="field">
@@ -1909,7 +1909,7 @@
               </select>
             </div>
             <div id="board-post-verify" style="margin-bottom:14px"></div>
-            <button class="btn btn-p btn-full btn-lg" onclick="postChallenge()">Lock Stake & Post</button>
+            <button class="btn btn-p btn-full btn-lg" onclick="postChallenge()">Lock Entry & Post</button>
           </div>
         </div>
 

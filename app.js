@@ -307,15 +307,15 @@ var GAME_PRESETS = {
   valorant: { label:'Valorant', presets:[
     {name:'Casual 1v1', desc:'Deathmatch, first to win', stake:50, mode:'1v1 Deathmatch'},
     {name:'Ranked Match', desc:'Competitive match outcome', stake:250, mode:'Ranked Win'},
-    {name:'Big Flex', desc:'Best of 3, winner takes all', stake:1000, mode:'Best of 3'},
+    {name:'Big Flex', desc:'Best of 3, winner earns the CLU', stake:1000, mode:'Best of 3'},
   ]},
   lol: { label:'League of Legends', presets:[
-    {name:'Solo Queue', desc:'Next ranked game, winner takes pot', stake:100, mode:'Ranked Solo'},
+    {name:'Solo Queue', desc:'Next ranked game, winner earns the CLU', stake:100, mode:'Ranked Solo'},
     {name:'1v1 Mid', desc:'Custom 1v1 mid lane, first blood wins', stake:250, mode:'1v1 Mid First Blood'},
     {name:'Bo3 Series', desc:'Best of 3 ranked games', stake:500, mode:'Best of 3'},
   ]},
   cs2: { label:'CS2', presets:[
-    {name:'Quick Match', desc:'Next competitive map, winner takes it', stake:100, mode:'Competitive Win'},
+    {name:'Quick Match', desc:'Next competitive map, winner earns the CLU', stake:100, mode:'Competitive Win'},
     {name:'Aim Duel', desc:'1v1 aim map, first to 16 kills', stake:250, mode:'1v1 Aim Duel'},
     {name:'Premier', desc:'Premier mode, rating on the line', stake:500, mode:'Premier Match'},
   ]},
@@ -330,7 +330,7 @@ var GAME_PRESETS = {
     {name:'Ranked Grind', desc:'Most RP gained in 3 games', stake:500, mode:'Ranked RP Race'},
   ]},
   dota2: { label:'Dota 2', presets:[
-    {name:'Pub Match', desc:'Next pub game, winner takes pot', stake:100, mode:'Pub Win'},
+    {name:'Pub Match', desc:'Next pub game, winner earns the CLU', stake:100, mode:'Pub Win'},
     {name:'Ranked', desc:'Ranked match outcome', stake:250, mode:'Ranked Win'},
     {name:'1v1 Mid', desc:'Solo mid, first to 2 kills or tower', stake:500, mode:'1v1 Mid'},
   ]},
@@ -1756,13 +1756,13 @@ function showQRModal(duel, code){
       + '<div style="font-size:16px;font-weight:900">' + (isFree ? 'Free duel ready' : 'Duel locked in escrow') + '</div>'
       + '<button onclick="closeQRModal()" style="background:transparent;border:none;color:var(--txt3);font-size:18px;cursor:pointer;line-height:1">✕</button>'
     + '</div>'
-    + '<div style="font-size:12px;color:var(--txt2);line-height:1.5;margin-bottom:14px">Send this to your friend. They open <b>Accept a Duel</b>, scan the QR or paste the code, and ' + (isFree ? 'the match is on.' : 'both stakes lock in escrow.') + '</div>'
+    + '<div style="font-size:12px;color:var(--txt2);line-height:1.5;margin-bottom:14px">Send this to your friend. They open <b>Accept a Duel</b>, scan the QR or paste the code, and ' + (isFree ? 'the match is on.' : 'both entries lock in escrow.') + '</div>'
     + '<div style="background:#fff;border-radius:14px;padding:12px;display:inline-block;margin-bottom:14px"><img src="' + qrUrl + '" width="180" height="180" alt="Duel QR" style="display:block"/></div>'
     + '<div style="text-align:left;background:var(--l2);border:1px solid var(--b);border-radius:12px;padding:12px 14px;margin-bottom:14px;font-size:12.5px">'
       + row('Game', g.name)
       + row('Entry', isFree ? 'Free (bragging rights)' : (stake.toLocaleString() + ' CLU'))
       + row('Condition', cond)
-      + (isFree ? '' : row('Winner takes', win.toLocaleString() + ' CLU'))
+      + (isFree ? '' : row('Winner earns', win.toLocaleString() + ' CLU'))
       + row('Expires', expH + 'h')
     + '</div>'
     + '<div style="display:flex;flex-direction:column;gap:8px">'
@@ -1838,7 +1838,7 @@ function updPreview() {
   var pot = stake * 2;
   setText('prev-pot',     pot.toLocaleString());
   setText('prev-pot-usd','≈ $'+(pot*(CLU_USD||0)).toFixed(2));
-  setText('stake-usd',   '≈ $'+(stake*(CLU_USD||0)).toFixed(2)+' · Pot: '+pot.toLocaleString()+' CLU');
+  setText('stake-usd',   '≈ $'+(stake*(CLU_USD||0)).toFixed(2)+' · Duel total: '+pot.toLocaleString()+' CLU');
 }
 
 function setSt(v){ document.getElementById('stake-input').value=v; updPreview(); }
@@ -1962,7 +1962,7 @@ function previewAccept() {
   var potLabel = document.getElementById('ap-pot-label');
   if (pot) pot.classList.toggle('free', isFree);
   if (isFree) {
-    document.getElementById('ap-stake').textContent = 'FREE · No stake';
+    document.getElementById('ap-stake').textContent = 'FREE · No entry';
     document.getElementById('ap-stake').style.color = '#b88aff';
     document.getElementById('ap-usd').textContent = 'Bragging rights only';
     if (potLabel) potLabel.textContent = 'Friendly duel · escrow is waived, verification is kept';
@@ -2201,7 +2201,7 @@ function wizSetStakeMode(mode, el){
   var nextBtn = document.getElementById('wiz-next-2');
   if (mode === 'free') {
     CREATE.stake = 0;
-    if (stakeInput) { stakeInput.disabled = true; stakeInput.value = ''; stakeInput.placeholder = 'Free duel · no stake'; }
+    if (stakeInput) { stakeInput.disabled = true; stakeInput.value = ''; stakeInput.placeholder = 'Free duel · no entry'; }
     if (nextBtn) nextBtn.disabled = false;
     wizUpdatePotFree();
   } else {
@@ -2235,7 +2235,7 @@ function pcmSetMode(mode, el){
     CREATE.postMode = 'free';
   } else {
     if (fld) fld.style.display = 'block';
-    if (label) label.textContent = 'Stake (CLU)';
+    if (label) label.textContent = 'Entry (CLU)';
     if (inp) { inp.disabled=false; inp.placeholder='Min 10 CLU'; }
     CREATE.postMode = 'paid';
   }
@@ -2275,7 +2275,7 @@ if (typeof postChallenge === 'function') {
         created: Date.now(),
         expiresAt: Date.now() + (parseInt((exp&&exp.value)||'24',10)*3600000),
         title: (mode&&mode.value) || 'Friendly warm-up',
-        description: 'No-stake bragging-rights duel · both sides play for pride.',
+        description: 'No-entry bragging-rights duel · both sides play for pride.',
         format: 'Best of 1',
         participants: 1,
         maxParticipants: 2,
@@ -2298,7 +2298,7 @@ if (typeof lockWiz === 'function') {
   lockWiz = function(){
     if (_wizMode === 'paid' && !_isPinUnlocked() && _hasPinSet()) {
       openPinVerify({
-        title:'Enter Passcode to Lock Stake',
+        title:'Enter Passcode to Lock Entry',
         sub:'Your CLU entry will be held in escrow until result verification.',
         onSuccess:function(){ _origLock(); }
       });
@@ -2327,8 +2327,8 @@ if (typeof acceptBoardChallenge === 'function') {
     }
     if (needsPin && !_isPinUnlocked()) {
       openPinVerify({
-        title: ch && ch.free ? 'Enter Passcode to Accept Duel' : 'Enter Passcode to Accept & Lock Stake',
-        sub: ch && ch.free ? 'Required to confirm this free match.' : 'Your matching CLU stake will lock into escrow after successful verification.',
+        title: ch && ch.free ? 'Enter Passcode to Accept Duel' : 'Enter Passcode to Accept & Lock Entry',
+        sub: ch && ch.free ? 'Required to confirm this free match.' : 'Your matching CLU entry will lock into escrow after successful verification.',
         onSuccess: cb
       });
       return;
@@ -2622,7 +2622,7 @@ function renderBoard(challenges) {
     var free = !!c.free || (c.stake||0)===0;
     var typeTag = free
       ? '<div class="cb-type-tag free"><span class="ico">★</span>FREE</div>'
-      : '<div class="cb-type-tag paid"><span class="ico">$</span>CLU STAKE</div>';
+      : '<div class="cb-type-tag paid"><span class="ico">$</span>CLU ENTRY</div>';
     var stakeBlock = free
       ? '<div class="cb-stake" style="color:#b88aff"><span class="clu-ico" style="background:#7000FF;color:#fff">★</span> <span style="color:#b88aff">0</span> <span style="color:var(--txt3);font-weight:700">· No escrow</span></div>'
       : '<div class="cb-stake"><span class="clu-ico">◈</span> '+(c.stake||0).toLocaleString()+' <span style="color:var(--txt3);font-weight:700">CLU</span></div>';
@@ -2985,7 +2985,7 @@ async function postChallenge() {
   if (!game) { toast('Pick a game','error'); return; }
   if (!modeId) { toast('Pick a duel mode','error'); return; }
   if (modeId === 'custom' && !customText) { toast('Describe your custom terms','error'); return; }
-  if (!stake || stake < 10) { toast('Minimum stake is 10 CLU','error'); return; }
+  if (!stake || stake < 10) { toast('Minimum entry is 10 CLU','error'); return; }
   if (stake > U.balance) { toast('Not enough CLU','error'); return; }
 
   var integrity = getIntegrity();
@@ -3003,7 +3003,7 @@ async function postChallenge() {
       await syncBalance();
       if (data.challenge) _boardCache.unshift(data.challenge);
       renderBoard(_boardCache);
-      toast('Duel posted — stake locked on server!','success');
+      toast('Duel posted — entry locked on server!','success');
     } catch(e) { toast('Server error','error'); return; }
   } else {
     var challenge = {id:'CB_'+Date.now()+'_'+Math.random().toString(36).slice(2,6), game:game, modeId:modeId, modeLabel:(modeObj?modeObj.label:mode), modeVerifiable:!!(modeObj&&modeObj.verifiable), mode:mode, challengeType:'outcome', condition:mode, stake:stake, creator:U.addr, creatorName:U.name||'Anonymous', creatorWins:wins, status:'open', createdAt:Date.now(), expiresAt:Date.now()+expiry*3600000};
@@ -3522,7 +3522,7 @@ async function cancelChallenge(challengeId) {
         saveDuels();
         renderDuels();
       }
-      toast(data.message || 'Duel cancelled — stake refunded','success');
+      toast(data.message || 'Duel cancelled — entry refunded','success');
       if (data.warning) toast(data.warning, 'info');
       refreshAll();
     } catch(e) { toast('Server error','error'); return; }
@@ -3535,7 +3535,7 @@ async function cancelChallenge(challengeId) {
     }
     U.balance += (c.stake||0); U.escrow -= (c.stake||0); saveProfile();
     saveDuels(); renderDuels(); refreshAll();
-    toast('Duel cancelled — stake refunded (local mode)','info');
+    toast('Duel cancelled — entry refunded (local mode)','info');
   }
 }
 
@@ -3743,7 +3743,7 @@ async function loadAdminDisputes() {
       + '<div>'
       + '<div style="font-size:12px;font-weight:800;color:var(--red);margin-bottom:4px">DISPUTED · ' + (ch.disputeReason || 'no reason') + '</div>'
       + '<div style="font-size:13px;font-weight:700">Duel ' + ch.id + ' · ' + (ch.game||'?') + '</div>'
-      + '<div style="font-size:11px;color:var(--txt3);margin-top:2px">Stake: ' + (ch.stake||0) + ' CLU · Pot: ' + (ch.totalPot||(ch.stake*2)||0) + ' CLU</div>'
+      + '<div style="font-size:11px;color:var(--txt3);margin-top:2px">Entry: ' + (ch.stake||0) + ' CLU · Duel total: ' + (ch.totalPot||(ch.stake*2)||0) + ' CLU</div>'
       + '</div>'
       + '<div style="text-align:right;font-size:11px;color:var(--txt2);line-height:1.6">'
       + '<div><b style="color:var(--acc)">Creator:</b> ' + (ch.creatorUserId || ch.creator || '?').slice(0,24) + '</div>'
@@ -3957,7 +3957,7 @@ function duelFullCard(d) {
     +'<div class="panel-body">'
     +'<div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">'
     +'<div><div style="font-size:13px;font-weight:800;color:'+g.color+'">'+g.name+'</div><div style="font-size:12px;color:var(--txt2);margin-top:2px">'+{outcome:'Match Outcome',target:'Performance Target',custom:'Custom'}[d.challengeType]+'</div></div>'
-    +'<div style="text-align:right"><div style="font-size:20px;font-weight:900;color:var(--gold)">'+d.totalPot.toLocaleString()+'<span style="font-size:11px;font-weight:600;color:var(--txt3);margin-left:4px">CLU pot</span></div><div style="font-size:11px;color:var(--txt3)">'+d.stake.toLocaleString()+' each</div></div>'
+    +'<div style="text-align:right"><div style="font-size:20px;font-weight:900;color:var(--gold)">'+d.totalPot.toLocaleString()+'<span style="font-size:11px;font-weight:600;color:var(--txt3);margin-left:4px">CLU total</span></div><div style="font-size:11px;color:var(--txt3)">'+d.stake.toLocaleString()+' each</div></div>'
     +'</div>'
     +'<div style="background:var(--l2);border:1px solid var(--b);border-radius:var(--r);padding:12px;margin-bottom:14px;font-size:13px;font-style:italic;color:var(--txt2)">"'+condLabel(d)+'"</div>'
     +'<div style="display:flex;align-items:center;justify-content:space-between;font-size:12px">'
@@ -4188,11 +4188,11 @@ function tryCreateDuelWithPin(){
     }
   };
   if (!_hasPinSet() && !isFree) {
-    if (confirm('Set a 6-digit CLUTCH Passcode first. It protects your wallet, stakes and duels. Set now?')) { openPinSetup(true); return; }
+    if (confirm('Set a 6-digit CLUTCH Passcode first. It protects your wallet, entries and duels. Set now?')) { openPinSetup(true); return; }
     toast('Passcode required for paid actions','info'); return;
   }
   if (!isFree && !_isPinUnlocked()) {
-    openPinVerify({ title:'Lock Stake · Passcode Required', sub: 'Confirm your 6-digit code to escrow this CLU stake.', onSuccess: proceed });
+    openPinVerify({ title:'Lock Entry · Passcode Required', sub: 'Confirm your 6-digit code to escrow this CLU entry.', onSuccess: proceed });
     return;
   }
   proceed();
@@ -4210,7 +4210,7 @@ function createDuelFree(){
   var code = btoa(JSON.stringify({id:duel.id,creator:duel.creator,game:duel.game,challengeType:duel.challengeType,condition:duel.condition,stake:0,free:true,expiry:duel.expiry,createdAt:duel.createdAt}));
   refreshAll();
   showQRModal(duel, code);
-  toast('Free duel created · no stake, verified result.','success');
+  toast('Free duel created · no entry, verified result.','success');
 }
 function tryWithdrawWithPin(){
   var cb = function(){ openWithdrawModal(); };
@@ -4229,7 +4229,7 @@ window.wizNext = function(from){
     var mode = (typeof _wizMode !== "undefined") ? _wizMode : 'paid';
     if (mode === 'free') { wizGoTo(3); return; }
     var sv = parseInt((document.getElementById('stake-input')||{}).value)||0;
-    if (sv < 10) { toast('Minimum 10 CLU stake for paid duels (or pick FREE mode)','error'); return; }
+    if (sv < 10) { toast('Minimum 10 CLU entry for paid duels (or pick FREE mode)','error'); return; }
     wizGoTo(3); return;
   }
   return _origWizNextBeforeInjectPINFREE.apply(this, arguments);
@@ -4252,7 +4252,7 @@ window.wizPopulateReview = function(){
     var lbl = document.querySelector('.wiz-pot-hero-lbl'); if(lbl) lbl.textContent = 'PRIZE';
     return;
   } else {
-    var lbl2 = document.querySelector('.wiz-pot-hero-lbl'); if(lbl2) lbl2.textContent = 'Winner takes';
+    var lbl2 = document.querySelector('.wiz-pot-hero-lbl'); if(lbl2) lbl2.textContent = 'Winner earns';
   }
   return _origWizPopReviewBeforePin.apply(this, arguments);
 };
@@ -4268,7 +4268,7 @@ window.confirmAccept = function(){
     toast('Passcode required to accept duels','info'); return;
   }
   if (isPaid && !_isPinUnlocked()) {
-    openPinVerify({ title:'Accept Duel · Passcode', sub:'Your matching stake will escrow after unlock.', onSuccess: proceed });
+    openPinVerify({ title:'Accept Duel · Passcode', sub:'Your matching entry will escrow after unlock.', onSuccess: proceed });
     return;
   }
   proceed();
