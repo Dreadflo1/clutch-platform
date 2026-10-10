@@ -2073,11 +2073,6 @@ function pcmSetMode(mode, el){
   }
 }
 
-/* Patch seedBoardChallenges + renderBoard to include paid/free flag */
-if (typeof _boardSeed !== 'undefined') {
-  _boardSeed.forEach(function(c){ if (c.stake===0) c.free = true; else c.free = false; });
-}
-
 /* Patch openPostChallengeModal to set default */
 if (typeof openPostChallengeModal === 'function') {
   var _origOPCM = openPostChallengeModal;
@@ -2254,7 +2249,7 @@ if (typeof applyBoardFilters === 'function') {
     var out = _boardCache.slice();
     if (_boardFilter !== 'all') out = out.filter(function(c){ return c.game === _boardFilter; });
     var vOnly = document.getElementById('cb-verified');
-    if (vOnly && vOnly.checked) out = out.filter(function(c){ return PLAYER_PROFILES[c.creator] && PLAYER_PROFILES[c.creator].verified; });
+    if (vOnly && vOnly.checked) out = out.filter(function(c){ return !!c.modeVerifiable; });
     var sortSel = document.getElementById('cb-sort');
     var sortBy = (sortSel && sortSel.value) || 'newest';
     if (sortBy === 'highest') out.sort(function(a,b){ return b.stake - a.stake; });
@@ -2265,31 +2260,6 @@ if (typeof applyBoardFilters === 'function') {
     renderBoard(out);
   };
 })();
-
-/* Patch seedBoardChallenges to include 2x free duels in seed */
-if (typeof _seedBoardChallenges === 'function') {
-  var _origSeed = _seedBoardChallenges;
-  _seedBoardChallenges = function(){
-    var r = _origSeed();
-    if (Array.isArray(r) && r.length) {
-      // Mark first two as free examples (shadowtitan + cyberghost) and add dedicated free entries
-      var free1 = Object.assign({}, r[2] || r[0], { id: 'CBF'+Date.now().toString(36).slice(-6).toUpperCase()+'1', free:true, stake:0,
-        title:'Warm-up session · no stake', description:'Bragging rights only. First to 2 wins in VALORANT unrated.',
-        creator:'ShadowTitan', participants:1, maxParticipants:2, isNew:false });
-      var free2 = Object.assign({}, r[6] || r[1], { id: 'CBF'+Date.now().toString(36).slice(-6).toUpperCase()+'2', free:true, stake:0,
-        title:'Friendly 1v1 · pride only', description:'No CLU. No pressure. Just let\'s see who plays better.',
-        creator:'CyberGhost', game:'cs2', participants:1, maxParticipants:2, isNew:true });
-      r.push(free1); r.push(free2);
-    }
-    return r;
-  };
-  if (typeof _boardSeed !== 'undefined') {
-    try {
-      var x = _seedBoardChallenges();
-      if (Array.isArray(x) && x.length) { _boardCache = x; }
-    } catch(e){}
-  }
-}
 
 /* Patch enterApp() to prompt PIN setup if not set */
 if (typeof enterApp === 'function') {
@@ -2425,10 +2395,10 @@ function calcFairness(you, them) {
   };
 }
 
-// -- CLUTCH V2: BOARD STATE + MOCK DATA -----------------
+// -- CLUTCH V2: BOARD STATE -----------------
 var _boardFilter = 'all';
 var _boardView = 'grid';
-var _boardSeed = null;
+var _boardCache = [];
 var _myCohort = null; // fetched lazily, see _ensureMyCohort()
 
 // Skill cohort colors — soft sort/display only, not a hard rank.
@@ -2442,19 +2412,6 @@ function _ensureMyCohort() {
     .catch(function(){ return null; });
 }
 
-function _seedBoardChallenges() {
-  var now = Date.now();
-  return [
-    { id:'cb-nova',     game:'valorant',   isNew:true,  creator:'NovaStriker',     crRankShort:'Diamond II',   stake:5000,  format:'Best of 3', modeShort:'Bo3', title:'5 kills in a row? Prove it.',   desc:'First to get 5 kills in a row wins.',                       created:now-120000,    expiresAt:now+86400000,  participants:'1 / 2' },
-    { id:'cb-frag',     game:'cs2',        isNew:true,  creator:'FragMaster',      crRankShort:'Gold Nova III',stake:2500,  format:'Best of 1', modeShort:'Bo1', title:'AWP only, no scopes only.',   desc:'No scope AWP kills only. Most kills in 10 rounds.',        created:now-300000,    expiresAt:now+82800000,  participants:'1 / 2' },
-    { id:'cb-shadow',   game:'lol',        isNew:true,  creator:'ShadowTitan',     crRankShort:'Platinum I',   stake:3000,  format:'Best of 1', modeShort:'Bo1', title:'1v1 Mid lane. No excuses.',    desc:'First blood + 100 CS by 10 min wins.',                      created:now-600000,    expiresAt:now+79200000,  participants:'1 / 2' },
-    { id:'cb-viper',    game:'fortnite',   isNew:false, creator:'ViperLynx',       crRankShort:'Elite',        stake:1000,  format:'First to 3', modeShort:'Ft3', title:'Build fight to the death.',    desc:'Box fight 1v1. First to 3 wins.',                          created:now-720000,    expiresAt:now+75600000,  participants:'1 / 2' },
-    { id:'cb-kii',      game:'apex',       isNew:false, creator:'KiiTheorem',      crRankShort:'Diamond IV',   stake:2000,  format:'Best of 3', modeShort:'Bo3', title:'2v2 Arenas duel.',        desc:'You + a friend vs us. Best of 3. Let\'s see it.',           created:now-1080000,   expiresAt:now+72000000,  participants:'2 / 4' },
-    { id:'cb-wiz',      game:'rl',         isNew:false, creator:'ClutchWizard',    crRankShort:'Champion II',  stake:1500,  format:'Best of 3', modeShort:'Bo3', title:'1v1 for the rank.',            desc:'Winner takes the rank. No rematches.',                      created:now-1500000,   expiresAt:now+68400000,  participants:'1 / 2' },
-    { id:'cb-ghost',    game:'dota2',      isNew:false, creator:'CyberGhost',      crRankShort:'Ancient II',   stake:2000,  format:'Best of 1', modeShort:'Bo1', title:'Mid only or lose.',            desc:'Mid lane only. 1v1. No jungle, no help.',                   created:now-1920000,   expiresAt:now+64800000,  participants:'1 / 2' },
-    { id:'cb-owl',      game:'cod',        isNew:false, creator:'NightOwl_X',      crRankShort:'Crimson I',    stake:1000,  format:'Best of 1', modeShort:'Bo1', title:'Sniper only. Quickscopes.',    desc:'First to 20 kills wins. Search & Destroy.',                 created:now-2400000,   expiresAt:now+61200000,  participants:'1 / 2' }
-  ];
-}
 function _initToPillsColor(g) {
   var map = { valorant:'#ff4655', lol:'#5687c7', dota2:'#e68c80', clashroyale:'#7cbcf0', brawlstars:'#f2d768',
               cs2:'#e7b877', fortnite:'#ff6aac', apex:'#ff8591', ow2:'#ffbd55', rl:'#6ab0ff',
@@ -2509,17 +2466,16 @@ function loadBoard() {
   var base = ARENA_CONFIG.API_BASE || '';
   var done = function(data) {
     if (data && data.challenges && data.challenges.length) {
-      _boardCache = data.challenges;
+      // API challenges carry creatorName/createdAt; the board renders creator/created.
+      _boardCache = data.challenges.map(function(c) {
+        return Object.assign({}, c, { creator: c.creator || c.creatorName || 'Player', created: c.created || c.createdAt });
+      });
     } else {
       var stored = [];
       try { stored = JSON.parse(localStorage.getItem('clutch_board') || '[]'); } catch(e) { stored = []; }
       stored = stored.filter(function(c) { return c.expiresAt > Date.now() && c.status === 'open'; });
-      if (stored.length) {
-        _boardCache = stored;
-      } else {
-        if (!_boardSeed) _boardSeed = _seedBoardChallenges();
-        _boardCache = _boardSeed.slice();
-      }
+      // Only the player's own stored challenges, never placeholder ones.
+      _boardCache = stored;
     }
     applyBoardFilters();
     // Skill cohort loads lazily/async; re-render once known so same-cohort
@@ -2535,7 +2491,7 @@ function applyBoardFilters() {
   }
   var vOnly = document.getElementById('cb-verified');
   if (vOnly && vOnly.checked) {
-    out = out.filter(function(c){ return PLAYER_PROFILES[c.creator] && PLAYER_PROFILES[c.creator].verified; });
+    out = out.filter(function(c){ return !!c.modeVerifiable; });
   }
   var sortSel = document.getElementById('cb-sort');
   var sortBy = (sortSel && sortSel.value) || 'newest';
@@ -2577,6 +2533,19 @@ function renderBoard(challenges) {
   var list = document.getElementById('board-list');
   var pag = document.getElementById('board-pag');
   if (!list) return;
+  if (!_boardCache || !_boardCache.length) {
+    // Honest empty board: nothing open, so invite the visitor to post the first one.
+    list.innerHTML = '<div class="empty" id="board-empty" style="grid-column:1/-1">'
+      + '<div class="empty-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--acc)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="14" rx="2.5"/><path d="M3 9h18M8 13h4M8 16h6"/></svg></div>'
+      + '<h3>No open challenges right now.</h3>'
+      + '<p style="margin-bottom:18px">Post one and send the link to your rival.</p>'
+      + '<button class="cb-post-btn" onclick="openPostChallengeModal()">'
+      +   '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.6"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>'
+      +   'Post a Duel</button>'
+      + '</div>';
+    if (pag) pag.innerHTML = '';
+    return;
+  }
   if (!challenges || !challenges.length) {
     list.innerHTML = '<div style="grid-column:1/-1;text-align:center;padding:60px 24px;color:var(--txt3)">'
       + '<div style="font-size:22px;font-weight:800;color:#c8cfe0;margin-bottom:6px">No open duels match</div>'
@@ -2588,7 +2557,7 @@ function renderBoard(challenges) {
   var totalPages = Math.max(1, Math.ceil(challenges.length / perPage));
   challenges = challenges.slice(0, perPage);
   list.innerHTML = challenges.map(function(c) {
-    var prof = PLAYER_PROFILES[c.creator] || { verified:false };
+    var prof = { verified: !!c.modeVerifiable };
     var init = (c.creator || '?').charAt(0);
     var avVar = 'v-' + c.game;
     var pillClr = _initToPillsColor(c.game);
@@ -3991,14 +3960,6 @@ async function runAdminMaintenance() {
 }
 
 // ── RENDER: DASHBOARD ─────────────────────────────────
-// Activity data for ticker
-var ACTIVITY_FEED = [
-  {msg:'xZerO dueled SpeedRunner on Valorant', t:'2m ago'},
-  {msg:'NightHawk vs CryptoKing — LoL match settled', t:'7m ago'},
-  {msg:'Fr0st locked 200 CLU vs Apex_Legend', t:'15m ago'},
-  {msg:'Bolt claimed 400 CLU from CS2 match', t:'23m ago'},
-  {msg:'GG_Wolf dueled ShadowByte on Fortnite', t:'31m ago'},
-];
 
 function isMyDuel(d) {
   if (!d || !U.addr) return false;
@@ -4562,39 +4523,6 @@ function shareStatsCard(){
 }
 
 // ─── TRENDING HUB ────────────────────────────────────────────────────────────
-var HT_SEEDS={ht1:{a:621,d:283},ht2:{a:198,d:441},ht3:{a:874,d:312},ht4:{a:507,d:489}};
-function initHotTakeVotes(){
-  var votes=JSON.parse(localStorage.getItem('ht_votes')||'{}');
-  Object.keys(HT_SEEDS).forEach(function(id){
-    var seeds=HT_SEEDS[id]; var myVote=votes[id];
-    if(myVote){
-      var total=seeds.a+seeds.d+1; var agree=seeds.a+(myVote==='a'?1:0);
-      var ap=Math.round(agree/total*100);
-      var aBar=document.getElementById(id+'-abar'); var dBar=document.getElementById(id+'-dbar');
-      var aPct=document.getElementById(id+'-apct'); var dPct=document.getElementById(id+'-dpct');
-      if(aBar) aBar.style.width=ap+'%'; if(dBar) dBar.style.width=(100-ap)+'%';
-      if(aPct) aPct.textContent=ap+'%'; if(dPct) dPct.textContent=(100-ap)+'%';
-      var aBtn=document.querySelector('[data-ht="'+id+'"][data-side="a"]');
-      var dBtn=document.querySelector('[data-ht="'+id+'"][data-side="d"]');
-      if(aBtn) aBtn.disabled=true; if(dBtn) dBtn.disabled=true;
-    }
-  });
-}
-function voteHotTake(id,side){
-  var votes=JSON.parse(localStorage.getItem('ht_votes')||'{}');
-  if(votes[id]){ toast('Already voted!','error'); return; }
-  votes[id]=side; localStorage.setItem('ht_votes',JSON.stringify(votes));
-  var seeds=HT_SEEDS[id]; var total=seeds.a+seeds.d+1; var agree=seeds.a+(side==='a'?1:0);
-  var ap=Math.round(agree/total*100);
-  var aBar=document.getElementById(id+'-abar'); var dBar=document.getElementById(id+'-dbar');
-  var aPct=document.getElementById(id+'-apct'); var dPct=document.getElementById(id+'-dpct');
-  if(aBar) aBar.style.width=ap+'%'; if(dBar) dBar.style.width=(100-ap)+'%';
-  if(aPct) aPct.textContent=ap+'%'; if(dPct) dPct.textContent=(100-ap)+'%';
-  var aBtn=document.querySelector('[data-ht="'+id+'"][data-side="a"]');
-  var dBtn=document.querySelector('[data-ht="'+id+'"][data-side="d"]');
-  if(aBtn) aBtn.disabled=true; if(dBtn) dBtn.disabled=true;
-  toast(side==='a'?'Agreed!':'Cap!','success');
-}
 function setHubTab(tab,el){
   var validTabs = document.querySelectorAll('.hub-tab[data-tab]');
   var allTabs = document.querySelectorAll('.hub-tab');
@@ -4640,7 +4568,6 @@ function setHubTab(tab,el){
     wireTabs(); setTimeout(wireTabs, 500); setTimeout(wireTabs, 1500);
   }
 })();
-function initTrendingHub(){ initHotTakeVotes(); }
 
 // ─── SAVE PRESET HOOK ────────────────────────────────────────────────────────
 function saveWizPreset(){
@@ -4659,7 +4586,6 @@ function saveWizPreset(){
 }
 
 // Init
-initTrendingHub();
 
 /* ═══ GLOBAL ACCESSIBILITY ENHANCER — keyboard + labels across every view ═══
    Clutch drives most actions from onclick <div>/<span> elements and re-renders
