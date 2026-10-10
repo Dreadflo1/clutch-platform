@@ -378,6 +378,216 @@ function quickConnect() {
   document.getElementById('connect-modal').classList.remove('hidden');
 }
 
+// ── YOUR FIRST DUEL / RIVAL LOOP / OPEN CHALLENGES ─────────────────────────
+// Everything shown here is the visitor's or player's own real state, or live
+// data from /api/challenges. No invented players, counts or countdowns.
+var _fdMine = null;      // count of the player's own challenges (GET /api/challenges?mine), null = not loaded
+var _fdMineFor = '';     // which user _fdMine belongs to
+var _fdMyStats = null;   // this player's stats from /api/profile/achievements
+var _fdStatsFor = '';
+
+function _fdIsSigned() { return !!_authToken && !!U.addr && U.via !== 'guest'; }
+function _fdUserKey() { return String(U.userId || U.addr || ''); }
+function _fdEsc(s) { return (window._escAcc || String)(s); }
+
+function _rivalLinkSent() {
+  var k = _fdUserKey(); if (!k) return false;
+  try { return localStorage.getItem('clutch_rival_sent_' + k) === '1'; } catch (e) { return false; }
+}
+function _markRivalLinkSent() {
+  var k = _fdUserKey();
+  if (k) { try { localStorage.setItem('clutch_rival_sent_' + k, '1'); } catch (e) {} }
+  try { renderFirstDuel(); } catch (e) {}
+}
+
+function _fdRefreshServerState() {
+  if (!_fdIsSigned()) { _fdMine = null; _fdMineFor = ''; _fdMyStats = null; _fdStatsFor = ''; return; }
+  var k = _fdUserKey();
+  if (_fdMineFor !== k) {
+    _fdMineFor = k; _fdMine = null;
+    authFetch('/api/challenges?mine')
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (d) { if (_fdMineFor === k) { _fdMine = (d && typeof d.count === 'number') ? d.count : 0; renderFirstDuel(); } })
+      .catch(function () {});
+  }
+  if (_fdStatsFor !== k) {
+    _fdStatsFor = k; _fdMyStats = null;
+    authFetch('/api/profile/achievements')
+      .then(function (r) { return r.ok ? r.json() : null; })
+      .then(function (d) { if (_fdStatsFor === k && d && d.stats) { _fdMyStats = d.stats; renderRivalCards(); } })
+      .catch(function () {});
+  }
+}
+
+function _fdSteps() {
+  var signed = _fdIsSigned();
+  var accts = (typeof loadConnectedAccounts === 'function') ? loadConnectedAccounts() : {};
+  var riot = signed && !!(accts.riot && accts.riot.name);
+  var me = String(U.addr || '').toLowerCase();
+  var localDuel = signed && Array.isArray(DUELS) && DUELS.some(function (d) {
+    return String(d.creator || '').toLowerCase() === me || String(d.opponent || '').toLowerCase() === me;
+  });
+  var played = signed && (localDuel || (_fdMine || 0) > 0);
+  var sent = signed && _rivalLinkSent();
+  return [
+    { done: signed, title: 'Create your account', doneTitle: 'Account created',
+      sub: '500 free CLU on sign-up. In-app credit, no cash value.', doneSub: '500 CLU to start. No card, no catch.',
+      cta: 'Create my account', act: 'quickConnect()' },
+    { done: riot, title: 'Link your Riot ID', doneTitle: 'Riot ID linked',
+      sub: 'Riot checks your LoL and Valorant results. Nobody argues.', doneSub: riot ? accts.riot.name : '',
+      cta: 'Link my Riot ID', act: 'fdLinkRiot()' },
+    { done: played, title: 'Post or accept a challenge', doneTitle: 'Challenge on the board',
+      sub: 'Pick a verified mode, or take an open one from the Duel Board.', doneSub: 'Your first challenge is in.',
+      cta: 'Open the Duel Board', act: 'fdOpenBoard()' },
+    { done: sent, title: 'Send the link to your rival', doneTitle: 'Link sent',
+      sub: 'They open it, accept, and the game API settles it.', doneSub: 'Now go win it.',
+      cta: 'Challenge a friend', act: 'challengeAFriend()' }
+  ];
+}
+
+var FD_HEADLINES = [
+  '4 steps to your first verified win. Step one takes 30 seconds.',
+  '1 of 4 done. 500 CLU in the bank, 3 steps to go.',
+  'Halfway there. Two steps to your first verified win.',
+  'One step left. Send the link and make it official.',
+  'All four done. Now go win it.'
+];
+var FD_CHECK = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M20 6L9 17l-5-5" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+
+function renderFirstDuel() {
+  var mounts = document.querySelectorAll('[data-fd-mount]');
+  if (!mounts.length) return;
+  _fdRefreshServerState();
+  var steps = _fdSteps();
+  var done = steps.filter(function (s) { return s.done; }).length;
+  var nextIdx = -1;
+  for (var i = 0; i < steps.length; i++) { if (!steps[i].done) { nextIdx = i; break; } }
+  var html = '<div class="lah-header">'
+    + '<span class="lah-title"><span class="land-panel-title-dot"></span>YOUR FIRST DUEL</span>'
+    + '<span class="fd-pill' + (done === 4 ? ' all' : '') + '">' + done + ' / 4 done</span></div>'
+    + '<div class="fd-headline">' + FD_HEADLINES[done] + '</div>'
+    + '<div class="fd-bar"><div class="fd-bar-fill" style="width:' + (done * 25) + '%"></div></div>'
+    + '<div class="fd-steps">'
+    + steps.map(function (s, i) {
+        var cls = s.done ? 'done' : (i === nextIdx ? 'next' : '');
+        return '<div class="fd-step ' + cls + '">'
+          + '<div class="fd-num">' + (s.done ? FD_CHECK : (i + 1)) + '</div>'
+          + '<div class="fd-body">'
+          +   '<div class="fd-title">' + (s.done ? s.doneTitle : s.title) + '</div>'
+          +   '<div class="fd-sub">' + _fdEsc(s.done ? (s.doneSub || s.sub) : s.sub) + '</div>'
+          +   (i === nextIdx ? '<button class="fd-cta" onclick="' + s.act + '">' + s.cta + '</button>' : '')
+          + '</div></div>';
+      }).join('')
+    + '</div>';
+  mounts.forEach(function (m) {
+    m.innerHTML = html;
+    // On the dashboard the checklist steps aside once everything is done.
+    if (m.getAttribute('data-fd-mount') === 'dashboard') m.style.display = (done === 4) ? 'none' : '';
+  });
+}
+
+function renderRivalCards() {
+  var signed = _fdIsSigned();
+  var name = (signed && U.name) ? String(U.name) : 'You';
+  document.querySelectorAll('[data-rv-me]').forEach(function (el) { el.textContent = name; });
+  document.querySelectorAll('[data-rv-initial]').forEach(function (el) { el.textContent = name.charAt(0).toUpperCase(); });
+  var s = signed ? _fdMyStats : null;
+  var rec = (s && s.played) ? (s.wins + 'W · ' + s.losses + 'L so far') : 'Starts with your first win';
+  document.querySelectorAll('[data-rv-record]').forEach(function (el) { el.textContent = rec; });
+}
+
+function fdLinkRiot() {
+  if (!_fdIsSigned()) { quickConnect(); return; }
+  goTo('profile');
+  setTimeout(function () {
+    var w = document.getElementById('prof-connections');
+    if (w && w.scrollIntoView) w.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    try { toggleAccountOverlay('riot', true); } catch (e) {}
+    var inp = document.querySelector('[data-account-platform="riot"] .account-input');
+    if (inp) { try { inp.focus({ preventScroll: true }); } catch (e) { inp.focus(); } }
+  }, 250);
+}
+function fdLoadStats() {
+  var el = document.getElementById('prof-stats');
+  if (el && el.scrollIntoView) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+  try { renderProfileStats(); } catch (e) {}
+}
+function fdOpenBoard() {
+  if (!_fdIsSigned()) { quickConnect(); return; }
+  goTo('board');
+}
+// "Challenge a friend": the rival loop. A visitor signs up first; a player
+// re-shares their last duel link, or builds a duel to get one.
+function challengeAFriend() {
+  if (!_fdIsSigned()) { quickConnect(); return; }
+  if (window._lastDuelLink) { shareDuel(); return; }
+  goTo('create');
+  toast('Pick your game and a verified mode. You get a link to send your rival.', 'info');
+}
+
+// Landing: live open challenges from GET /api/challenges (same source as the
+// Duel Board). Empty is shown as empty, with an invitation to post the first one.
+function loadLandingChallenges() {
+  var list = document.getElementById('land-open-list');
+  var counts = document.querySelectorAll('[data-open-count]');
+  var sub = document.getElementById('land-open-sub');
+  if (!list && !counts.length) return;
+  function paint(arr, failed) {
+    var n = arr.length;
+    counts.forEach(function (el) { el.textContent = failed ? '—' : String(n); });
+    if (sub) sub.textContent = failed ? 'The board is reachable once you are in.'
+      : (n ? 'Pick one, or post your own and send the link.' : 'None yet. Post the first one and set the tone.');
+    if (!list) return;
+    if (!n) {
+      list.innerHTML = '<div class="lo-empty">'
+        + '<div class="lo-empty-icon"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="var(--acc)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2.5"/><path d="M3 9h18M12 12v4M10 14h4"/></svg></div>'
+        + '<div class="lo-empty-h">No open challenges yet. Post the first one.</div>'
+        + '<div class="lo-empty-p">The first challenge on the board gets every eye on it. Make it yours.</div>'
+        + '<button class="fd-cta" onclick="quickConnect()">Post the first challenge</button>'
+        + '</div>';
+      return;
+    }
+    list.innerHTML = arr.slice(0, 6).map(function (c) {
+      var who = String(c.creator || c.creatorName || 'Player');
+      var clr = _initToPillsColor(c.game);
+      var free = !!c.free || (c.stake || 0) === 0;
+      var mode = c.modeLabel || c.format || c.modeShort || c.mode || '';
+      return '<div class="lo-row">'
+        + '<div class="lo-game" style="color:' + clr + ';border-color:' + clr + '55;background:' + clr + '18">' + _fdEsc(_initToShortName(c.game)) + '</div>'
+        + '<div class="lo-side"><div class="lo-av">' + _fdEsc(who.charAt(0).toUpperCase()) + '</div>'
+        +   '<div style="min-width:0"><div class="lo-name">' + _fdEsc(who) + '</div>'
+        +   '<div class="lo-meta">' + _fdEsc(_initToDisplayName(c.game)) + (mode ? ' · ' + _fdEsc(mode) : '') + '</div></div></div>'
+        + '<div class="lo-vs">VS</div>'
+        + '<div class="lo-side lo-right"><div class="lo-av lo-av-open">?</div>'
+        +   '<div style="min-width:0"><div class="lo-name">Open seat</div>'
+        +   '<div class="lo-meta">' + (free ? 'Free duel' : ((c.stake || 0).toLocaleString() + ' CLU entry'))
+        +     (c.modeVerifiable ? ' · <span style="color:var(--acc)">API-verified</span>' : '') + '</div></div></div>'
+        + '<button class="lo-btn" onclick="quickConnect()">Take it</button>'
+        + '</div>';
+    }).join('');
+  }
+  fetch((ARENA_CONFIG.API_BASE || '') + '/api/challenges')
+    .then(function (r) { if (!r.ok) throw new Error('http'); return r.json(); })
+    .then(function (d) { paint((d && d.challenges) || [], false); })
+    .catch(function () { paint([], true); });
+}
+
+(function wireFirstDuel() {
+  function run() {
+    try { renderFirstDuel(); } catch (e) {}
+    try { renderRivalCards(); } catch (e) {}
+    try { loadLandingChallenges(); } catch (e) {}
+    // Re-check step 2 whenever a Riot ID is linked or unlinked.
+    if (typeof window.saveConnectedAccounts === 'function' && !window.saveConnectedAccounts.__fdPatched) {
+      var orig = window.saveConnectedAccounts;
+      window.saveConnectedAccounts = function (d) { orig(d); try { renderFirstDuel(); } catch (e) {} };
+      window.saveConnectedAccounts.__fdPatched = true;
+    }
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', run);
+  else setTimeout(run, 0);
+})();
+
 // Landing "Pick Your Game" selector — toggles the selected tile and remembers
 // the choice so the duel wizard can preselect it. (The tiles had no click
 // handler, so selecting a game did nothing.)
@@ -391,41 +601,6 @@ function pickLandingGame(el, game) {
   } catch (e) {}
 }
 window.pickLandingGame = pickLandingGame;
-
-function scrollFac(pageIndex) {
-  var scroller = document.getElementById('fac-scroll');
-  if (!scroller) return;
-  var card = scroller.querySelector('.fac-card');
-  if (!card) return;
-  var cardWidth = card.getBoundingClientRect().width;
-  var style = window.getComputedStyle(scroller);
-  var gap = parseFloat(style.columnGap || style.gap || 0) || 14;
-  var scrollAmount = pageIndex * (cardWidth * 3 + gap * 2);
-  scroller.scrollTo({ left: scrollAmount, behavior: 'smooth' });
-}
-
-document.addEventListener('DOMContentLoaded', function () {
-  var facScroller = document.getElementById('fac-scroll');
-  if (!facScroller) return;
-  var facDots = document.querySelectorAll('#fac-dots .fac-scroll-dot');
-  var currentActive = 0;
-  facScroller.addEventListener('scroll', function () {
-    var card = facScroller.querySelector('.fac-card');
-    if (!card) return;
-    var cardWidth = card.getBoundingClientRect().width;
-    var style = window.getComputedStyle(facScroller);
-    var gap = parseFloat(style.columnGap || style.gap || 0) || 14;
-    var pageWidth = cardWidth * 3 + gap * 2;
-    var scrollLeft = facScroller.scrollLeft;
-    var idx = Math.max(0, Math.round(scrollLeft / pageWidth));
-    idx = Math.min(idx, facDots.length - 1);
-    if (idx !== currentActive) {
-      if (facDots[currentActive]) facDots[currentActive].classList.remove('active');
-      if (facDots[idx]) facDots[idx].classList.add('active');
-      currentActive = idx;
-    }
-  }, { passive: true });
-});
 
 // Auth tab switcher (Sign up / Log in)
 function switchAuthTab(which) {
@@ -662,7 +837,7 @@ function scrollToHow() {
   var NAV_MAP = {
     dashboard:   'land-dashboard',
     leaderboard: 'land-leaderboard',
-    rewards:     'land-rewards',
+    community:   'land-community',
     challenges:  'land-challenges',
     friends:     'land-friends'
   };
@@ -1066,6 +1241,7 @@ function doDisconnect() {
   document.getElementById('page-app').style.display = 'none';
   document.getElementById('page-landing').style.display = 'flex';
   document.getElementById('page-landing').style.flexDirection = 'column';
+  try { renderFirstDuel(); renderRivalCards(); } catch(e){}
 }
 
 // ── SESSION RESTORE + PAYMENT RETURN ─────────────────────
@@ -1297,6 +1473,7 @@ function refreshAll() {
   var profName = document.getElementById('prof-name'); if (profName) profName.textContent = U.name || 'Player';
   var profAddr = document.getElementById('prof-addr'); if (profAddr) profAddr.textContent = U.addr ? (U.addr.slice(0,10)+'...') : 'Not connected';
   var profVia = document.getElementById('prof-via-badge'); if (profVia) profVia.textContent = U.via || '—';
+  try { renderFirstDuel(); renderRivalCards(); } catch(e){}
 }
 
 function fetchEthPrice() {
@@ -1595,8 +1772,8 @@ function showQRModal(duel, code){
       + '</div>'
       + '<button onclick="shareDuel()" class="btn btn-p btn-full" style="height:44px">Send to a rival</button>'
       + '<div style="display:flex;gap:8px">'
-        + '<a href="' + _duelShareHref('whatsapp') + '" target="_blank" rel="noopener" class="btn btn-g" style="flex:1;height:40px;display:flex;align-items:center;justify-content:center;text-decoration:none">WhatsApp</a>'
-        + '<a href="' + _duelShareHref('telegram') + '" target="_blank" rel="noopener" class="btn btn-g" style="flex:1;height:40px;display:flex;align-items:center;justify-content:center;text-decoration:none">Telegram</a>'
+        + '<a href="' + _duelShareHref('whatsapp') + '" target="_blank" rel="noopener" onclick="_markRivalLinkSent()" class="btn btn-g" style="flex:1;height:40px;display:flex;align-items:center;justify-content:center;text-decoration:none">WhatsApp</a>'
+        + '<a href="' + _duelShareHref('telegram') + '" target="_blank" rel="noopener" onclick="_markRivalLinkSent()" class="btn btn-g" style="flex:1;height:40px;display:flex;align-items:center;justify-content:center;text-decoration:none">Telegram</a>'
       + '</div>'
       + '<button onclick="copyDuelInvite()" class="btn btn-g btn-full" style="height:40px">Copy message for Discord</button>'
       + '<button onclick="copyDuelLink()" class="btn btn-g btn-full" style="height:36px;font-size:12px">Copy link only</button>'
@@ -1613,8 +1790,8 @@ function _copyText(txt, okMsg){
     } else { fb(); }
   } catch(e){ fb(); }
 }
-function copyDuelCode(){ _copyText(window._lastDuelCode || '', 'Duel code copied — send it to your friend'); }
-function copyDuelLink(){ _copyText(window._lastDuelLink || '', 'Share link copied'); }
+function copyDuelCode(){ _markRivalLinkSent(); _copyText(window._lastDuelCode || '', 'Duel code copied — send it to your friend'); }
+function copyDuelLink(){ _markRivalLinkSent(); _copyText(window._lastDuelLink || '', 'Share link copied'); }
 
 // Bring-a-rival loop: every duel is an invite. The message is short and bold so
 // it gets sent; the link carries ?join=, which boot() records as ref
@@ -1629,8 +1806,9 @@ function _duelShareHref(app){
   if (app === 'telegram') return 'https://t.me/share/url?url=' + encodeURIComponent(window._lastDuelLink || location.origin) + '&text=' + encodeURIComponent('I just challenged you to a 1v1 on CLUTCH. Prove it.');
   return window._lastDuelLink || location.origin;
 }
-function copyDuelInvite(){ _copyText(_duelInviteText(), 'Invite copied, paste it to your rival'); }
+function copyDuelInvite(){ _markRivalLinkSent(); _copyText(_duelInviteText(), 'Invite copied, paste it to your rival'); }
 function shareDuel(){
+  _markRivalLinkSent();
   var text = _duelInviteText();
   if (navigator.share) {
     navigator.share({ title: 'CLUTCH 1v1', text: text }).catch(function(){});
@@ -1740,33 +1918,25 @@ function copyCode() {
 }
 
 // ── ACCEPT ────────────────────────────────────────────
+// Accept preview: how this duel gets settled. No invented win-probability or
+// "fairness" numbers: we only state what is true for this game and mode.
 function renderAcceptFairness(them) {
-  var me = buildMyProfile();
-  var fair = calcFairness(me, them);
+  var esc = window._escAcc || String;
+  them = them || {};
   var fp = document.getElementById('ap-fair-predict');
   if (fp) {
-    fp.innerHTML = '<div style="text-align:left"><div style="font-size:10px;letter-spacing:.08em;color:var(--txt3);font-weight:700">' + (U.name || 'YOU') + '</div><div style="font-size:26px;font-weight:900;color:#00FF87;margin-top:2px">'+fair.pctYou+'%</div></div>'
-      + '<div style="text-align:center;padding:4px 12px;background:#13141a;border:1px solid #262a36;border-radius:999px"><div style="font-size:10px;font-weight:800;color:#fff;padding:2px 8px;background:#7000FF;border-radius:999px;letter-spacing:.04em;margin-bottom:4px">'+fair.diff+'</div><div style="font-size:10px;color:var(--txt3)">vs</div></div>'
-      + '<div style="text-align:right"><div style="font-size:10px;letter-spacing:.08em;color:var(--txt3);font-weight:700">' + (them && them.name || 'OPPONENT') + '</div><div style="font-size:26px;font-weight:900;color:var(--purple-txt);margin-top:2px">'+fair.pctThem+'%</div></div>';
+    fp.innerHTML = '<div style="text-align:left;min-width:0"><div style="font-size:10px;letter-spacing:.08em;color:var(--txt3);font-weight:700">YOU</div><div style="font-size:15px;font-weight:900;color:#00FF87;margin-top:2px;overflow:hidden;text-overflow:ellipsis">' + esc(U.name || 'You') + '</div></div>'
+      + '<div style="text-align:center;padding:4px 12px;background:#13141a;border:1px solid #262a36;border-radius:999px;font-size:11px;font-weight:900;color:var(--txt2)">VS</div>'
+      + '<div style="text-align:right;min-width:0"><div style="font-size:10px;letter-spacing:.08em;color:var(--txt3);font-weight:700">CREATOR</div><div style="font-size:15px;font-weight:900;color:var(--purple-txt);margin-top:2px;overflow:hidden;text-overflow:ellipsis">' + esc(them.name || 'Opponent') + '</div></div>';
   }
   var fs = document.getElementById('ap-fair-score');
   if (fs) {
-    var fcls = fair.overall >= 85 ? 'hi' : (fair.overall >= 65 ? 'lo' : 'very-lo');
-    var numCls = (fcls === 'hi') ? '#00FF87' : (fcls === 'lo' ? '#f0c832' : '#FF4D5E');
-    fs.innerHTML = '<div><span style="font-size:10px;color:var(--txt3);letter-spacing:.1em;font-weight:700">OVERALL FAIRNESS</span> <span style="font-size:18px;font-weight:900;color:'+numCls+';margin-left:6px">'+fair.overall+'%</span></div>'
-      + '<div style="font-size:11px;color:#8692ad;max-width:60%;text-align:right;line-height:1.3">'+fair.rec+'</div>';
+    fs.innerHTML = them.api
+      ? '<div style="font-size:12px;color:var(--txt2);line-height:1.55"><b style="color:var(--acc)">Checked by the ' + esc(them.apiName || 'game API') + '.</b> Play the match, the result comes from the match history. No screenshots, no arguments.</div>'
+      : '<div style="font-size:12px;color:var(--txt2);line-height:1.55"><b style="color:var(--gold)">Score confirmed by both players.</b> Upload proof if you disagree; disputes go to review.</div>';
   }
   var fbk = document.getElementById('ap-fair-breakdown');
-  if (fbk) {
-    fbk.innerHTML = fair.breakdown.map(function(b){
-      var cls = b.v >= 85 ? 'color:#00FF87' : (b.v >= 65 ? 'color:#f0c832' : 'color:#FF4D5E');
-      return '<div style="background:#13141a;border:1px solid #262a36;border-radius:8px;padding:8px 10px">'
-        + '<div style="font-size:9px;color:var(--txt3);font-weight:700;letter-spacing:.06em;margin-bottom:4px">'+b.k+'</div>'
-        + '<div style="font-size:14px;font-weight:900;'+cls+'">'+b.v+'%</div>'
-        + '<div style="height:3px;background:#262a36;border-radius:999px;margin-top:6px;overflow:hidden"><div style="height:100%;width:'+Math.min(100,b.v)+'%;background:linear-gradient(90deg,#00FF87,#7000FF);border-radius:999px"></div></div>'
-        + '</div>';
-    }).join('');
-  }
+  if (fbk) fbk.innerHTML = '';
 }
 
 function previewAccept() {
@@ -1803,9 +1973,7 @@ function previewAccept() {
     if (potLabel) potLabel.textContent = 'Your Entry (locked in neutral escrow)';
   }
   try {
-    var them = PLAYER_PROFILES[data.creator] || { name: data.creator, game: data.game, official:{ wr:50, matches:0 }, clutch:{ rating:700, form:50, opponentQ:50, consistency:50, pressure:50 }, dna:[], recentForm:['W','L','W','L','W','W','L','L','W','W'], opponent:{ wrRaw:'Unknown',avgTier:'Unknown',difficulty:'Unknown'} };
-    them.name = data.creator;
-    renderAcceptFairness(them);
+    renderAcceptFairness({ name: data.creator, game: data.game, api: !!g.api, apiName: g.apiName });
   } catch(e) { console.warn(e); }
   document.getElementById('accept-preview-panel').style.display = 'block';
   document.getElementById('accept-preview-panel').scrollIntoView({behavior:'smooth'});
@@ -2273,128 +2441,6 @@ if (typeof enterApp === 'function') {
 
 // ======== /PIN + PAID/FREE END ========
 
-var PLAYER_PROFILES = {
-  'NovaStriker': {
-    game:'valorant', verified:true, online:true, status:'In Game',
-    official:{ rank:'Diamond II', tier:'D2', wr:54, matches:1842, seasonAct:'Episode 9 Act 2', rr:18 },
-    clutch:{ rating:847, percentile:'TOP 8%', conf:'high', confMatches:1842,
-             adjWr:56.8, form:92, opponentQ:86, consistency:78, pressure:91 },
-    dna:[ {k:'Aggressive', v:82}, {k:'Mechanical', v:91}, {k:'Clutch', v:88}, {k:'Consistent', v:70}, {k:'Team Play', v:62} ],
-    recentForm:['W','W','L','W','W','W','W','L','W','W'],
-    opponent:{ wrRaw:'vs avg Platinum I', avgTier:'Ascendant-adjacent', difficulty:'High Competition' }
-  },
-  'FragMaster': {
-    game:'cs2', verified:true, online:false, status:'Offline 3h',
-    official:{ rank:'Gold Nova III', tier:'GN3', wr:61, matches:1284, seasonAct:'Premier Season 7', rr:1210 },
-    clutch:{ rating:722, percentile:'TOP 22%', conf:'high', confMatches:1284,
-             adjWr:59.1, form:80, opponentQ:72, consistency:85, pressure:76 },
-    dna:[ {k:'Aggressive', v:76}, {k:'Mechanical', v:80}, {k:'Clutch', v:68}, {k:'Consistent', v:85}, {k:'Strategic', v:72} ],
-    recentForm:['W','L','W','W','W','L','W','W','D','W'],
-    opponent:{ wrRaw:'vs avg Silver Elite', avgTier:'AK-MG adjacent', difficulty:'Balanced' }
-  },
-  'ShadowTitan': {
-    game:'lol', verified:true, online:true, status:'In Lobby',
-    official:{ rank:'Platinum I', tier:'P1', wr:51, matches:2105, seasonAct:'Split 2', lp:42 },
-    clutch:{ rating:789, percentile:'TOP 12%', conf:'high', confMatches:2105,
-             adjWr:54.3, form:88, opponentQ:92, consistency:71, pressure:84 },
-    dna:[ {k:'Aggressive', v:64}, {k:'Mechanical', v:71}, {k:'Clutch', v:84}, {k:'Consistent', v:70}, {k:'Strategic', v:90} ],
-    recentForm:['W','W','W','L','W','W','L','W','W','W'],
-    opponent:{ wrRaw:'vs avg Gold II', avgTier:'Emerald-adjacent', difficulty:'High Opponent Quality' }
-  },
-  'ViperLynx': {
-    game:'fortnite', verified:true, online:true, status:'Ranked Match',
-    official:{ rank:'Elite', tier:'E1', wr:42, matches:924, seasonAct:'Chapter 6 S1', rp:8820 },
-    clutch:{ rating:694, percentile:'TOP 31%', conf:'medium', confMatches:924,
-             adjWr:48.2, form:76, opponentQ:78, consistency:64, pressure:70 },
-    dna:[ {k:'Aggressive', v:88}, {k:'Mechanical', v:82}, {k:'Clutch', v:58}, {k:'Consistent', v:64}, {k:'Adaptive', v:72} ],
-    recentForm:['W','L','L','W','W','L','W','L','W','W'],
-    opponent:{ wrRaw:'vs avg Diamond', avgTier:'Champion-adjacent', difficulty:'Tough Lobbies' }
-  },
-  'KiiTheorem': {
-    game:'apex', verified:true, online:false, status:'Offline 1d',
-    official:{ rank:'Diamond IV', tier:'D4', wr:48, matches:612, seasonAct:'Ranked Split 2', rp:9850 },
-    clutch:{ rating:748, percentile:'TOP 18%', conf:'medium', confMatches:612,
-             adjWr:52.1, form:72, opponentQ:84, consistency:66, pressure:78 },
-    dna:[ {k:'Aggressive', v:80}, {k:'Mechanical', v:76}, {k:'Clutch', v:78}, {k:'Consistent', v:66}, {k:'Team Play', v:86} ],
-    recentForm:['L','W','W','L','W','L','L','W','W','W'],
-    opponent:{ wrRaw:'vs avg Platinum II', avgTier:'Master-adjacent', difficulty:'High Quality' }
-  },
-  'ClutchWizard': {
-    game:'rl', verified:true, online:true, status:'In Game',
-    official:{ rank:'Champion II', tier:'C2', wr:57, matches:3108, seasonAct:'Season 15', mmr:1620 },
-    clutch:{ rating:874, percentile:'TOP 5%', conf:'high', confMatches:3108,
-             adjWr:59.7, form:94, opponentQ:88, consistency:82, pressure:95 },
-    dna:[ {k:'Aggressive', v:74}, {k:'Mechanical', v:93}, {k:'Clutch', v:95}, {k:'Consistent', v:82}, {k:'Team Play', v:84} ],
-    recentForm:['W','W','W','W','L','W','W','W','L','W'],
-    opponent:{ wrRaw:'vs avg Champion I', avgTier:'Grand Champion-adjacent', difficulty:'Top Tier' }
-  },
-  'CyberGhost': {
-    game:'dota2', verified:true, online:true, status:'Queueing',
-    official:{ rank:'Ancient II', tier:'A2', wr:49, matches:1792, seasonAct:'Patch 7.40', mmr:4020 },
-    clutch:{ rating:812, percentile:'TOP 9%', conf:'high', confMatches:1792,
-             adjWr:52.8, form:85, opponentQ:90, consistency:73, pressure:87 },
-    dna:[ {k:'Aggressive', v:60}, {k:'Mechanical', v:76}, {k:'Clutch', v:87}, {k:'Consistent', v:73}, {k:'Strategic', v:92} ],
-    recentForm:['W','L','W','W','L','W','W','L','W','W'],
-    opponent:{ wrRaw:'vs avg Legend', avgTier:'Divine-adjacent', difficulty:'High Competition' }
-  },
-  'NightOwl_X': {
-    game:'cod', verified:true, online:true, status:'In Match',
-    official:{ rank:'Crimson I', tier:'CR1', wr:58, matches:864, seasonAct:'Season 4 Reloaded', sr:23100 },
-    clutch:{ rating:758, percentile:'TOP 15%', conf:'medium', confMatches:864,
-             adjWr:56.2, form:82, opponentQ:74, consistency:79, pressure:81 },
-    dna:[ {k:'Aggressive', v:86}, {k:'Mechanical', v:82}, {k:'Clutch', v:81}, {k:'Consistent', v:79}, {k:'Objective-Focused', v:74} ],
-    recentForm:['W','W','W','L','W','L','W','W','W','L'],
-    opponent:{ wrRaw:'vs avg Amber IV', avgTier:'Crimson-adjacent', difficulty:'Balanced' }
-  }
-};
-// Shortcut to build self-profile on demand
-function buildMyProfile() {
-  var name = U.name || 'You';
-  var game = 'valorant';
-  return {
-    game:game, verified:!!_authToken, online:true, status:(_authToken ? 'Online' : 'Guest'),
-    official:{ rank:'Diamond III', tier:'D3', wr:52, matches:(_authToken? 482 : 0), seasonAct:'Episode 9 Act 2', rr:42 },
-    clutch:{ rating:798, percentile:'TOP 11%', conf:(_authToken? 'medium' : 'insuf'), confMatches:(_authToken? 482 : 0),
-             adjWr:55.1, form:74, opponentQ:76, consistency:72, pressure:80 },
-    dna:[ {k:'Aggressive', v:70}, {k:'Mechanical', v:78}, {k:'Clutch', v:80}, {k:'Consistent', v:72}, {k:'Team Play', v:68} ],
-    recentForm:['W','L','W','W','L','W','W','L','W','D'],
-    opponent:{ wrRaw:'vs avg Platinum III', avgTier:'Ascendant-adjacent', difficulty:'Rising Competition' }
-  };
-}
-function calcFairness(you, them) {
-  if (!you || !them) return { overall:50, breakdown:[], pctYou:50, pctThem:50, diff:'Competitive', rec:'Not enough data.' };
-  var skillYou = you.clutch.rating;
-  var skillThem = them.clutch.rating;
-  var skillBal = 100 - Math.min(100, Math.abs(skillYou - skillThem));
-  var formBal = 100 - Math.min(100, Math.abs((you.clutch.form||50) - (them.clutch.form||50)) * 2);
-  var expBal = 100 - Math.min(100, Math.abs((you.official.matches||0) - (them.official.matches||0)) / 30);
-  var oppBal = 100 - Math.min(100, Math.abs((you.clutch.opponentQ||50) - (them.clutch.opponentQ||50)) * 2);
-  var fam = Math.min(100, 70 + Math.random()*15);
-  skillBal = Math.round(skillBal); formBal = Math.round(formBal); expBal = Math.round(expBal); oppBal = Math.round(oppBal); fam = Math.round(fam);
-  var weights = [0.4, 0.2, 0.15, 0.15, 0.1];
-  var overall = Math.round(skillBal*weights[0] + formBal*weights[1] + expBal*weights[2] + oppBal*weights[3] + fam*weights[4]);
-  var mean = (skillYou + skillThem) / 2;
-  var delta = skillThem - skillYou;
-  var winPct = Math.max(2, Math.min(98, Math.round(50 - delta * 0.35)));
-  var losePct = 100 - winPct;
-  var diff;
-  if (winPct >= 70) diff = 'Easy';
-  else if (winPct >= 58) diff = 'Competitive';
-  else if (winPct >= 45) diff = 'Hard';
-  else diff = 'Very Hard';
-  var rec;
-  if (overall >= 90) rec = 'This duel is expected to be highly competitive and fair.';
-  else if (overall >= 75) rec = 'This duel is expected to be competitive — slight edge on one side.';
-  else rec = 'Skill mismatch detected — consider a closer opponent for a more balanced match.';
-  return {
-    overall: overall, breakdown:[
-      {k:'Skill Balance', v:skillBal}, {k:'Recent Form', v:formBal}, {k:'Experience', v:expBal},
-      {k:'Opponent Strength', v:oppBal}, {k:'Game Familiarity', v:fam}
-    ],
-    pctYou: winPct, pctThem: losePct, diff: diff, rec: rec
-  };
-}
-
 // -- CLUTCH V2: BOARD STATE -----------------
 var _boardFilter = 'all';
 var _boardView = 'grid';
@@ -2648,52 +2694,6 @@ function filterBoard(gameId, el) {
 
 
 // ── CLUTCH V2: PROFILE RENDERING ────────────────────────
-var _ocView = 'both';
-function switchOCView(which, el) {
-  _ocView = which;
-  var offTab = document.getElementById('oc-tab-off');
-  var clTab = document.getElementById('oc-tab-clutch');
-  var grid = document.getElementById('profile-oc-grid');
-  if (!offTab || !clTab || !grid) return;
-  offTab.classList.remove('active');
-  clTab.classList.remove('active');
-  if (el) el.classList.add('active');
-  var cols = grid.querySelectorAll('.ps-oc-col');
-  cols.forEach(function(c){ c.style.opacity = '1'; c.style.transform = 'none'; c.style.filter = ''; });
-  if (which === 'off') {
-    cols.forEach(function(c,i){ if (i===1) { c.style.opacity='.25'; c.style.filter='blur(1px)'; } });
-  } else if (which === 'clutch') {
-    cols.forEach(function(c,i){ if (i===0) { c.style.opacity='.25'; c.style.filter='blur(1px)'; } });
-  }
-}
-
-function _dimVal(game, dimName, prof) {
-  try {
-    if (prof && prof.clutch && prof.clutch.dims && prof.clutch.dims[dimName] != null) return prof.clutch.dims[dimName];
-  } catch(e) {}
-  var seed = ((game||'') + '|' + dimName + '|' + ((prof && prof.official && prof.official.rank) || '')).split('').reduce(function(a,c){return (a*31 + c.charCodeAt(0)) & 0x7fffffff;}, 7);
-  return 55 + (seed % 40);
-}
-
-function _buildDims(game, prof) {
-  var maps = {
-    valorant: ['Mechanical Skill','Aim','Decision Making','Clutch','Consistency','Team Impact','Recent Form','Opponent Strength'],
-    cs2:      ['Aim','Game Sense','Positioning','Clutch','Consistency','Utility Usage','Recent Form','Opponent Strength'],
-    lol:      ['Laning','Teamfighting','Macro','Clutch','Consistency','Vision','Recent Form','Opponent Strength'],
-    dota2:    ['Laning','Teamfights','Draft','Clutch','Consistency','Farm','Recent Form','Opponent Strength'],
-    fortnite: ['Aim','Build/Edit','Positioning','Clutch','Consistency','Rotations','Recent Form','Opponent Strength'],
-    apex:     ['Aim','Movement','Positioning','Team Play','Clutch','Consistency','Recent Form','Opponent Strength'],
-    rl:       ['Mechanical','Positioning','Passing','Defense','Consistency','Boost Mgmt','Recent Form','Opponent Strength'],
-    cod:      ['Aim','Movement','Rotations','Clutch','Consistency','Objective','Recent Form','Opponent Strength'],
-    ow2:      ['Aim','Positioning','Ult Economy','Clutch','Consistency','Team Synergy','Recent Form','Opponent Strength'],
-    clashroyale: ['Deck Mastery','Win Rate','Opp. Strength','Consistency','Adaptability','Decisions','Recent Form','Elixir Mgmt'],
-    brawlstars:['Mechanics','Game Sense','Brawler Mastery','Adaptability','Team Play','Consistency','Recent Form','Opp. Strength'],
-    fifa:     ['Finishing','Passing','Defense','Possession','Adaptability','Consistency','Recent Form','Opponent Strength']
-  };
-  var names = maps[game] || maps.valorant;
-  return names.map(function(n) { return { k:n, v:_dimVal(game,n.toLowerCase().replace(/[^a-z0-9]/g,''),prof) }; });
-}
-
 async function _fetchLolStats(handle, region) {
   try {
     var res = await fetch((ARENA_CONFIG.API_BASE || '') + '/api/stats/lol?handle=' + encodeURIComponent(String(handle).replace('#', '-')) + '&region=' + encodeURIComponent(region));
@@ -2755,7 +2755,7 @@ async function renderProfileProgress() {
     if (!res.ok) { el.innerHTML = '<div style="color:var(--red);font-size:12px">Progress unavailable: ' + (window._escAcc||String)(d.error || 'error') + '</div>'; if (streakEl) streakEl.textContent=''; return; }
     if (d.cohort) _myCohort = d.cohort; // reuse for Duel Board sort, avoids a second fetch
     el.innerHTML = _progressHtml(d);
-    if (streakEl) streakEl.innerHTML = (d.stats.currentStreak > 0) ? ('🔥 ' + d.stats.currentStreak + ' win streak') : '';
+    if (streakEl) streakEl.innerHTML = (d.stats.currentStreak > 0) ? (d.stats.currentStreak + ' win streak') : '';
   } catch (e) {
     el.innerHTML = '<div style="color:var(--red);font-size:12px">Could not load progress right now.</div>';
     if (streakEl) streakEl.textContent = '';
@@ -2773,16 +2773,16 @@ function _progressHtml(d) {
   var earnedHtml = b.earned.length
     ? '<div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(84px,1fr));gap:8px;margin-bottom:16px">'
       + b.earned.map(function(x) { return '<div title="' + esc(x.desc) + '" style="text-align:center;padding:10px 6px;border-radius:12px;background:rgba(0,255,135,.06);border:1px solid rgba(0,255,135,.2)">'
-        + '<div style="font-size:22px">' + x.icon + '</div>'
+        + '<div style="display:flex;justify-content:center;color:' + (tierClr[x.tier] || 'var(--acc)') + '"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="14" r="6" stroke="currentColor" stroke-width="1.9"/><path d="M8.5 3h7l-2 5.5h-3z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></svg></div>'
         + '<div style="font-size:10px;font-weight:800;margin-top:4px;color:' + (tierClr[x.tier] || 'var(--txt)') + '">' + esc(x.label) + '</div></div>'; }).join('')
       + '</div>'
-    : '<div style="color:var(--txt3);font-size:12px;margin-bottom:16px">No badges yet — win your first duel to earn <b>First Blood</b> 🩸</div>';
+    : '<div style="color:var(--txt3);font-size:12px;margin-bottom:16px">No badges yet — win your first duel to earn <b>First Blood</b>.</div>';
   var nextHtml = b.next.length
     ? '<div style="font-size:11px;font-weight:800;color:var(--txt3);text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px">Next up</div>'
       + b.next.slice(0, 4).map(function(x) { return '<div style="margin-bottom:10px">'
-        + '<div style="display:flex;justify-content:space-between;gap:8px;font-size:11.5px;margin-bottom:4px"><span>' + x.icon + ' <b>' + esc(x.label) + '</b> <span style="color:var(--txt3)">· ' + esc(x.desc) + '</span></span><span style="color:var(--txt3);font-weight:700;white-space:nowrap">' + x.progress + '/' + x.goal + '</span></div>'
+        + '<div style="display:flex;justify-content:space-between;gap:8px;font-size:11.5px;margin-bottom:4px"><span><b>' + esc(x.label) + '</b> <span style="color:var(--txt3)">· ' + esc(x.desc) + '</span></span><span style="color:var(--txt3);font-weight:700;white-space:nowrap">' + x.progress + '/' + x.goal + '</span></div>'
         + '<div style="height:6px;border-radius:6px;background:var(--b);overflow:hidden"><div style="height:100%;width:' + x.pct + '%;background:linear-gradient(90deg,var(--acc),#7000FF)"></div></div></div>'; }).join('')
-    : '<div style="color:var(--acc);font-size:12px;font-weight:700">🏆 All badges unlocked — legend.</div>';
+    : '<div style="color:var(--acc);font-size:12px;font-weight:700">All badges unlocked. Legend.</div>';
   return head + earnedHtml + nextHtml;
 }
 
@@ -2835,153 +2835,57 @@ async function renderProfileStats() {
   }
 }
 
+// Profile header card: only the player's real data. Clutch record + next badge
+// come from /api/profile/achievements (written at settlement, server-side);
+// the Riot ID comes from Connected Accounts. A new player sees 0W · 0L and an
+// invitation, never invented ranks or percentiles.
 function renderProfile() {
   var card = document.getElementById('profile-stat-card');
   if (!card) return;
+  var esc = window._escAcc || String;
+  function set(id, txt) { var el = document.getElementById(id); if (el) el.textContent = txt; return el; }
 
-  var prof = buildMyProfile();
   var nameEl = document.getElementById('prof-name-input');
   if (nameEl && !nameEl.value && U.name) nameEl.value = U.name;
 
+  var accts = (typeof loadConnectedAccounts === 'function') ? loadConnectedAccounts() : {};
+  var riot = (_fdIsSigned() && accts.riot && accts.riot.name) ? accts.riot : null;
+
   var vBadge = document.getElementById('prof-verified-badge');
-  if (vBadge) vBadge.style.display = prof.verified ? 'inline-flex' : 'none';
-  var gd = document.getElementById('prof-game-dot');
-  if (gd) { gd.style.background = _initToPillsColor(prof.game); }
-  var gn = document.getElementById('prof-game-name');
-  if (gn) gn.textContent = _initToDisplayName(prof.game);
-  var ri = document.getElementById('prof-rank-inline');
-  if (ri) ri.textContent = prof.official.rank;
-
+  if (vBadge) vBadge.style.display = (riot && riot.status === 'verified') ? 'inline-flex' : 'none';
+  set('prof-rank-inline', riot ? ('Riot ID ' + riot.name) : 'Riot ID not linked');
   var st = document.getElementById('prof-status-el');
-  if (st) {
-    st.textContent = prof.online ? prof.status : 'Offline';
-    st.className = 'ps-status ' + (prof.online ? 'online' : '');
-    if (!prof.online) { st.style.background='rgba(134,146,173,.08)'; st.style.color='#8692ad'; st.style.border='1px solid #262a36'; }
+  if (st) { st.textContent = _authToken ? 'Signed in' : 'Guest'; st.className = 'ps-status ' + (_authToken ? 'online' : ''); }
+
+  set('pr-riot-name', riot ? riot.name : 'Not linked');
+  set('pr-riot-sub', riot ? 'Riot checks your LoL and Valorant duels against this ID.' : 'Link it so Riot can check your LoL and Valorant results.');
+  var rb = document.getElementById('pr-riot-btn');
+  if (rb) {
+    rb.textContent = riot ? 'Load my LoL stats' : 'Link my Riot ID';
+    rb.onclick = riot ? fdLoadStats : fdLinkRiot;
   }
 
-  var cs = document.getElementById('pr-clutch-score');
-  if (cs) cs.innerHTML = prof.clutch.rating + '<span class="ps-rn-max"> / 1000</span>';
-  var pp = document.getElementById('pr-pct');
-  if (pp) pp.textContent = prof.clutch.percentile;
-
-  var conf = prof.clutch.conf || 'medium';
-  var confLabel = ({high:'HIGH CONFIDENCE', medium:'MEDIUM CONFIDENCE', low:'LOW CONFIDENCE', insuf:'INSUFFICIENT DATA'})[conf] || 'MEDIUM CONFIDENCE';
-  var confMatches = (prof.clutch.confMatches||0).toLocaleString() + ' VERIFIED MATCHES';
-  var csEl = document.getElementById('pr-conf-state');
-  if (csEl) { csEl.className = 'ps-conf-state ' + (conf === 'insuf' ? 'insuf' : conf); csEl.textContent = confLabel; }
-  var ccEl = document.getElementById('pr-conf-count');
-  if (ccEl) ccEl.textContent = confMatches;
-  var cfEl = document.getElementById('pr-conf-fill');
-  if (cfEl) cfEl.className = 'ps-conf-fill ' + (conf === 'insuf' ? 'low' : conf);
-
-  var p1 = document.getElementById('pr-off-rank'); if (p1) p1.textContent = prof.official.rank;
-  var p2 = document.getElementById('pr-off-season'); if (p2) p2.textContent = prof.official.seasonAct || 'Season';
-  var p3 = document.getElementById('pr-wr-off'); if (p3) p3.textContent = prof.official.wr + '%';
-  var p4 = document.getElementById('pr-matches-off'); if (p4) p4.textContent = (prof.official.matches||0).toLocaleString();
-
-  var rrTxt = (prof.official.rr!=null?'RR':prof.official.lp!=null?'LP':'MMR');
-  var rrVal = (prof.official.rr!=null?prof.official.rr:prof.official.lp!=null?prof.official.lp:prof.official.mmr||0);
-  var o5 = document.getElementById('oc-off-rank'); if (o5) o5.textContent = prof.official.rank + ' · ' + rrVal + ' ' + rrTxt;
-  var o1 = document.getElementById('oc-off-wr'); if (o1) o1.textContent = prof.official.wr + '%';
-  var o2 = document.getElementById('oc-off-matches'); if (o2) o2.textContent = (prof.official.matches||0).toLocaleString();
-  var streakEl = document.getElementById('oc-off-streak');
-  try {
-    var wins = prof.recentForm.slice(0,3).filter(function(r){return r==='W'}).length;
-    var losses = prof.recentForm.slice(0,3).filter(function(r){return r==='L'}).length;
-    if (streakEl) streakEl.textContent = (wins>losses ? wins+'W' : losses + 'L');
-  } catch(e) {}
-  var c1 = document.getElementById('oc-clutch-rank'); if (c1) c1.textContent = prof.clutch.rating + ' / 1000 · ' + prof.clutch.percentile;
-  var c2 = document.getElementById('oc-clutch-wr'); if (c2) c2.textContent = prof.clutch.adjWr + '%';
-  var c3 = document.getElementById('oc-clutch-form'); if (c3) c3.textContent = prof.clutch.form + ' / 100';
-  var c4 = document.getElementById('oc-clutch-opp'); if (c4) c4.textContent = prof.clutch.opponentQ + ' / 100';
-  var c5 = document.getElementById('oc-clutch-pres'); if (c5) c5.textContent = prof.clutch.pressure + ' / 100';
-
-  var dims = _buildDims(prof.game, prof);
-  var dimsGrid = document.getElementById('pr-dims-grid');
-  if (dimsGrid) {
-    dimsGrid.innerHTML = dims.slice(0,8).map(function(d){
-      return '<div class="ps-dim"><div class="ps-dim-k">' + d.k + '</div>'
-        + '<div class="ps-dim-v">' + d.v + '</div>'
-        + '<div class="ps-dim-bar"><div class="ps-dim-fill" style="width:'+Math.min(100,d.v)+'%"></div></div></div>';
-    }).join('');
+  function paint(s, badges) {
+    s = s || { played: 0, wins: 0, losses: 0, winRate: 0, currentStreak: 0, bestStreak: 0 };
+    set('pr-clutch-score', (s.wins || 0) + 'W · ' + (s.losses || 0) + 'L');
+    set('pr-pct', s.played ? (s.winRate + '% WIN RATE') : 'NEW');
+    set('pr-record-sub', s.played
+      ? (s.played + ' duel' + (s.played === 1 ? '' : 's') + ' played' + (s.currentStreak > 0 ? ' · ' + s.currentStreak + ' win streak' : '') + ' · best streak ' + (s.bestStreak || 0))
+      : 'No duels yet. Your record starts with your first win.');
+    var nx = badges && badges.next && badges.next[0];
+    set('pr-next-badge', nx ? nx.label : (badges && badges.earned && badges.earned.length ? 'All unlocked' : 'First Blood'));
+    set('pr-next-sub', nx ? (nx.desc + ' · ' + nx.progress + '/' + nx.goal) : 'Win your first duel.');
+    var nf = document.getElementById('pr-next-fill'); if (nf) nf.style.width = (nx ? Math.min(100, nx.pct || 0) : 0) + '%';
+    var nm = document.getElementById('pr-next-move');
+    if (nm) nm.style.display = s.played ? 'none' : '';
+    _fdMyStats = s; renderRivalCards();
   }
-
-  var dnaGrid = document.getElementById('pr-dna-grid');
-  if (dnaGrid) {
-    dnaGrid.innerHTML = prof.dna.map(function(d){
-      return '<div class="ps-dna-row"><div class="ps-dna-k">' + d.k + '</div>'
-        + '<div class="ps-dna-track"><div class="ps-dna-fill" style="width:'+Math.min(100,d.v)+'%"></div></div>'
-        + '<div class="ps-dna-v">' + d.v + '</div></div>';
-    }).join('');
-  }
-
-  var formStrip = document.getElementById('pr-form-strip');
-  if (formStrip) {
-    formStrip.innerHTML = prof.recentForm.map(function(r,i){
-      var letter = r;
-      return '<div class="ps-result ' + r.toLowerCase() + '" title="Match ' + (i+1) + ': ' + (r==='W'?'Win':r==='L'?'Loss':'Draw') + '">' + letter + '</div>';
-    }).join('');
-  }
-  var formTrend = document.getElementById('pr-form-trend');
-  if (formTrend) {
-    var last5 = prof.recentForm.slice(-5);
-    var w5 = last5.filter(function(r){return r==='W'}).length;
-    var l5 = last5.filter(function(r){return r==='L'}).length;
-    var delta = w5 - l5;
-    formTrend.textContent = (delta >=0 ? '▲ ' : '▼ ') + Math.abs(delta) + ' net W/L over last 5 · trend ' + (delta>=0?'UP':'DOWN');
-    formTrend.style.color = (delta >=0 ? '#00FF87' : '#FF4D5E');
-  }
-
-  var oppGrid = document.getElementById('pr-opp-grid');
-  if (oppGrid) {
-    oppGrid.innerHTML = [
-      { lbl:'RAW WIN RATE', val: prof.official.wr + '%', sub:prof.opponent.wrRaw },
-      { lbl:'AVERAGE OPPONENT', val: prof.opponent.avgTier, sub: prof.opponent.difficulty },
-      { lbl:'OPPONENT-ADJ',   val: prof.clutch.adjWr + '%', sub:'Adjusted for quality' }
-    ].map(function(o){
-      return '<div class="ps-opp-cell"><div class="ps-opp-lbl">' + o.lbl + '</div>'
-        + '<div class="ps-opp-val">' + o.val + '</div>'
-        + '<div class="ps-opp-sub">' + o.sub + '</div></div>';
-    }).join('');
-  }
-
-  var them = PLAYER_PROFILES['NovaStriker'];
-  var fair = calcFairness(prof, them);
-  var fp = document.getElementById('pr-fair-predict');
-  if (fp) {
-    fp.innerHTML = '<div class="ps-fp-you"><div class="ps-fp-name">' + (U.name || 'YOU') + '</div><div class="ps-fp-val">' + fair.pctYou + '%</div></div>'
-      + '<div class="ps-fp-vs"><div class="ps-fp-diff">' + fair.diff + '</div><div style="font-size:10px;color:var(--txt3)">50%</div></div>'
-      + '<div class="ps-fp-them"><div class="ps-fp-name">NOVASTRIKER</div><div class="ps-fp-val">' + fair.pctThem + '%</div></div>';
-  }
-  var fs = document.getElementById('pr-fair-score');
-  if (fs) {
-    var fairClass = fair.overall >= 85 ? 'hi' : (fair.overall >= 65 ? 'lo' : 'very-lo');
-    fs.innerHTML = '<div class="ps-fair-pct">FAIRNESS <span class="'+fairClass+'">' + fair.overall + '%</span></div>'
-      + '<div class="ps-fair-label">' + fair.rec + '</div>';
-  }
-  var fbk = document.getElementById('pr-fair-brk');
-  if (fbk) {
-    fbk.innerHTML = fair.breakdown.map(function(b){
-      return '<div class="ps-fair-item"><div class="ps-fair-k">' + b.k + '</div>'
-        + '<div class="ps-fair-v"><span class="pct">' + b.v + '%</span></div>'
-        + '<div class="ps-fair-mini"><div class="ps-fair-mini-fill" style="width:'+Math.min(100,b.v)+'%"></div></div></div>';
-    }).join('');
-  }
-
-  try {
-    var winEl = document.getElementById('pr-wins');
-    var loseEl = document.getElementById('pr-losses');
-    var rateEl = document.getElementById('pr-rate');
-    if (winEl && winEl.textContent === '0') {
-      var m = prof.official.matches || 0;
-      var wr = prof.official.wr || 0;
-      var w = Math.round(m * wr / 100);
-      var l = m - w;
-      winEl.textContent = w.toLocaleString();
-      loseEl.textContent = l.toLocaleString();
-      if (rateEl) rateEl.textContent = wr + '%';
-    }
-  } catch(e) {}
+  paint(_fdMyStats, null);
+  if (!_authToken) return;
+  authFetch('/api/profile/achievements')
+    .then(function(r){ return r.ok ? r.json() : null; })
+    .then(function(d){ if (d && d.stats) paint(d.stats, d.badges); })
+    .catch(function(){});
 }
 (function patchRefreshProfile(){
   try {

@@ -79,7 +79,7 @@
       "name": "How does CLUTCH work?",
       "acceptedAnswer": {
         "@type": "Answer",
-        "text": "Pick a game and a duel format, then send the link or QR code to your rival. Play the match on your own account. The result is verified automatically through the Riot API for League of Legends and Valorant, the Steam API for Dota 2, or by screenshot for other games. The winner takes the duel and climbs the leaderboard."
+        "text": "Pick a game and a duel format, then send the link or QR code to your rival. Play the match on your own account. The result is verified automatically through the Riot API for League of Legends and Valorant, the Steam API for Dota 2, or by screenshot for other games. The win goes on your record and on the leaderboard."
       }
     },
     {
@@ -161,9 +161,9 @@
         <svg viewBox="0 0 24 24" fill="none"><path d="M8 21h8M12 17v4M7 4h10v5a5 5 0 01-10 0V4zM4 4h3v4H4zM17 4h3v4h-3z" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
         Leaderboard
       </div>
-      <div class="land-nav-menu-item" data-nav="rewards">
-        <svg viewBox="0 0 24 24" fill="none"><path d="M12 2l3 7h7l-5.5 4 2 7L12 16l-6.5 4 2-7L2 9h7z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
-        Rewards
+      <div class="land-nav-menu-item" data-nav="community">
+        <svg viewBox="0 0 24 24" fill="none"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
+        Community
       </div>
     </div>
 
@@ -180,7 +180,6 @@
     <div class="land-nav-right">
       <div class="land-nav-icon-btn" title="Notifications">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M6 8a6 6 0 0112 0c0 7 3 9 3 9H3s3-2 3-9" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/><path d="M10 21a2 2 0 004 0" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
-        <span class="land-nav-notif-dot"></span>
       </div>
       <div class="land-nav-icon-btn" title="Integrity Shield">
         <svg width="16" height="16" viewBox="0 0 24 24" fill="none"><path d="M12 2l8 3v5c0 5-3.5 9-8 11-4.5-2-8-6-8-11V5l8-3z" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
@@ -207,7 +206,7 @@
           </h1>
           <div style="max-width:720px;margin:0 auto 22px;padding:16px 24px;border-radius:16px;background:rgba(13,14,18,.6);border:1px dashed rgba(112,0,255,.25);display:inline-block;position:relative">
             <div style="font-size:clamp(20px,2.4vw,28px);font-weight:900;letter-spacing:-.01em;margin:2px 0"><span style="color:var(--acc);font-weight:900">❝</span> 5 kills in a row? Prove it. <span style="color:var(--purple-txt);font-weight:900">❞</span></div>
-            <div style="font-size:13.5px;color:var(--txt2);margin-top:6px;line-height:1.6">Duel them head to head. The game itself checks the result. No house, no luck. Just skill.</div>
+            <div style="font-size:13.5px;color:var(--txt2);margin-top:6px;line-height:1.6">Duel them head to head. The game itself checks the result. No luck, no arguments. Just skill.</div>
           </div>
           <div class="hero-cta-row">
             <button class="hero-cta" onclick="quickConnect()">
@@ -220,374 +219,173 @@
             </button>
           </div>
 
-          <!-- FIL D'INFO TRANSVERSAL — scrolling marquee (1 seule fois) + countdown months/weeks/days -->
-          <div class="news-ticker" aria-label="Esports Gaming News Live Feed" style="margin:4px auto 36px">
+          <div class="hero-microcopy">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M20 6L9 17l-5-5" stroke="currentColor" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            Free account · <b>500 CLU to start</b> · no card needed · 18+
+          </div>
+
+          <!-- FACT TICKER — only true statements about Clutch, no events, no countdowns -->
+          <div class="news-ticker" aria-label="What Clutch is" style="margin:4px auto 36px">
             <div class="nt-track" style="gap:48px">
-              <span class="nt-item"><span class="nt-live">LIVE · 3 DAYS</span><span class="nt-dot" style="background:var(--acc)"></span>Valorant Champions 2026 — Grand Final samedi 15/08 · Sentinels vs LOUD · Twitch 1.2M viewers peak attendu<span class="nt-meta">COUNTDOWN · Starts in 3 days</span></span>
-              <span class="nt-item"><span class="nt-hot">IN 2 WEEKS</span><span class="nt-dot" style="background:var(--purple)"></span>LoL LEC 2026 Summer Split Playoffs — G2 Fnatic MAD Lions round-robin · Berlin Arena<span class="nt-meta">Starts in 2 weeks</span></span>
-              <span class="nt-item"><span class="nt-dot" style="background:var(--gold)"></span>Clutch World Championship 2026 · $500k Prize Pool · qualifications phase opens<span class="nt-meta">Starts in 1 month</span></span>
-              <span class="nt-item"><span class="nt-live">IN 1 MONTH</span><span class="nt-dot" style="background:var(--red)"></span>CS2 IEM Cologne Major 2026 · NaVi Vitality FaZe all qualified · Lanxess Arena sellout<span class="nt-meta">Starts in 1 month</span></span>
-              <span class="nt-item"><span class="nt-hot">IN 3 WEEKS</span><span class="nt-dot" style="background:#FF7A28"></span>Dota 2 TI15 The International 2026 · Seattle · $40M crowdfund prize pool target · open quals live<span class="nt-meta">Starts in 3 weeks</span></span>
-              <span class="nt-item"><span class="nt-dot" style="background:var(--acc)"></span>Apex Legends ALGS Year 6 Championship · Birmingham · TSM defending champs · group stage<span class="nt-meta">Starts in 2 months</span></span>
-              <span class="nt-item"><span class="nt-hot">NEXT MONTH</span><span class="nt-dot" style="background:#00D4FF"></span>Fortnite Chapter 6 Season 2 release · Battle Pass exclusive drop confirmed<span class="nt-meta">Starts in 3 weeks</span></span>
-              <span class="nt-item"><span class="nt-dot" style="background:var(--gold)"></span>League of Legends Worlds 2026 · London O2 Arena · Host city official announcement<span class="nt-meta">Starts in 3 months</span></span>
+              <span class="nt-item"><span class="nt-hot">FREE</span><span class="nt-dot" style="background:var(--acc)"></span>1v1 duels on League of Legends, Valorant and Dota 2<span class="nt-meta">No card needed</span></span>
+              <span class="nt-item"><span class="nt-hot">VERIFIED</span><span class="nt-dot" style="background:var(--purple)"></span>Results checked by the game API. No screenshots, no arguments.</span>
+              <span class="nt-item"><span class="nt-dot" style="background:var(--gold)"></span>500 CLU to start<span class="nt-meta">In-app credit · no cash value · 18+</span></span>
+              <span class="nt-item"><span class="nt-dot" style="background:var(--red)"></span>LoL · Summoner's Rift 1v1 · first blood or first tower<span class="nt-meta">Riot-verified</span></span>
+              <span class="nt-item"><span class="nt-dot" style="background:var(--acc)"></span>Valorant · aim 1v1 · first to 13<span class="nt-meta">Riot-verified</span></span>
+              <span class="nt-item"><span class="nt-dot" style="background:#FF7A28"></span>Dota 2 · mid 1v1 · first blood or 2 towers<span class="nt-meta">API-verified</span></span>
+              <span class="nt-item"><span class="nt-hot">EARLY BETA</span><span class="nt-dot" style="background:var(--purple)"></span>The first duels set the first records<span class="nt-meta">Join us on Discord</span></span>
               <!-- INFINITE LOOP track copy -->
-              <span class="nt-item"><span class="nt-live">LIVE · 3 DAYS</span><span class="nt-dot" style="background:var(--acc)"></span>Valorant Champions 2026 — Grand Final samedi 15/08 · Sentinels vs LOUD · Twitch 1.2M viewers peak attendu<span class="nt-meta">COUNTDOWN · Starts in 3 days</span></span>
-              <span class="nt-item"><span class="nt-hot">IN 2 WEEKS</span><span class="nt-dot" style="background:var(--purple)"></span>LoL LEC 2026 Summer Split Playoffs — G2 Fnatic MAD Lions round-robin · Berlin Arena<span class="nt-meta">Starts in 2 weeks</span></span>
-              <span class="nt-item"><span class="nt-dot" style="background:var(--gold)"></span>Clutch World Championship 2026 · $500k Prize Pool · qualifications phase opens<span class="nt-meta">Starts in 1 month</span></span>
-              <span class="nt-item"><span class="nt-live">IN 1 MONTH</span><span class="nt-dot" style="background:var(--red)"></span>CS2 IEM Cologne Major 2026 · NaVi Vitality FaZe all qualified · Lanxess Arena sellout<span class="nt-meta">Starts in 1 month</span></span>
-              <span class="nt-item"><span class="nt-hot">IN 3 WEEKS</span><span class="nt-dot" style="background:#FF7A28"></span>Dota 2 TI15 The International 2026 · Seattle · $40M crowdfund prize pool target · open quals live<span class="nt-meta">Starts in 3 weeks</span></span>
-              <span class="nt-item"><span class="nt-dot" style="background:var(--acc)"></span>Apex Legends ALGS Year 6 Championship · Birmingham · TSM defending champs · group stage<span class="nt-meta">Starts in 2 months</span></span>
-              <span class="nt-item"><span class="nt-hot">NEXT MONTH</span><span class="nt-dot" style="background:#00D4FF"></span>Fortnite Chapter 6 Season 2 release · Battle Pass exclusive drop confirmed<span class="nt-meta">Starts in 3 weeks</span></span>
-              <span class="nt-item"><span class="nt-dot" style="background:var(--gold)"></span>League of Legends Worlds 2026 · London O2 Arena · Host city official announcement<span class="nt-meta">Starts in 3 months</span></span>
+              <span class="nt-item" aria-hidden="true"><span class="nt-hot">FREE</span><span class="nt-dot" style="background:var(--acc)"></span>1v1 duels on League of Legends, Valorant and Dota 2<span class="nt-meta">No card needed</span></span>
+              <span class="nt-item" aria-hidden="true"><span class="nt-hot">VERIFIED</span><span class="nt-dot" style="background:var(--purple)"></span>Results checked by the game API. No screenshots, no arguments.</span>
+              <span class="nt-item" aria-hidden="true"><span class="nt-dot" style="background:var(--gold)"></span>500 CLU to start<span class="nt-meta">In-app credit · no cash value · 18+</span></span>
+              <span class="nt-item" aria-hidden="true"><span class="nt-dot" style="background:var(--red)"></span>LoL · Summoner's Rift 1v1 · first blood or first tower<span class="nt-meta">Riot-verified</span></span>
+              <span class="nt-item" aria-hidden="true"><span class="nt-dot" style="background:var(--acc)"></span>Valorant · aim 1v1 · first to 13<span class="nt-meta">Riot-verified</span></span>
+              <span class="nt-item" aria-hidden="true"><span class="nt-dot" style="background:#FF7A28"></span>Dota 2 · mid 1v1 · first blood or 2 towers<span class="nt-meta">API-verified</span></span>
+              <span class="nt-item" aria-hidden="true"><span class="nt-hot">EARLY BETA</span><span class="nt-dot" style="background:var(--purple)"></span>The first duels set the first records<span class="nt-meta">Join us on Discord</span></span>
             </div>
           </div>
 
-          <!-- 3 MEANINGFUL STATS CARDS (no more empty sparklines!) -->
-          <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:18px;max-width:1120px;margin:18px auto 60px;text-align:left">
-            <!-- CARD 1: DUELS CREATED = mini duel-avatars visualization + bar chart + VAL/CS2/LOL logos -->
-            <div class="stat-card" style="padding:18px 20px 16px;text-align:left;min-height:120px;display:flex;flex-direction:column;justify-content:space-between;gap:10px">
-              <div style="display:flex;align-items:baseline;justify-content:space-between;gap:8px">
+          <!-- 3 VALUE CARDS — every number is real: the sign-up grant, the API-verified games, and the live open-challenge count -->
+          <div class="land-value-grid">
+            <!-- CARD 1: reciprocity — the sign-up grant -->
+            <div class="stat-card land-value-card">
+              <div class="lvc-top">
                 <div>
-                  <div class="stat-num" style="font-size:24px;line-height:1">1,247</div>
-                  <div class="stat-lbl" style="margin:4px 0 0;line-height:1">DUELS CREATED</div>
+                  <div class="stat-num" style="font-size:24px;line-height:1;color:var(--acc)">500 CLU</div>
+                  <div class="stat-lbl" style="margin:4px 0 0;line-height:1">FREE ON SIGN-UP</div>
                 </div>
-                <div style="display:flex;gap:4px;flex-shrink:0">
-                  <div style="width:18px;height:18px;border-radius:5px;background:rgba(255,77,94,.14);border:1px solid rgba(255,77,94,.28);display:flex;align-items:center;justify-content:center;overflow:hidden" title="Valorant">
-                    <img src="https://coreva-normal.trae.ai/api/ide/v1/text_to_image?prompt=valorant%20esports%20game%20badge%20emblem%2C%20neon%20green%20glowing%20cyber%20geometric%20V%20logo%2C%20futuristic%20cyberpunk%20tech%20lines%2C%20dark%20charcoal%20background%2C%203D%20render%20polished%20metal%2C%20cinematic%20studio%20lighting%2C%20highly%20detailed&image_size=square" alt="Valorant" style="width:14px;height:14px;object-fit:contain;display:block;filter:drop-shadow(0 1px 2px rgba(0,0,0,.5))"/>
-                  </div>
-                  <div style="width:18px;height:18px;border-radius:5px;background:rgba(245,158,11,.12);border:1px solid rgba(245,158,11,.26);display:flex;align-items:center;justify-content:center;overflow:hidden" title="CS2">
-                    <img src="https://coreva-normal.trae.ai/api/ide/v1/text_to_image?prompt=counter%20strike%20CS2%20esports%20game%20badge%20emblem%2C%20tactical%20spec%20ops%20helmet%20with%20orange%20glowing%20goggles%2C%20military%20HUD%20targeting%20reticle%20UI%20around%2C%203D%20render%20dark%20tactical%20metal%2C%20cinematic%20studio%20lighting%2C%20highly%20detailed&image_size=square" alt="CS2" style="width:14px;height:14px;object-fit:contain;display:block;filter:drop-shadow(0 1px 2px rgba(0,0,0,.5))"/>
-                  </div>
-                  <div style="width:18px;height:18px;border-radius:5px;background:rgba(200,155,60,.12);border:1px solid rgba(200,155,60,.26);display:flex;align-items:center;justify-content:center;overflow:hidden" title="LoL">
-                    <img src="https://coreva-normal.trae.ai/api/ide/v1/text_to_image?prompt=league%20of%20legends%20esports%20game%20badge%20emblem%2C%20golden%20ornate%20medieval%20crest%20medallion%2C%20intricate%20interwoven%20gold%20triple%20star%20pattern%2C%203D%20render%20polished%20metal%20engravings%2C%20dark%20fantasy%20backdrop%2C%20cinematic%20studio%20lighting%2C%20highly%20detailed&image_size=square" alt="LoL" style="width:14px;height:14px;object-fit:contain;display:block;filter:drop-shadow(0 1px 2px rgba(0,0,0,.5))"/>
-                  </div>
+                <div class="lvc-icon" style="color:var(--acc);background:rgba(0,255,135,.1);border-color:rgba(0,255,135,.28)">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="3" y="8" width="18" height="13" rx="2" stroke="currentColor" stroke-width="1.9"/><path d="M12 8v13M3 12h18M12 8c-1.5-3-5-4-5-1.5S10 8 12 8zm0 0c1.5-3 5-4 5-1.5S14 8 12 8z" stroke="currentColor" stroke-width="1.7" stroke-linejoin="round"/></svg>
                 </div>
               </div>
-              <!-- Bar chart meaningful (weekly duels) -->
-              <div style="display:grid;grid-template-columns:repeat(7,1fr);gap:3px;align-items:end;height:32px">
-                <div style="height:35%;background:rgba(0,255,135,.3);border-radius:3px 3px 0 0;align-self:end"></div>
-                <div style="height:55%;background:rgba(0,255,135,.35);border-radius:3px 3px 0 0;align-self:end"></div>
-                <div style="height:75%;background:rgba(0,255,135,.45);border-radius:3px 3px 0 0;align-self:end"></div>
-                <div style="height:65%;background:rgba(0,255,135,.4);border-radius:3px 3px 0 0;align-self:end"></div>
-                <div style="height:100%;background:var(--acc);border-radius:3px 3px 0 0;align-self:end;box-shadow:0 0 8px rgba(0,255,135,.6)"></div>
-                <div style="height:90%;background:rgba(0,255,135,.7);border-radius:3px 3px 0 0;align-self:end"></div>
-                <div style="height:60%;background:rgba(0,255,135,.45);border-radius:3px 3px 0 0;align-self:end"></div>
-              </div>
+              <div class="lvc-sub">Yours the second your account exists. In-app credit, no cash value. Free duels cost 0 CLU.</div>
             </div>
 
-            <!-- CARD 2: LONGEST WIN STREAK = fire icon + win/loss 12-bar heatmap (14 GREEN STREAK) -->
-            <div class="stat-card" style="padding:14px 16px 12px;text-align:left;border-color:rgba(255,125,60,.22);background:linear-gradient(165deg,rgba(255,90,40,.07),rgba(6,9,16,.7));min-height:110px;display:flex;flex-direction:column;justify-content:space-between;gap:8px">
-              <div style="display:flex;align-items:baseline;justify-content:space-between;gap:8px">
+            <!-- CARD 2: authority — the game decides -->
+            <div class="stat-card land-value-card">
+              <div class="lvc-top">
                 <div>
-                  <div style="display:flex;align-items:baseline;gap:6px">
-                    <div class="stat-num" style="font-size:24px;color:#FF7A28;line-height:1">27</div>
-                    <span style="font-size:11px;font-weight:800;color:var(--txt3);letter-spacing:.06em;line-height:1;padding-top:8px">WINS IN A ROW</span>
-                  </div>
-                  <div class="stat-lbl" style="margin:4px 0 0;line-height:1">PARTY STREAK RECORD</div>
-                  <div style="font-size:9.5px;color:var(--txt3);font-weight:700;margin-top:3px;display:flex;align-items:center;gap:4px">
-                    <svg width="9" height="9" viewBox="0 0 24 24" fill="none" style="color:var(--gold)"><path d="M12 2l2.39 4.84 5.34.78-3.87 3.77.91 5.33L12 14.77 7.23 16.72l.91-5.33L4.27 7.62l5.34-.78L12 2z" fill="currentColor"/></svg>
-                    NovaStriker · LoL Ranked Grind
-                  </div>
+                  <div class="stat-num" style="font-size:24px;line-height:1;color:var(--purple-txt)">3 games</div>
+                  <div class="stat-lbl" style="margin:4px 0 0;line-height:1">CHECKED BY THE GAME API</div>
                 </div>
-                <div style="width:30px;height:30px;border-radius:8px;background:linear-gradient(145deg,rgba(255,90,40,.2),rgba(255,90,40,.06));border:1px solid rgba(255,125,60,.34);display:flex;align-items:center;justify-content:center;flex-shrink:0;box-shadow:0 0 18px rgba(255,90,40,.14) inset">
-                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" style="color:#FF7A28">
-                    <path d="M12 2s4 4 4 8a4 4 0 01-8 0c0-2 1-3 1-3s-3 3-3 7a6 6 0 0012 0c0-6-6-12-6-12z" fill="currentColor" opacity=".95"/>
-                    <path d="M12 10c1 1 1 2.5 1 2.5s0-.5-.5-1.5-1-2-1-2s-1.5 2.5-.5 4c.5.8 1.2 1 1.2 1" stroke="#FFD28A" stroke-width=".8" opacity=".7" fill="none"/>
-                  </svg>
+                <div class="lvc-icon" style="color:var(--purple-txt);background:rgba(112,0,255,.12);border-color:rgba(112,0,255,.32)">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 2l8 3v6c0 5-3.5 9-8 11-4.5-2-8-6-8-11V5l8-3z" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"/><path d="M8.5 12l2.5 2.5 4.5-5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
                 </div>
               </div>
-              <!-- Win / Loss 12 bar heatmap: L L W W W W W W W W W W W W (14 wins) -->
-              <div style="display:grid;grid-template-columns:repeat(14,1fr);gap:2.5px;align-items:end;height:32px;padding-top:2px">
-                <div style="height:38%;background:rgba(255,77,94,.22);border-radius:2px 2px 0 0;align-self:end;border:1px solid rgba(255,77,94,.4)"></div>
-                <div style="height:48%;background:rgba(255,77,94,.28);border-radius:2px 2px 0 0;align-self:end;border:1px solid rgba(255,77,94,.45)"></div>
-                <div style="height:42%;background:rgba(0,255,135,.35);border-radius:2px 2px 0 0;align-self:end;border:1px solid rgba(0,255,135,.45)"></div>
-                <div style="height:55%;background:rgba(0,255,135,.42);border-radius:2px 2px 0 0;align-self:end;border:1px solid rgba(0,255,135,.48)"></div>
-                <div style="height:62%;background:rgba(0,255,135,.48);border-radius:2px 2px 0 0;align-self:end;border:1px solid rgba(0,255,135,.5)"></div>
-                <div style="height:70%;background:rgba(0,255,135,.55);border-radius:2px 2px 0 0;align-self:end;border:1px solid rgba(0,255,135,.55)"></div>
-                <div style="height:78%;background:rgba(0,255,135,.6);border-radius:2px 2px 0 0;align-self:end;border:1px solid rgba(0,255,135,.6)"></div>
-                <div style="height:85%;background:rgba(0,255,135,.7);border-radius:2px 2px 0 0;align-self:end;border:1px solid rgba(0,255,135,.65)"></div>
-                <div style="height:92%;background:rgba(0,255,135,.8);border-radius:2px 2px 0 0;align-self:end;border:1px solid rgba(0,255,135,.7)"></div>
-                <div style="height:100%;background:var(--acc);border-radius:3px 3px 0 0;align-self:end;box-shadow:0 0 10px rgba(0,255,135,.65);border:1px solid rgba(0,255,135,.8)"></div>
-                <div style="height:96%;background:rgba(0,255,135,.88);border-radius:2px 2px 0 0;align-self:end;border:1px solid rgba(0,255,135,.75)"></div>
-                <div style="height:88%;background:rgba(0,255,135,.78);border-radius:2px 2px 0 0;align-self:end;border:1px solid rgba(0,255,135,.7)"></div>
-                <div style="height:82%;background:rgba(0,255,135,.66);border-radius:2px 2px 0 0;align-self:end;border:1px solid rgba(0,255,135,.62)"></div>
-                <div style="height:76%;background:rgba(0,255,135,.58);border-radius:2px 2px 0 0;align-self:end;border:1px solid rgba(0,255,135,.58)"></div>
+              <div class="lvc-chips">
+                <span class="lvc-chip"><i style="background:#5687c7"></i>LoL</span>
+                <span class="lvc-chip"><i style="background:#ff4655"></i>Valorant</span>
+                <span class="lvc-chip"><i style="background:#e68c80"></i>Dota 2</span>
               </div>
+              <div class="lvc-sub">Riot API for LoL and Valorant, Steam API for Dota 2. Nobody argues with the match history.</div>
             </div>
 
-            <!-- CARD 3: ACTIVE PLAYERS = FARANDOLE of REAL GAMER AVATARS (overlapping stack) -->
-            <div class="stat-card" style="padding:18px 20px 16px;text-align:left;min-height:120px;display:flex;flex-direction:column;justify-content:space-between;gap:10px">
-              <div style="display:flex;align-items:baseline;justify-content:space-between;gap:8px">
+            <!-- CARD 3: the live open-challenge count from GET /api/challenges -->
+            <div class="stat-card land-value-card">
+              <div class="lvc-top">
                 <div>
-                  <div class="stat-num gold" style="font-size:24px;color:var(--gold);line-height:1">893</div>
-                  <div class="stat-lbl" style="margin:4px 0 0;line-height:1">ACTIVE PLAYERS</div>
+                  <div class="stat-num" style="font-size:24px;line-height:1;color:var(--gold)" data-open-count>—</div>
+                  <div class="stat-lbl" style="margin:4px 0 0;line-height:1">OPEN CHALLENGES RIGHT NOW</div>
                 </div>
-                <span style="padding:3px 8px;border-radius:6px;background:rgba(0,255,135,.1);color:var(--acc);font-size:9px;font-weight:900;letter-spacing:.05em;display:inline-flex;align-items:center;gap:5px;flex-shrink:0">
-                  <span style="width:5px;height:5px;border-radius:50%;background:var(--acc);box-shadow:0 0 6px var(--acc);animation:breathe 1.5s infinite"></span>
-                  ONLINE
-                </span>
+                <div class="lvc-icon" style="color:var(--gold);background:rgba(232,160,32,.1);border-color:rgba(232,160,32,.3)">
+                  <svg width="15" height="15" viewBox="0 0 24 24" fill="none" aria-hidden="true"><rect x="3" y="5" width="18" height="14" rx="2.5" stroke="currentColor" stroke-width="1.9"/><path d="M3 9h18M8 13h4M8 16h6" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"/></svg>
+                </div>
               </div>
-              <!-- FARANDOLE: 7 real Photos_Gamers avatars overlapping + +42 badge -->
-              <div style="display:flex;align-items:center;height:32px;padding-top:2px">
-                <img src="Photos_Gamers/pexels-yankrukov-9069279.jpg" alt="P1" style="width:30px;height:30px;border-radius:50%;object-fit:cover;border:2px solid var(--l1);z-index:7"/>
-                <img src="Photos_Gamers/pexels-yankrukov-9072275.jpg" alt="P2" style="width:30px;height:30px;border-radius:50%;object-fit:cover;border:2px solid var(--l1);margin-left:-9px;z-index:6"/>
-                <img src="Photos_Gamers/pexels-a-darmel-7862590.jpg" alt="P3" style="width:30px;height:30px;border-radius:50%;object-fit:cover;border:2px solid var(--l1);margin-left:-9px;z-index:5"/>
-                <img src="Photos_Gamers/pexels-yankrukov-9072278.jpg" alt="P4" style="width:30px;height:30px;border-radius:50%;object-fit:cover;border:2px solid var(--l1);margin-left:-9px;z-index:4"/>
-                <img src="Photos_Gamers/pexels-roman-odintsov-12718631.jpg" alt="P5" style="width:30px;height:30px;border-radius:50%;object-fit:cover;border:2px solid var(--l1);margin-left:-9px;z-index:3"/>
-                <img src="Photos_Gamers/pexels-kevin-malik-8762754.jpg" alt="P6" style="width:30px;height:30px;border-radius:50%;object-fit:cover;border:2px solid var(--l1);margin-left:-9px;z-index:2"/>
-                <img src="Photos_Gamers/pexels-a-darmel-7862609.jpg" alt="P7" style="width:30px;height:30px;border-radius:50%;object-fit:cover;border:2px solid var(--l1);margin-left:-9px;z-index:1"/>
-                <div style="width:30px;height:30px;border-radius:50%;background:linear-gradient(135deg,rgba(232,160,32,.3),rgba(232,160,32,.15));border:2px solid var(--l1);margin-left:-9px;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:900;color:var(--gold);letter-spacing:-.01em;z-index:0">+886</div>
-              </div>
+              <div class="lvc-sub" id="land-open-sub">Checking the board…</div>
             </div>
           </div>
         </div>
 
-        <!-- ═══ HORIZONTAL LIVE ACTIVITY BOARD ═══ -->
-        <div class="live-activity-horizontal">
+        <!-- ═══ YOUR FIRST DUEL — progress checklist driven by the visitor's / player's real state (renderFirstDuel in app.js) ═══ -->
+        <div id="land-first-duel" class="live-activity-horizontal fd-wrap" data-fd-mount="landing">
           <div class="lah-header">
-            <span class="lah-title">
-              <span class="land-panel-title-dot"></span>
-              LIVE ACTIVITY FEED
-            </span>
-            <div style="display:flex;align-items:center;gap:12px">
-              <span style="display:inline-flex;align-items:center;gap:6px;padding:5px 12px;border-radius:999px;background:var(--purple-lo);border:1px solid rgba(112,0,255,.25);color:var(--purple-txt);font-size:10.5px;font-weight:700">
-                <span style="width:5px;height:5px;border-radius:50%;background:var(--purple);box-shadow:0 0 6px var(--purple)"></span>
-                893 PLAYERS ONLINE
-              </span>
-              <span class="land-panel-link">VIEW ALL →</span>
-            </div>
+            <span class="lah-title"><span class="land-panel-title-dot"></span>YOUR FIRST DUEL</span>
+            <span class="fd-pill">0 / 4 done</span>
           </div>
-          <div class="lah-scroll" id="lah-scroll">
-            <div class="lah-item">
-              <img src="Photos_Gamers/pexels-yankrukov-9069279.jpg" alt="FragMaster" class="lah-avatar" style="border-color:rgba(0,255,135,.4)"/>
-              <div class="lah-body">
-                <div class="lah-user">FragMaster</div>
-                <div class="lah-action"><em>won CS2 duel</em> · 250 CLU</div>
-              </div>
-              <div class="lah-icon" style="color:var(--gold)">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 21h8M12 17v4M7 4h10v5a5 5 0 01-10 0V4zM7 6H4v2a3 3 0 003 3M17 6h3v2a3 3 0 01-3 3"/></svg>
-              </div>
-            </div>
-            <div class="lah-item">
-              <img src="Photos_Gamers/pexels-yankrukov-9072275.jpg" alt="NightOwl_X" class="lah-avatar" style="border-color:rgba(112,0,255,.4)"/>
-              <div class="lah-body">
-                <div class="lah-user">NightOwl_X</div>
-                <div class="lah-action"><em>accepted LoL duel</em></div>
-              </div>
-              <div class="lah-icon" style="color:var(--acc)">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M20 6L9 17l-5-5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-              </div>
-            </div>
-            <div class="lah-item">
-              <img src="Photos_Gamers/pexels-yankrukov-9069313.jpg" alt="ClutchWizard" class="lah-avatar" style="border-color:rgba(112,0,255,.35)"/>
-              <div class="lah-body">
-                <div class="lah-user">ClutchWizard</div>
-                <div class="lah-action"><em>reached Diamond I</em> · LoL</div>
-              </div>
-              <div class="lah-icon" style="color:var(--acc)">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 15l6-6 6 6M6 20l6-6 6 6"/></svg>
-              </div>
-            </div>
-            <div class="lah-item">
-              <img src="Photos_Gamers/pexels-yankrukov-9072278.jpg" alt="NovaStriker" class="lah-avatar" style="border-color:var(--gold)"/>
-              <div class="lah-body">
-                <div class="lah-user">NovaStriker</div>
-                <div class="lah-action"><em>27 win streak</em> · Valorant</div>
-              </div>
-              <div class="lah-icon" style="color:var(--gold)">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3c3 4 6 6 6 10a6 6 0 01-12 0c0-2 1-3.5 2.5-4.5C9 10 10.5 7 12 3z"/><path d="M12 20a3 3 0 01-3-3c0-1.6 1.1-2.6 1.9-3.1.3 1 .8 1.5 1.1 1.8.5-.6.6-1.4.6-2.2 1.2.8 1.4 1.9 1.4 3.5A3 3 0 0112 20z"/></svg>
-              </div>
-            </div>
-            <div class="lah-item">
-              <img src="Photos_Gamers/pexels-a-darmel-7862590.jpg" alt="ShadowTitan" class="lah-avatar" style="border-color:rgba(0,255,135,.3)"/>
-              <div class="lah-body">
-                <div class="lah-user">ShadowTitan</div>
-                <div class="lah-action"><em>won Valorant duel</em> · 100 CLU</div>
-              </div>
-              <div class="lah-icon" style="color:var(--gold)">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 21h8M12 17v4M7 4h10v5a5 5 0 01-10 0V4zM7 6H4v2a3 3 0 003 3M17 6h3v2a3 3 0 01-3 3"/></svg>
-              </div>
-            </div>
-            <div class="lah-item">
-              <img src="Photos_Gamers/pexels-a-darmel-7862609.jpg" alt="CyberGhosT" class="lah-avatar" style="border-color:rgba(255,77,94,.5)"/>
-              <div class="lah-body">
-                <div class="lah-user">CyberGhosT</div>
-                <div class="lah-action"><em>created Dota 2 duel</em></div>
-              </div>
-              <div class="lah-icon" style="color:var(--red)">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M14 2l4 4m0 0l-4 4m4-4H6" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-              </div>
-            </div>
-            <div class="lah-item">
-              <img src="Photos_Gamers/pexels-kevin-malik-8762754.jpg" alt="KillTheorem" class="lah-avatar" style="border-color:rgba(0,255,135,.3)"/>
-              <div class="lah-body">
-                <div class="lah-user">KillTheorem</div>
-                <div class="lah-action"><em>accepted Apex duel</em></div>
-              </div>
-              <div class="lah-icon" style="color:var(--acc)">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M20 6L9 17l-5-5" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-              </div>
-            </div>
-            <div class="lah-item">
-              <img src="Photos_Gamers/pexels-roman-odintsov-12718631.jpg" alt="ViperLynx" class="lah-avatar" style="border-color:rgba(255,200,80,.4)"/>
-              <div class="lah-body">
-                <div class="lah-user">ViperLynx</div>
-                <div class="lah-action"><em>won Fortnite duel</em> · 75 CLU</div>
-              </div>
-              <div class="lah-icon" style="color:var(--gold)">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8 21h8M12 17v4M7 4h10v5a5 5 0 01-10 0V4zM7 6H4v2a3 3 0 003 3M17 6h3v2a3 3 0 01-3 3"/></svg>
-              </div>
-            </div>
-            <div class="lah-item">
-              <img src="Photos_Gamers/pexels-ron-lach-7856690.jpg" alt="PhoenixOG" class="lah-avatar" style="border-color:rgba(232,160,32,.5)"/>
-              <div class="lah-body">
-                <div class="lah-user">PhoenixOG</div>
-                <div class="lah-action"><em>Lost CS2 duel</em> · 150 CLU</div>
-              </div>
-              <div class="lah-icon" style="color:var(--txt3)">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M18 6L6 18M6 6l12 12" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
-              </div>
-            </div>
-            <div class="lah-item">
-              <img src="Photos_Gamers/pexels-ketut-subiyanto-4669903.jpg" alt="Luna_Pro" class="lah-avatar" style="border-color:rgba(0,212,255,.45)"/>
-              <div class="lah-body">
-                <div class="lah-user">Luna_Pro</div>
-                <div class="lah-action"><em>joined tournament</em> · $5K</div>
-              </div>
-              <div class="lah-icon" style="color:var(--blue)">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M8 21h8M12 17v4M7 4h10v5a5 5 0 01-10 0V4z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-              </div>
-            </div>
-            <div class="lah-item">
-              <img src="Photos_Gamers/pexels-yankrukov-7315194.jpg" alt="StormBreaker" class="lah-avatar" style="border-color:rgba(112,0,255,.5)"/>
-              <div class="lah-body">
-                <div class="lah-user">StormBreaker</div>
-                <div class="lah-action"><em>rank up Radiant</em> · Valorant</div>
-              </div>
-              <div class="lah-icon" style="color:var(--acc)">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 15l6-6 6 6M6 20l6-6 6 6"/></svg>
-              </div>
-            </div>
-            <div class="lah-item">
-              <img src="Photos_Gamers/pexels-a-darmel-7862590.jpg?x=2" alt="ZenMaster" class="lah-avatar" style="border-color:rgba(0,255,135,.5)"/>
-              <div class="lah-body">
-                <div class="lah-user">ZenMaster</div>
-                <div class="lah-action"><em>500 CLU deposited</em></div>
-              </div>
-              <div class="lah-icon" style="color:var(--gold)">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="2"/><path d="M12 7v5l3 2" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
-              </div>
-            </div>
+          <div class="fd-headline">4 steps to your first verified win. Step one takes 30 seconds.</div>
+          <div class="fd-bar"><div class="fd-bar-fill" style="width:0%"></div></div>
+          <div class="fd-steps">
+            <div class="fd-step next"><div class="fd-num">1</div><div class="fd-body"><div class="fd-title">Create your account</div><div class="fd-sub">500 free CLU on sign-up. In-app credit, no cash value.</div><button class="fd-cta" onclick="quickConnect()">Create my account</button></div></div>
+            <div class="fd-step"><div class="fd-num">2</div><div class="fd-body"><div class="fd-title">Link your Riot ID</div><div class="fd-sub">Riot checks your LoL and Valorant results. Nobody argues.</div></div></div>
+            <div class="fd-step"><div class="fd-num">3</div><div class="fd-body"><div class="fd-title">Post or accept a challenge</div><div class="fd-sub">Pick a verified mode, or take an open one from the Duel Board.</div></div></div>
+            <div class="fd-step"><div class="fd-num">4</div><div class="fd-body"><div class="fd-title">Send the link to your rival</div><div class="fd-sub">They open it, accept, and the game API settles it.</div></div></div>
           </div>
         </div>
 
-        <!-- ═══ LEADERBOARD TOP 5 — HORIZONTAL CARDS ═══ -->
+        <!-- ═══ BETA LEADERBOARD — empty until real verified wins exist; the open spots are the invitation ═══ -->
         <div id="land-leaderboard" class="leaderboard-section">
           <div class="lb-top-header">
             <div style="display:flex;align-items:center;gap:10px">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" style="color:var(--gold)"><path d="M8 21h8M12 17v4M7 4h10v5a5 5 0 01-10 0V4zM4 4h3v4H4zM17 4h3v4h-3z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
-              <span style="font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.12em;color:var(--txt2)">TOP PLAYERS · GLOBAL LEADERBOARD</span>
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" style="color:var(--gold)" aria-hidden="true"><path d="M8 21h8M12 17v4M7 4h10v5a5 5 0 01-10 0V4zM4 4h3v4H4zM17 4h3v4h-3z" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              <span style="font-size:12px;font-weight:800;text-transform:uppercase;letter-spacing:.12em;color:var(--txt2)">BETA LEADERBOARD</span>
             </div>
-            <span class="land-panel-link">VIEW FULL RANKINGS →</span>
+            <span class="land-panel-link" onclick="quickConnect()">CLAIM THE FIRST SPOT →</span>
+          </div>
+          <div class="lb-empty-lead">
+            <div class="lb-empty-h">The leaderboard is empty.</div>
+            <div class="lb-empty-p">The first name on it stays in the history of the beta. Win a verified duel and it could be yours.</div>
           </div>
           <div class="lb-grid">
-            <div class="lb-player-card top1">
+            <div class="lb-player-card top1 lb-open" onclick="quickConnect()">
               <div class="lb-rank-badge g1">1</div>
-              <img src="Photos_Gamers/pexels-ron-lach-7856690.jpg" alt="PhoenixOG" class="lb-player-avatar" style="border-color:rgba(232,160,32,.5)"/>
+              <div class="lb-open-avatar">?</div>
               <div class="lb-player-info">
-                <div class="lb-player-name">PhoenixOG</div>
-                <div class="lb-player-score">2,847<em>pts</em></div>
+                <div class="lb-player-name">You?</div>
+                <div class="lb-player-score" style="color:var(--gold)">First win</div>
               </div>
             </div>
-            <div class="lb-player-card top2">
+            <div class="lb-player-card top2 lb-open" onclick="quickConnect()">
               <div class="lb-rank-badge g2">2</div>
-              <img src="Photos_Gamers/pexels-yankrukov-9069279.jpg" alt="NovaStriker" class="lb-player-avatar" style="border-color:rgba(0,255,135,.5)"/>
-              <div class="lb-player-info">
-                <div class="lb-player-name">NovaStriker <span style="font-size:10px;padding:2px 6px;border-radius:5px;background:rgba(0,255,135,.14);color:var(--acc);font-weight:900;letter-spacing:.04em;margin-left:6px">YOU</span></div>
-                <div class="lb-player-score" style="color:var(--acc)">2,456<em>pts</em></div>
-              </div>
+              <div class="lb-open-avatar">?</div>
+              <div class="lb-player-info"><div class="lb-player-name">Open spot</div><div class="lb-player-score">Unclaimed</div></div>
             </div>
-            <div class="lb-player-card top3">
+            <div class="lb-player-card top3 lb-open" onclick="quickConnect()">
               <div class="lb-rank-badge g3">3</div>
-              <img src="Photos_Gamers/pexels-a-darmel-7862590.jpg" alt="ShadowTitan" class="lb-player-avatar" style="border-color:rgba(205,127,50,.45)"/>
-              <div class="lb-player-info">
-                <div class="lb-player-name">ShadowTitan</div>
-                <div class="lb-player-score">2,234<em>pts</em></div>
-              </div>
+              <div class="lb-open-avatar">?</div>
+              <div class="lb-player-info"><div class="lb-player-name">Open spot</div><div class="lb-player-score">Unclaimed</div></div>
             </div>
-            <div class="lb-player-card">
+            <div class="lb-player-card lb-open" onclick="quickConnect()">
               <div class="lb-rank-badge normal">4</div>
-              <img src="Photos_Gamers/pexels-yankrukov-9069313.jpg" alt="ClutchMaster" class="lb-player-avatar"/>
-              <div class="lb-player-info">
-                <div class="lb-player-name">ClutchMaster</div>
-                <div class="lb-player-score">1,987<em>pts</em></div>
-              </div>
+              <div class="lb-open-avatar">?</div>
+              <div class="lb-player-info"><div class="lb-player-name">Open spot</div><div class="lb-player-score">Unclaimed</div></div>
             </div>
-            <div class="lb-player-card">
+            <div class="lb-player-card lb-open" onclick="quickConnect()">
               <div class="lb-rank-badge normal">5</div>
-              <img src="Photos_Gamers/pexels-yankrukov-9072278.jpg" alt="ZypherX" class="lb-player-avatar"/>
-              <div class="lb-player-info">
-                <div class="lb-player-name">ZypherX</div>
-                <div class="lb-player-score">1,654<em>pts</em></div>
-              </div>
+              <div class="lb-open-avatar">?</div>
+              <div class="lb-player-info"><div class="lb-player-name">Open spot</div><div class="lb-player-score">Unclaimed</div></div>
             </div>
           </div>
         </div>
 
-        <!-- READY TO COMPETE · VS BATTLE CARD (NovaStriker vs ShadowTitan) PROPERLY CENTERED -->
-        <div style="margin:20px 0 52px">
+        <!-- ═══ YOU VS YOUR RIVAL — the signed-in player's own name, never an invented one (renderRivalCards in app.js) ═══ -->
+        <div id="land-friends" style="margin:20px 0 52px">
           <div style="display:flex;align-items:center;justify-content:space-between;margin:4px 4px 12px">
-            <div style="display:flex;align-items:center;gap:8px">
-              <span style="font-size:10.5px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:var(--acc);display:inline-flex;align-items:center;gap:6px"><span style="width:6px;height:6px;border-radius:50%;background:var(--acc);box-shadow:0 0 8px var(--acc);animation:breathe 1.5s infinite"></span>READY TO COMPETE?</span>
-            </div>
-            <span style="font-size:10.5px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:var(--acc);display:inline-flex;align-items:center;gap:6px"><span style="width:6px;height:6px;border-radius:50%;background:var(--acc);box-shadow:0 0 6px var(--acc);animation:breathe 1s infinite"></span>LIVE</span>
+            <span style="font-size:10.5px;font-weight:800;text-transform:uppercase;letter-spacing:.08em;color:var(--acc);display:inline-flex;align-items:center;gap:6px"><span style="width:6px;height:6px;border-radius:50%;background:var(--acc);box-shadow:0 0 8px var(--acc);animation:breathe 1.5s infinite"></span>THAT ONE FRIEND</span>
           </div>
 
-          <!-- VS BATTLE CARD (VERRICALLY CENTERED PLAYERS, VALORANT-SPECIFIC DESIGN) -->
-          <div style="background:var(--l1);border:1px solid var(--b);border-radius:18px;padding:28px 26px 24px;position:relative;overflow:hidden;box-shadow:0 10px 36px rgba(0,0,0,.4)">
-            <!-- Radial burst glow (Valorant red-green mix) behind VS -->
-            <div style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:520px;height:520px;background:radial-gradient(circle,rgba(255,77,94,.12),rgba(0,255,135,.08) 40%,rgba(112,0,255,.06) 65%,transparent 80%);pointer-events:none;z-index:0"></div>
-            <!-- Subtle diagonal neon lines (Valorant aesthetic) -->
-            <div style="position:absolute;inset:0;pointer-events:none;z-index:0;opacity:.25;background:
-              linear-gradient(135deg,transparent 48%,rgba(255,77,94,.08) 49%,rgba(255,77,94,.08) 51%,transparent 52%),
-              linear-gradient(45deg,transparent 48%,rgba(0,255,135,.07) 49%,rgba(0,255,135,.07) 51%,transparent 52%)"></div>
-
+          <div class="rv-card">
+            <div class="rv-glow"></div>
+            <div class="rv-lines"></div>
             <div style="position:relative;z-index:1">
-              <!-- VERTICALLY CENTERED 3-col grid with middle for burst/VS/countdown -->
-              <div style="display:grid;grid-template-columns:1fr auto 1fr;gap:18px;align-items:center">
-                <!-- NOVA STRIKER - LEFT center vertically -->
-                <div style="display:flex;align-items:center;gap:12px;justify-content:flex-end">
-                  <div style="text-align:right">
-                    <div style="font-size:16px;font-weight:850;letter-spacing:-.01em;line-height:1.1">NovaStriker <span style="display:inline-block;padding:2.5px 7px;border-radius:5px;background:var(--acc-lo);color:var(--acc);font-size:9px;font-weight:900;margin-left:5px;letter-spacing:.04em;vertical-align:2px">TOP 100</span></div>
-                    <div style="display:flex;align-items:center;gap:6px;font-size:11.5px;color:var(--txt2);margin-top:5px;justify-content:flex-end">
-                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" style="color:var(--purple-txt)"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
-                      Diamond II
-                    </div>
-                    <div style="font-size:11px;color:var(--txt3);font-weight:700;letter-spacing:.05em;margin-top:6px;display:flex;align-items:center;justify-content:flex-end;gap:8px">
-                      <span style="display:inline-flex;align-items:center;gap:5px"><span style="width:4px;height:4px;border-radius:50%;background:var(--acc);opacity:.7"></span>12W · 3L</span>
-                      <span style="opacity:.4">·</span>
-                      <span>Best of 3</span>
-                    </div>
+              <div class="rv-grid">
+                <!-- YOU — left -->
+                <div class="rv-side rv-left">
+                  <div class="rv-txt" style="text-align:right">
+                    <div class="rv-name"><span data-rv-me>You</span></div>
+                    <div class="rv-meta">Your 1v1 record</div>
+                    <div class="rv-meta2" data-rv-record>Starts with your first win</div>
                   </div>
-                  <div style="position:relative;flex-shrink:0">
-                    <!-- Valorant green conic ring -->
-                    <div style="position:absolute;inset:-4px;border-radius:50%;background:conic-gradient(from 0deg,var(--acc) 0deg,rgba(0,255,135,.15) 120deg,var(--acc) 240deg,var(--acc) 360deg);-webkit-mask:radial-gradient(closest-side,transparent calc(100% - 4px),#000 calc(100% - 4px));mask:radial-gradient(closest-side,transparent calc(100% - 4px),#000 calc(100% - 4px));animation:spin 8s linear infinite"></div>
-                    <img src="Photos_Gamers/pexels-yankrukov-9069279.jpg" alt="NovaStriker" style="width:62px;height:62px;border-radius:50%;object-fit:cover;display:block;border:2.5px solid var(--l1);background:var(--l2);position:relative;z-index:1;filter:contrast(1.05) saturate(1.1)"/>
+                  <div class="rv-av-wrap">
+                    <div class="rv-ring rv-ring-acc"></div>
+                    <div class="rv-av rv-av-me" data-rv-initial>Y</div>
                   </div>
                 </div>
 
-                <!-- CENTER BURST + VALORANT TAG + VS + COUNTDOWN (middle, always center) -->
-                <div style="display:flex;flex-direction:column;align-items:center;gap:14px;min-width:200px;padding:4px 0">
-                  <div style="text-align:center">
-                    <span style="display:inline-flex;align-items:center;gap:7px;padding:5px 13px;border-radius:7px;background:linear-gradient(135deg,rgba(255,77,94,.14),rgba(0,255,135,.1));border:1px solid rgba(255,77,94,.22);font-size:10px;font-weight:900;letter-spacing:.12em;color:var(--txt);text-transform:uppercase">
-                      <img src="https://coreva-normal.trae.ai/api/ide/v1/text_to_image?prompt=valorant%20esports%20game%20badge%20emblem%2C%20neon%20green%20glowing%20cyber%20geometric%20V%20logo%2C%20futuristic%20cyberpunk%20tech%20lines%2C%20dark%20charcoal%20background%2C%203D%20render%20polished%20metal%2C%20cinematic%20studio%20lighting%2C%20highly%20detailed&image_size=square" alt="Valorant" style="width:14px;height:14px;object-fit:contain;display:block;filter:drop-shadow(0 1px 3px rgba(0,0,0,.6))"/>
-                      VALORANT
-                    </span>
-                  </div>
-                  <!-- VS BURST with 12 rays -->
-                  <div style="position:relative;width:160px;height:100px;display:flex;align-items:center;justify-content:center">
-                    <svg width="160" height="100" viewBox="0 0 160 100" fill="none" style="position:absolute;inset:0">
+                <!-- CENTER — VS -->
+                <div class="rv-center">
+                  <span class="rv-tag">1V1 · YOUR GAME, YOUR RULES</span>
+                  <div class="rv-burst">
+                    <svg width="160" height="100" viewBox="0 0 160 100" fill="none" style="position:absolute;inset:0" aria-hidden="true">
                       <defs>
                         <radialGradient id="vsg2" cx="50%" cy="50%" r="50%">
                           <stop offset="0%" stop-color="rgba(255,77,94,.45)"/>
@@ -596,442 +394,130 @@
                           <stop offset="100%" stop-color="transparent"/>
                         </radialGradient>
                       </defs>
-                      <!-- 12 rays (Valorant starburst aesthetic) -->
-                      <g opacity="1">
+                      <g>
                         <path d="M80 50L80 10 M80 50L120 30 M80 50L150 50 M80 50L120 70 M80 50L80 90 M80 50L40 70 M80 50L10 50 M80 50L40 30" stroke="rgba(255,77,94,.28)" stroke-width="1.2"/>
                         <path d="M80 50L105 14 M80 50L145 28 M80 50L145 72 M80 50L105 86 M80 50L55 86 M80 50L15 72 M80 50L15 28 M80 50L55 14" stroke="rgba(0,255,135,.25)" stroke-width="1"/>
                         <circle cx="80" cy="50" r="42" fill="url(#vsg2)"/>
                       </g>
                     </svg>
-                    <div style="font-family:'Inter',sans-serif;font-size:72px;font-weight:950;letter-spacing:-.05em;background:linear-gradient(135deg,var(--acc) 0%,#FFFFFF 40%,#FF4D5E 70%,var(--purple) 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;line-height:1;text-shadow:0 0 48px rgba(255,77,94,.35);position:relative;z-index:2;filter:drop-shadow(0 2px 0 rgba(0,0,0,.4))">VS</div>
+                    <div class="rv-vs">VS</div>
                   </div>
-                  <!-- Countdown monospace -->
-                  <div style="text-align:center">
-                    <div style="font-size:10px;color:var(--txt3);font-weight:700;letter-spacing:.1em;text-transform:uppercase;margin-bottom:5px">STARTS IN</div>
-                    <div style="display:inline-flex;align-items:baseline;gap:2px">
-                      <span style="font-size:30px;font-weight:900;color:var(--acc);letter-spacing:.04em;line-height:1;font-family:'JetBrains Mono',Consolas,monospace;padding:6px 10px;border-radius:10px;background:rgba(0,255,135,.08);border:1px solid rgba(0,255,135,.2);min-width:40px;text-align:center">02</span>
-                      <span style="font-size:22px;font-weight:900;color:var(--txt2);padding-bottom:3px">:</span>
-                      <span style="font-size:30px;font-weight:900;color:var(--acc);letter-spacing:.04em;line-height:1;font-family:'JetBrains Mono',Consolas,monospace;padding:6px 10px;border-radius:10px;background:rgba(0,255,135,.08);border:1px solid rgba(0,255,135,.2);min-width:40px;text-align:center">45</span>
-                    </div>
-                  </div>
+                  <div class="rv-proof">Riot checks the result.<br/><b>No excuses.</b></div>
                 </div>
 
-                <!-- SHADOW TITAN - RIGHT center vertically (mirror of left) -->
-                <div style="display:flex;align-items:center;gap:12px;justify-content:flex-start">
-                  <div style="position:relative;flex-shrink:0">
-                    <!-- Purple conic ring -->
-                    <div style="position:absolute;inset:-4px;border-radius:50%;background:conic-gradient(from 180deg,var(--purple) 0deg,rgba(112,0,255,.15) 120deg,var(--purple) 240deg,var(--purple) 360deg);-webkit-mask:radial-gradient(closest-side,transparent calc(100% - 4px),#000 calc(100% - 4px));mask:radial-gradient(closest-side,transparent calc(100% - 4px),#000 calc(100% - 4px));animation:spin 9s linear infinite reverse"></div>
-                    <img src="Photos_Gamers/pexels-a-darmel-7862590.jpg" alt="ShadowTitan" style="width:62px;height:62px;border-radius:50%;object-fit:cover;display:block;border:2.5px solid var(--l1);background:var(--l2);position:relative;z-index:1;filter:contrast(1.05) saturate(1.1)"/>
+                <!-- RIVAL — right -->
+                <div class="rv-side rv-right">
+                  <div class="rv-av-wrap">
+                    <div class="rv-ring rv-ring-purple"></div>
+                    <div class="rv-av rv-av-rival">?</div>
                   </div>
-                  <div style="text-align:left">
-                    <div style="font-size:16px;font-weight:850;letter-spacing:-.01em;line-height:1.1">ShadowTitan <span style="display:inline-block;padding:2.5px 7px;border-radius:5px;background:var(--purple-lo);color:var(--purple-txt);font-size:9px;font-weight:900;margin-left:5px;letter-spacing:.04em;vertical-align:2px">TOP 100</span></div>
-                    <div style="display:flex;align-items:center;gap:6px;font-size:11.5px;color:var(--txt2);margin-top:5px;justify-content:flex-start">
-                      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" style="color:var(--gold)"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
-                      Platinum I
-                    </div>
-                    <div style="font-size:11px;color:var(--txt3);font-weight:700;letter-spacing:.05em;margin-top:6px;display:flex;align-items:center;justify-content:flex-start;gap:8px">
-                      <span style="display:inline-flex;align-items:center;gap:5px"><span style="width:4px;height:4px;border-radius:50%;background:var(--purple);opacity:.7"></span>28W · 9L</span>
-                      <span style="opacity:.4">·</span>
-                      <span>Best of 3</span>
-                    </div>
+                  <div class="rv-txt">
+                    <div class="rv-name">Your rival?</div>
+                    <div class="rv-meta">The friend who won't stop talking</div>
+                    <div class="rv-meta2">One link and it's settled</div>
                   </div>
                 </div>
               </div>
 
-              <!-- PRIZE POOL (gold) + CTA purple -->
-              <div style="text-align:center;margin-top:20px;padding-top:16px;border-top:1px dashed rgba(255,255,255,.06)">
-                <div style="font-size:10.5px;color:var(--txt3);font-weight:800;letter-spacing:.1em;text-transform:uppercase;margin-bottom:6px">PRIZE POOL</div>
-                <div style="font-size:36px;font-weight:950;letter-spacing:-.02em;background:linear-gradient(135deg,#FFFFFF 0%,#FFE5A0 35%,var(--gold) 75%,#B98316 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;line-height:1">5,000 CLU</div>
-                <div style="display:flex;justify-content:center;margin-top:18px">
-                  <button style="display:inline-flex;align-items:center;gap:10px;padding:14px 34px;border-radius:13px;background:linear-gradient(135deg,var(--purple),#8c33ff 55%,#a855ff);color:#fff;font-size:14px;font-weight:800;letter-spacing:.02em;border:none;cursor:pointer;transition:all .2s;box-shadow:0 0 28px rgba(112,0,255,.45),inset 0 1px 0 rgba(255,255,255,.15)">
-                    View Match Details
-                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none"><path d="M5 12h14M13 5l7 7-7 7" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              <div class="rv-foot">
+                <div class="rv-claim">Your rank is a team stat. <span>Your 1v1 record isn't.</span></div>
+                <div style="display:flex;justify-content:center;margin-top:16px">
+                  <button class="rv-cta" onclick="challengeAFriend()">
+                    Challenge a friend
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M5 12h14M13 5l7 7-7 7" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"/></svg>
                   </button>
                 </div>
+                <div class="rv-micro">Free duels cost 0 CLU. Your friend gets 500 CLU too when they sign up.</div>
               </div>
             </div>
           </div>
         </div>
 
-        <!-- WEEKEND TOURNAMENT — MOVED UP HERE: BETWEEN Ready to Compete & Active Challenges -->
-        <div id="land-rewards" style="margin:0 0 0;position:relative;z-index:1;isolation:isolate">
-          <div style="background:linear-gradient(135deg,rgba(112,0,255,.15) 0%,rgba(6,4,20,.92) 50%,rgba(0,255,135,.08) 100%);border:1px solid rgba(112,0,255,.35);border-radius:16px;padding:18px 20px 18px 24px;display:grid;grid-template-columns:140px 1fr auto;gap:18px;align-items:center;overflow:hidden;position:relative;margin-bottom:48px !important;isolation:isolate">
-          <!-- BACKGROUND FIXED GRADIENT for cup (no more transparent bg bleed) -->
-          <div style="position:absolute;inset:0;pointer-events:none;background:
-            radial-gradient(400px 240px at 12% 50%,rgba(112,0,255,.22),transparent 70%),
-            radial-gradient(500px 260px at 92% 40%,rgba(0,255,135,.08),transparent 72%);z-index:0"></div>
-          <!-- TROPHY column: proper frame bg so image has no weirdness -->
-          <div style="position:relative;z-index:1;width:124px;min-height:88px;display:flex;align-items:center;justify-content:center">
-            <div style="position:relative;width:96px;height:96px;border-radius:18px;background:linear-gradient(160deg,rgba(112,0,255,.22),rgba(6,4,16,.8));border:1px solid rgba(112,0,255,.35);display:flex;align-items:center;justify-content:center;overflow:hidden">
-              <img src="https://coreva-normal.trae.ai/api/ide/v1/text_to_image?prompt=realistic%20dark%20purple%20glowing%203D%20trophy%20cup%20with%20gold%20highlights%20on%20dark%20esports%20purple%20background%20studio%20lighting%20award&image_size=square" alt="Weekend Tournament Trophy" style="width:90%;height:90%;object-fit:contain;display:block;filter:drop-shadow(0 8px 24px rgba(112,0,255,.65))"/>
-            </div>
-          </div>
-          <!-- Middle info -->
-          <div style="position:relative;z-index:1;min-width:0">
-            <div style="font-size:10.5px;font-weight:900;text-transform:uppercase;letter-spacing:.12em;color:var(--purple-txt);margin-bottom:5px;display:inline-flex;align-items:center;gap:7px">
-              <svg width="11" height="11" viewBox="0 0 24 24" fill="none" style="color:var(--gold)"><path d="M8 21h8M12 17v4M7 4h10v5a5 5 0 01-10 0V4zM4 4h3v4H4zM17 4h3v4h-3z" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></svg>
-              WEEKEND TOURNAMENT
-            </div>
-            <div style="font-size:clamp(26px,3vw,36px);font-weight:950;letter-spacing:-.02em;line-height:1;margin-bottom:6px;background:linear-gradient(135deg,#FFFFFF 0%,#FFE5A0 40%,var(--gold) 75%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text">$5,000 CLU PRIZE POOL</div>
-            <div style="display:flex;align-items:center;gap:10px;font-size:12px;color:var(--txt2);font-weight:600">
-              <div style="display:flex;align-items:center;gap:6px">
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" style="color:var(--acc)"><rect x="3" y="5" width="18" height="16" rx="2.5" stroke="currentColor" stroke-width="1.8"/><path d="M3 9h18M8 14h3M8 18h8" stroke="currentColor" stroke-width="1.6"/></svg>
-                32 / 128 Teams Registered
-              </div>
-              <span style="opacity:.3">·</span>
-              <div style="display:flex;align-items:center;gap:6px">
-                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" style="color:var(--gold)"><circle cx="12" cy="12" r="9" stroke="currentColor" stroke-width="1.8"/><path d="M12 7v5l3 2" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
-                Starts in 3 days
+        <!-- ═══ FOUNDING PLAYERS — the beta is genuinely early (replaces the invented weekend tournament) ═══ -->
+        <div id="land-founding" style="margin:0;position:relative;z-index:1;isolation:isolate">
+          <div class="founding-banner">
+            <div class="founding-bg"></div>
+            <div class="founding-icon-col">
+              <div class="founding-icon">
+                <svg width="46" height="46" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M5 21V4" stroke="var(--gold)" stroke-width="1.8" stroke-linecap="round"/><path d="M5 4h11l-2 3.5L16 11H5" stroke="var(--purple-txt)" stroke-width="1.8" stroke-linejoin="round" fill="rgba(112,0,255,.18)"/><circle cx="5" cy="21" r="1.4" fill="var(--gold)"/></svg>
               </div>
             </div>
+            <div style="position:relative;z-index:1;min-width:0">
+              <div class="founding-label">
+                <svg width="11" height="11" viewBox="0 0 24 24" fill="none" style="color:var(--gold)" aria-hidden="true"><path d="M12 2l2.39 4.84 5.34.78-3.87 3.77.91 5.33L12 14.77 7.23 16.72l.91-5.33L4.27 7.62l5.34-.78L12 2z" fill="currentColor"/></svg>
+                EARLY BETA · FOUNDING PLAYERS
+              </div>
+              <div class="founding-h">Be here first. It counts.</div>
+              <div class="founding-p">Clutch is new. Every verified win now writes the first page of its history, and you help decide what it becomes.</div>
+            </div>
+            <div style="position:relative;z-index:1">
+              <button class="tournament-cta founding-cta" onclick="quickConnect()">
+                Create my account
+                <svg width="13" height="13" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M5 12h14M13 5l7 7-7 7" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              </button>
+            </div>
           </div>
-          <!-- CTA -->
-          <div style="position:relative;z-index:1">
-            <button class="tournament-cta" style="padding:14px 28px;font-size:13.5px;box-shadow:0 0 28px rgba(112,0,255,.55);height:48px;display:inline-flex;align-items:center;gap:8px;border-radius:12px">
-              Register Now
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none"><path d="M5 12h14M13 5l7 7-7 7" stroke="currentColor" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"/></svg>
-            </button>
-          </div>
-        </div>
         </div>
 
-        <!-- ACTIVE CHALLENGES 6 ROWS -->
+        <!-- ═══ OPEN CHALLENGES — live from GET /api/challenges (loadLandingChallenges in app.js), honest empty state ═══ -->
         <div id="land-challenges" class="land-panel" style="padding:18px 20px 14px;margin-bottom:32px !important;margin-top:16px !important;position:relative;isolation:isolate;display:block;clear:both">
-          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
-            <span style="font-size:14px;font-weight:800">Active Duels</span>
-            <span class="land-panel-link">VIEW ALL →</span>
+          <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;gap:10px;flex-wrap:wrap">
+            <span style="font-size:14px;font-weight:800;display:inline-flex;align-items:center;gap:8px">Open Challenges <span class="lo-count" data-open-count>—</span></span>
+            <span class="land-panel-link" onclick="quickConnect()">POST A CHALLENGE →</span>
           </div>
-
-          <div style="display:flex;flex-direction:column;gap:0">
-            <!-- Row 1: Valorant CyberPunk vs ClutchMaster -->
-            <div style="display:grid;grid-template-columns:44px 1fr 40px 1fr auto;gap:10px;align-items:center;padding:11px 8px;border-top:1px solid var(--b);border-bottom:1px solid var(--b)">
-              <div style="width:40px;height:40px;border-radius:10px;background:rgba(255,77,94,.12);border:1px solid rgba(255,77,94,.24);display:flex;align-items:center;justify-content:center;overflow:hidden">
-                <img src="https://coreva-normal.trae.ai/api/ide/v1/text_to_image?prompt=valorant%20esports%20game%20badge%20emblem%2C%20neon%20green%20glowing%20cyber%20geometric%20V%20logo%2C%20futuristic%20cyberpunk%20tech%20lines%2C%20dark%20charcoal%20background%2C%203D%20render%20polished%20metal%2C%20cinematic%20studio%20lighting%2C%20highly%20detailed&image_size=square" alt="Valorant" style="width:28px;height:28px;object-fit:contain;display:block;filter:drop-shadow(0 2px 5px rgba(0,0,0,.55))"/>
-              </div>
-              <div style="display:flex;align-items:center;gap:8px">
-                <img src="Photos_Gamers/pexels-a-darmel-7862609.jpg" class="lb-avatar" alt="CyberPunk" style="width:26px;height:26px;object-fit:cover;font-size:9.5px;padding:0"/>
-                <div style="min-width:0;flex:1">
-                  <div style="font-size:12.5px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">CyberPunk</div>
-                  <div style="font-size:10px;color:var(--txt3);font-weight:700">Gold I · Best of 3</div>
-                </div>
-              </div>
-              <div style="text-align:center;font-size:13px;font-weight:900;color:var(--txt3);letter-spacing:.04em">VS</div>
-              <div style="display:flex;align-items:center;gap:8px;flex-direction:row-reverse">
-                <img src="Photos_Gamers/pexels-yankrukov-9069313.jpg" class="lb-avatar av2" alt="ClutchMaster" style="width:26px;height:26px;object-fit:cover;font-size:9.5px;padding:0"/>
-                <div style="min-width:0;flex:1;text-align:right">
-                  <div style="font-size:12.5px;font-weight:800;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">ClutchMaster</div>
-                  <div style="font-size:10px;color:var(--txt3);font-weight:700">Gold II</div>
-                </div>
-              </div>
-              <button onclick="quickConnect()" style="padding:9px 18px;border-radius:10px;border:1px solid rgba(0,255,135,.45);background:linear-gradient(180deg,rgba(0,255,135,.16),rgba(0,255,135,.06));color:var(--acc);font-size:11.5px;font-weight:850;cursor:pointer;transition:all .2s var(--ease);white-space:nowrap;box-shadow:0 0 0 1px rgba(0,255,135,.08) inset,0 6px 14px rgba(0,0,0,.25);letter-spacing:.02em;display:inline-flex;align-items:center;gap:6px"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" style="color:var(--acc)"><path d="M3 12h6l2-5 4 10 2-5h4" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"/></svg>View Duel</button>
-            </div>
-
-            <!-- Row 2: LoL ZypherX vs PhoenixOG -->
-            <div style="display:grid;grid-template-columns:44px 1fr 40px 1fr auto;gap:10px;align-items:center;padding:11px 8px;border-bottom:1px solid var(--b)">
-              <div style="width:40px;height:40px;border-radius:10px;background:rgba(200,155,60,.1);border:1px solid rgba(200,155,60,.24);display:flex;align-items:center;justify-content:center;overflow:hidden">
-                <img src="https://coreva-normal.trae.ai/api/ide/v1/text_to_image?prompt=league%20of%20legends%20esports%20game%20badge%20emblem%2C%20golden%20ornate%20medieval%20crest%20medallion%2C%20intricate%20interwoven%20gold%20triple%20star%20pattern%2C%203D%20render%20polished%20metal%20engravings%2C%20dark%20fantasy%20backdrop%2C%20cinematic%20studio%20lighting%2C%20highly%20detailed&image_size=square" alt="LoL" style="width:28px;height:28px;object-fit:contain;display:block;filter:drop-shadow(0 2px 5px rgba(0,0,0,.55))"/>
-              </div>
-              <div style="display:flex;align-items:center;gap:8px">
-                <img src="Photos_Gamers/pexels-yankrukov-9072278.jpg" class="lb-avatar" alt="ZypherX" style="width:26px;height:26px;object-fit:cover;font-size:9.5px;padding:0"/>
-                <div style="min-width:0;flex:1">
-                  <div style="font-size:12.5px;font-weight:800">ZypherX</div>
-                  <div style="font-size:10px;color:var(--txt3);font-weight:700">Silver I · Best of 1</div>
-                </div>
-              </div>
-              <div style="text-align:center;font-size:13px;font-weight:900;color:var(--txt3);letter-spacing:.04em">VS</div>
-              <div style="display:flex;align-items:center;gap:8px;flex-direction:row-reverse">
-                <img src="Photos_Gamers/pexels-ron-lach-7856690.jpg" class="lb-avatar av3" alt="PhoenixOG" style="width:26px;height:26px;object-fit:cover;font-size:9.5px;padding:0"/>
-                <div style="min-width:0;flex:1;text-align:right">
-                  <div style="font-size:12.5px;font-weight:800">PhoenixOG</div>
-                  <div style="font-size:10px;color:var(--txt3);font-weight:700">Gold I</div>
-                </div>
-              </div>
-              <button onclick="quickConnect()" style="padding:9px 18px;border-radius:10px;border:1px solid rgba(0,255,135,.45);background:linear-gradient(180deg,rgba(0,255,135,.16),rgba(0,255,135,.06));color:var(--acc);font-size:11.5px;font-weight:850;cursor:pointer;transition:all .2s var(--ease);white-space:nowrap;box-shadow:0 0 0 1px rgba(0,255,135,.08) inset,0 6px 14px rgba(0,0,0,.25);letter-spacing:.02em;display:inline-flex;align-items:center;gap:6px"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" style="color:var(--acc)"><path d="M3 12h6l2-5 4 10 2-5h4" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"/></svg>View Duel</button>
-            </div>
-
-            <!-- Row 3: CS2 FragMaster vs NightOwl_X -->
-            <div style="display:grid;grid-template-columns:44px 1fr 40px 1fr auto;gap:10px;align-items:center;padding:11px 8px;border-bottom:1px solid var(--b)">
-              <div style="width:40px;height:40px;border-radius:10px;background:rgba(245,158,11,.1);border:1px solid rgba(245,158,11,.24);display:flex;align-items:center;justify-content:center;overflow:hidden">
-                <img src="logos/cs2.jpg" alt="CS2" style="width:28px;height:28px;object-fit:cover;display:block;border-radius:7px;border:1px solid rgba(255,255,255,.15)"/>
-              </div>
-              <div style="display:flex;align-items:center;gap:8px">
-                <img src="Photos_Gamers/pexels-yankrukov-9069279.jpg" class="lb-avatar" alt="FragMaster" style="width:26px;height:26px;object-fit:cover;font-size:9.5px;padding:0;border-color:var(--acc)"/>
-                <div style="min-width:0;flex:1">
-                  <div style="font-size:12.5px;font-weight:800">FragMaster</div>
-                  <div style="font-size:10px;color:var(--txt3);font-weight:700">Gold Nova · Best of 3</div>
-                </div>
-              </div>
-              <div style="text-align:center;font-size:13px;font-weight:900;color:var(--txt3);letter-spacing:.04em">VS</div>
-              <div style="display:flex;align-items:center;gap:8px;flex-direction:row-reverse">
-                <img src="Photos_Gamers/pexels-yankrukov-9072275.jpg" class="lb-avatar av2" alt="NightOwl_X" style="width:26px;height:26px;object-fit:cover;font-size:9.5px;padding:0"/>
-                <div style="min-width:0;flex:1;text-align:right">
-                  <div style="font-size:12.5px;font-weight:800">NightOwl_X</div>
-                  <div style="font-size:10px;color:var(--txt3);font-weight:700">MG1</div>
-                </div>
-              </div>
-              <button onclick="quickConnect()" style="padding:9px 18px;border-radius:10px;border:1px solid rgba(0,255,135,.45);background:linear-gradient(180deg,rgba(0,255,135,.16),rgba(0,255,135,.06));color:var(--acc);font-size:11.5px;font-weight:850;cursor:pointer;transition:all .2s var(--ease);white-space:nowrap;box-shadow:0 0 0 1px rgba(0,255,135,.08) inset,0 6px 14px rgba(0,0,0,.25);letter-spacing:.02em;display:inline-flex;align-items:center;gap:6px"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" style="color:var(--acc)"><path d="M3 12h6l2-5 4 10 2-5h4" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"/></svg>View Duel</button>
-            </div>
-
-            <!-- Row 4: DOTA 2 ShadowTitan vs CyberGhosT -->
-            <div style="display:grid;grid-template-columns:44px 1fr 40px 1fr auto;gap:10px;align-items:center;padding:11px 8px;border-bottom:1px solid var(--b)">
-              <div style="width:40px;height:40px;border-radius:10px;background:rgba(209,34,41,.1);border:1px solid rgba(209,34,41,.24);display:flex;align-items:center;justify-content:center;overflow:hidden">
-                <img src="logos/dota2.jpg" alt="Dota 2" style="width:28px;height:28px;object-fit:cover;display:block;border-radius:7px;border:1px solid rgba(255,255,255,.15)"/>
-              </div>
-              <div style="display:flex;align-items:center;gap:8px">
-                <img src="Photos_Gamers/pexels-a-darmel-7862590.jpg" class="lb-avatar a2" alt="ShadowTitan" style="width:26px;height:26px;object-fit:cover;font-size:9.5px;padding:0"/>
-                <div style="min-width:0;flex:1">
-                  <div style="font-size:12.5px;font-weight:800">ShadowTitan</div>
-                  <div style="font-size:10px;color:var(--txt3);font-weight:700">Ancient II · Best of 1</div>
-                </div>
-              </div>
-              <div style="text-align:center;font-size:13px;font-weight:900;color:var(--txt3);letter-spacing:.04em">VS</div>
-              <div style="display:flex;align-items:center;gap:8px;flex-direction:row-reverse">
-                <img src="Photos_Gamers/pexels-a-darmel-7862609.jpg" class="lb-avatar av3" alt="CyberGhosT" style="width:26px;height:26px;object-fit:cover;font-size:9.5px;padding:0;border-color:var(--red)"/>
-                <div style="min-width:0;flex:1;text-align:right">
-                  <div style="font-size:12.5px;font-weight:800">CyberGhosT</div>
-                  <div style="font-size:10px;color:var(--txt3);font-weight:700">Ancient III</div>
-                </div>
-              </div>
-              <button onclick="quickConnect()" style="padding:9px 18px;border-radius:10px;border:1px solid rgba(0,255,135,.45);background:linear-gradient(180deg,rgba(0,255,135,.16),rgba(0,255,135,.06));color:var(--acc);font-size:11.5px;font-weight:850;cursor:pointer;transition:all .2s var(--ease);white-space:nowrap;box-shadow:0 0 0 1px rgba(0,255,135,.08) inset,0 6px 14px rgba(0,0,0,.25);letter-spacing:.02em;display:inline-flex;align-items:center;gap:6px"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" style="color:var(--acc)"><path d="M3 12h6l2-5 4 10 2-5h4" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"/></svg>View Duel</button>
-            </div>
-
-            <!-- Row 5: Apex Legends ViperLynx vs KillTheorem -->
-            <div style="display:grid;grid-template-columns:44px 1fr 40px 1fr auto;gap:10px;align-items:center;padding:11px 8px;border-bottom:1px solid var(--b)">
-              <div style="width:40px;height:40px;border-radius:10px;background:rgba(220,38,38,.09);border:1px solid rgba(220,38,38,.22);display:flex;align-items:center;justify-content:center;overflow:hidden">
-                <img src="logos/apex.jpg" alt="Apex" style="width:28px;height:28px;object-fit:cover;display:block;border-radius:7px;border:1px solid rgba(255,255,255,.15)"/>
-              </div>
-              <div style="display:flex;align-items:center;gap:8px">
-                <img src="Photos_Gamers/pexels-roman-odintsov-12718631.jpg" class="lb-avatar a3" alt="ViperLynx" style="width:26px;height:26px;object-fit:cover;font-size:9.5px;padding:0"/>
-                <div style="min-width:0;flex:1">
-                  <div style="font-size:12.5px;font-weight:800">ViperLynx</div>
-                  <div style="font-size:10px;color:var(--txt3);font-weight:700">Platinum IV · Best of 3</div>
-                </div>
-              </div>
-              <div style="text-align:center;font-size:13px;font-weight:900;color:var(--txt3);letter-spacing:.04em">VS</div>
-              <div style="display:flex;align-items:center;gap:8px;flex-direction:row-reverse">
-                <img src="Photos_Gamers/pexels-kevin-malik-8762754.jpg" class="lb-avatar av2" alt="KillTheorem" style="width:26px;height:26px;object-fit:cover;font-size:9.5px;padding:0;border-color:var(--purple-txt)"/>
-                <div style="min-width:0;flex:1;text-align:right">
-                  <div style="font-size:12.5px;font-weight:800">KillTheorem</div>
-                  <div style="font-size:10px;color:var(--txt3);font-weight:700">Platinum IV</div>
-                </div>
-              </div>
-              <button onclick="quickConnect()" style="padding:9px 18px;border-radius:10px;border:1px solid rgba(0,255,135,.45);background:linear-gradient(180deg,rgba(0,255,135,.16),rgba(0,255,135,.06));color:var(--acc);font-size:11.5px;font-weight:850;cursor:pointer;transition:all .2s var(--ease);white-space:nowrap;box-shadow:0 0 0 1px rgba(0,255,135,.08) inset,0 6px 14px rgba(0,0,0,.25);letter-spacing:.02em;display:inline-flex;align-items:center;gap:6px"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" style="color:var(--acc)"><path d="M3 12h6l2-5 4 10 2-5h4" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"/></svg>View Duel</button>
-            </div>
-
-            <!-- Row 6: Fortnite -->
-            <div style="display:grid;grid-template-columns:44px 1fr 40px 1fr auto;gap:10px;align-items:center;padding:11px 8px">
-              <div style="width:40px;height:40px;border-radius:10px;background:rgba(0,212,255,.1);border:1px solid rgba(0,212,255,.24);display:flex;align-items:center;justify-content:center;overflow:hidden">
-                <img src="logos/fortnite.jpg" alt="Fortnite" style="width:28px;height:28px;object-fit:cover;display:block;border-radius:7px;border:1px solid rgba(255,255,255,.15)"/>
-              </div>
-              <div style="display:flex;align-items:center;gap:8px">
-                <img src="Photos_Gamers/pexels-yankrukov-9072278.jpg" class="lb-avatar av4" alt="Luna_Pro" style="width:26px;height:26px;object-fit:cover;font-size:9.5px;padding:0"/>
-                <div style="min-width:0;flex:1">
-                  <div style="font-size:12.5px;font-weight:800">Luna_Pro</div>
-                  <div style="font-size:10px;color:var(--txt3);font-weight:700">Immortal · Best of 5</div>
-                </div>
-              </div>
-              <div style="text-align:center;font-size:13px;font-weight:900;color:var(--txt3);letter-spacing:.04em">VS</div>
-              <div style="display:flex;align-items:center;gap:8px;flex-direction:row-reverse">
-                <img src="Photos_Gamers/pexels-yankrukov-9072275.jpg" class="lb-avatar" alt="NovaStriker" style="width:26px;height:26px;object-fit:cover;font-size:9.5px;padding:0;border-color:var(--acc)"/>
-                <div style="min-width:0;flex:1;text-align:right">
-                  <div style="font-size:12.5px;font-weight:800">NovaStriker</div>
-                  <div style="font-size:10px;color:var(--txt3);font-weight:700">Radiant</div>
-                </div>
-              </div>
-              <button onclick="quickConnect()" style="padding:9px 18px;border-radius:10px;border:1px solid rgba(0,255,135,.45);background:linear-gradient(180deg,rgba(0,255,135,.16),rgba(0,255,135,.06));color:var(--acc);font-size:11.5px;font-weight:850;cursor:pointer;transition:all .2s var(--ease);white-space:nowrap;box-shadow:0 0 0 1px rgba(0,255,135,.08) inset,0 6px 14px rgba(0,0,0,.25);letter-spacing:.02em;display:inline-flex;align-items:center;gap:6px"><svg width="12" height="12" viewBox="0 0 24 24" fill="none" style="color:var(--acc)"><path d="M3 12h6l2-5 4 10 2-5h4" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round"/></svg>View Duel</button>
-            </div>
+          <div id="land-open-list">
+            <div class="lo-loading">Checking the board…</div>
           </div>
         </div>
 
-        <!-- FIND A CONTENDER — parallel section (people posting LFG duels) -->
-        <div id="land-friends" class="land-panel" style="margin-block:0 52px;padding:26px 24px;border-radius:20px;border:1px solid rgba(112,0,255,.24);background:linear-gradient(180deg,rgba(112,0,255,.08),rgba(6,4,18,.92) 55%)">
+        <!-- ═══ COMMUNITY — the real Discord (replaces the invented "Find a Contender" cards) ═══ -->
+        <div id="land-community" class="land-panel" style="margin-block:0 52px;padding:26px 24px;border-radius:20px;border:1px solid rgba(112,0,255,.24);background:linear-gradient(180deg,rgba(112,0,255,.08),rgba(6,4,18,.92) 55%)">
           <div style="display:flex;align-items:flex-end;justify-content:space-between;margin-bottom:20px;gap:14px;flex-wrap:wrap">
             <div>
               <div style="font-size:10.5px;font-weight:900;letter-spacing:.18em;text-transform:uppercase;color:var(--purple-txt);margin-bottom:8px">
-                <span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--purple);margin-right:10px;vertical-align:middle;box-shadow:0 0 10px var(--purple);animation:breathe 1.8s ease-in-out infinite"></span>
-                PLAYERS LOOKING FOR OPPONENTS RIGHT NOW
+                <span style="display:inline-block;width:7px;height:7px;border-radius:50%;background:var(--purple);margin-right:10px;vertical-align:middle;box-shadow:0 0 10px var(--purple)"></span>
+                COMMUNITY · DISCORD
               </div>
-              <h3 style="font-size:24px;font-weight:950;letter-spacing:-.02em;margin:0;line-height:1.1">Find a Contender · <span style="background:linear-gradient(135deg,var(--purple),#c9a5ff);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text">Pick your duel</span></h3>
-              <p style="font-size:12.5px;color:var(--txt2);margin:10px 0 0;max-width:540px;line-height:1.6">Open challenges from players looking for a rival. Pick one, play it out, and the result settles it.</p>
+              <h3 style="font-size:24px;font-weight:950;letter-spacing:-.02em;margin:0;line-height:1.1">Join the crew · <span style="background:linear-gradient(135deg,var(--purple),#c9a5ff);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text">Help shape the beta</span></h3>
+              <p style="font-size:12.5px;color:var(--txt2);margin:10px 0 0;max-width:540px;line-height:1.6">Clutch is early, and the players in the Discord decide what comes next. Find a rival, call out a bug, pitch the next game.</p>
             </div>
-            <button onclick="quickConnect()" style="padding:11px 22px;border-radius:12px;border:1px solid rgba(112,0,255,.5);background:linear-gradient(135deg,var(--purple),#8c33ff 55%,#a855ff);color:#fff;font-size:12.5px;font-weight:850;cursor:pointer;transition:all .22s var(--ease);box-shadow:0 0 26px rgba(112,0,255,.45),0 1px 0 rgba(255,255,255,.2) inset;white-space:nowrap;letter-spacing:.02em;display:inline-flex;align-items:center;gap:8px">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" style="color:#fff"><path d="M12 5v14M5 12h14" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg>
-              Post My Duel
-            </button>
+            <a href="https://discord.gg/abyzAXMKu" target="_blank" rel="noopener" class="cm-join">
+              <svg width="15" height="15" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M20.3 4.4A19.8 19.8 0 0015.6 3l-.3.6a18.2 18.2 0 00-6.6 0L8.4 3a19.8 19.8 0 00-4.7 1.4C.5 8.8-.3 13 0 17.2a20 20 0 006 3l.5-.7a13.1 13.1 0 01-2-1l.5-.4a13.6 13.6 0 0021.8 0l.5.4c-.6.4-1.3.8-2 1l.5.7a20 20 0 006-3c.4-4.9-.7-9-3.6-12.8zM8.5 14.5c-1.2 0-2.2-1.1-2.2-2.5 0-1.4 1-2.5 2.2-2.5 1.2 0 2.2 1.1 2.2 2.5 0 1.4-1 2.5-2.2 2.5zm7 0c-1.2 0-2.2-1.1-2.2-2.5 0-1.4 1-2.5 2.2-2.5 1.2 0 2.2 1.1 2.2 2.5 0 1.4-1 2.5-2.2 2.5z"/></svg>
+              Join the Discord
+            </a>
           </div>
 
-          <div class="fac-horizontal-scroll" id="fac-scroll" style="scroll-padding-left:4px">
-            <!-- LFG CARD 1 -->
+          <div class="fac-horizontal-scroll" style="scroll-padding-left:4px">
             <div class="fac-card">
-              <div style="padding:18px;height:100%;border-radius:16px;background:linear-gradient(180deg,rgba(255,255,255,.04),rgba(255,255,255,.005));border:1px solid var(--b);display:flex;flex-direction:column;gap:14px;transition:all .22s var(--ease)">
-                <div style="display:flex;align-items:center;gap:10px">
-                  <img src="Photos_Gamers/pexels-yankrukov-9069279.jpg" alt="NovaStriker" style="width:42px;height:42px;border-radius:13px;object-fit:cover;border:2px solid rgba(0,255,135,.4);flex-shrink:0"/>
-                  <div style="min-width:0;flex:1">
-                    <div style="font-size:13.5px;font-weight:900;letter-spacing:-.01em;display:flex;align-items:center;gap:7px;flex-wrap:wrap">NovaStriker<div style="font-size:9px;padding:2px 6px;border-radius:6px;background:rgba(255,77,94,.12);color:var(--red);font-weight:900">27W STREAK</div></div>
-                    <div style="font-size:11px;color:var(--txt3);margin-top:2px">Immortal 3 · Valorant · Paris</div>
-                  </div>
+              <div class="cm-card">
+                <div class="cm-icon" style="color:var(--acc);background:rgba(0,255,135,.1);border-color:rgba(0,255,135,.3)">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><circle cx="12" cy="12" r="8" stroke="currentColor" stroke-width="1.9"/><circle cx="12" cy="12" r="2" fill="currentColor"/><path d="M12 2v4M12 18v4M2 12h4M18 12h4" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/></svg>
                 </div>
-                <div style="padding:11px 12px;border-radius:11px;background:var(--l2);border:1px dashed rgba(255,255,255,.05)">
-                  <div style="font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.12em;color:var(--txt3);margin-bottom:5px">DUEL CONDITIONS</div>
-                  <div style="font-size:12.5px;font-weight:800;color:var(--txt);margin-bottom:3px">BO3 · Rank-Locked · 100 CLU Entry</div>
-                  <div style="font-size:11.5px;color:var(--txt2);line-height:1.5">« First to 13 on Bind / Haven / Ascent — I only main Jett, no smurfs please »</div>
-                </div>
-                <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:auto">
-                  <div style="font-size:11px;color:var(--txt3);display:flex;align-items:center;gap:6px">
-                    <span style="display:inline-flex;align-items:center;gap:5px;padding:3px 8px;border-radius:7px;background:rgba(0,255,135,.1);color:var(--acc);font-weight:800;border:1px solid rgba(0,255,135,.22)"><span style="width:7px;height:7px;border-radius:50%;background:currentColor;display:inline-block;flex-shrink:0;box-shadow:0 0 6px currentColor"></span>Online</span>
-                    2 min
-                  </div>
-                  <button onclick="quickConnect()" style="padding:10px 16px;border-radius:11px;background:linear-gradient(180deg,#1dffab,#00d972);color:#04130a;font-size:11.5px;font-weight:900;cursor:pointer;display:inline-flex;align-items:center;gap:6px;white-space:nowrap;border:none;box-shadow:0 6px 18px rgba(0,255,135,.3);letter-spacing:.02em">
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M7 8.5L14.5 12 7 15.5V8.5z" fill="#04130a" stroke="#04130a" stroke-width="1.5" stroke-linejoin="round"/><rect x="3" y="4.5" width="18" height="15" rx="3" stroke="#04130a" stroke-width="2.2"/></svg>
-                    Duel
-                  </button>
-                </div>
+                <div class="cm-title">Find a rival in <span>#find-a-rival</span></div>
+                <div class="cm-text">Drop your game and your rank. Someone in there thinks they can beat you.</div>
+                <a href="https://discord.gg/abyzAXMKu" target="_blank" rel="noopener" class="cm-link">Find a rival →</a>
               </div>
             </div>
-
-            <!-- LFG CARD 2 -->
             <div class="fac-card">
-              <div style="padding:18px;height:100%;border-radius:16px;background:linear-gradient(180deg,rgba(255,255,255,.04),rgba(255,255,255,.005));border:1px solid var(--b);display:flex;flex-direction:column;gap:14px;transition:all .22s var(--ease)">
-                <div style="display:flex;align-items:center;gap:10px">
-                  <img src="Photos_Gamers/pexels-a-darmel-7862590.jpg" alt="ShadowTitan" style="width:42px;height:42px;border-radius:13px;object-fit:cover;border:2px solid rgba(112,0,255,.45);flex-shrink:0"/>
-                  <div style="min-width:0;flex:1">
-                    <div style="font-size:13.5px;font-weight:900;letter-spacing:-.01em;display:flex;align-items:center;gap:7px;flex-wrap:wrap">ShadowTitan<div style="font-size:9px;padding:2px 6px;border-radius:6px;background:rgba(112,0,255,.14);color:var(--purple-txt);font-weight:900">GRANDMASTER</div></div>
-                    <div style="font-size:11px;color:var(--txt3);margin-top:2px">Duelist · LoL · Berlin</div>
-                  </div>
+              <div class="cm-card">
+                <div class="cm-icon" style="color:var(--purple-txt);background:rgba(112,0,255,.12);border-color:rgba(112,0,255,.34)">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M9 18h6M10 21h4M12 3a6 6 0 00-3.5 10.9c.6.4 1 1.1 1 1.8V16h5v-.3c0-.7.4-1.4 1-1.8A6 6 0 0012 3z" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"/></svg>
                 </div>
-                <div style="padding:11px 12px;border-radius:11px;background:var(--l2);border:1px dashed rgba(255,255,255,.05)">
-                  <div style="font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.12em;color:var(--txt3);margin-bottom:5px">DUEL CONDITIONS</div>
-                  <div style="font-size:12.5px;font-weight:800;color:var(--txt);margin-bottom:3px">BO1 Solo Mid · 50 CLU Entry</div>
-                  <div style="font-size:11.5px;color:var(--txt2);line-height:1.5">« Any champion but Darius. Summoner's Rift. Must screen share during match »</div>
-                </div>
-                <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:auto">
-                  <div style="font-size:11px;color:var(--txt3);display:flex;align-items:center;gap:6px">
-                    <span style="display:inline-flex;align-items:center;gap:5px;padding:3px 8px;border-radius:7px;background:rgba(0,255,135,.1);color:var(--acc);font-weight:800;border:1px solid rgba(0,255,135,.22)"><span style="width:7px;height:7px;border-radius:50%;background:currentColor;display:inline-block;flex-shrink:0;box-shadow:0 0 6px currentColor"></span>Online</span>
-                    7 min
-                  </div>
-                  <button onclick="quickConnect()" style="padding:10px 16px;border-radius:11px;background:linear-gradient(180deg,#1dffab,#00d972);color:#04130a;font-size:11.5px;font-weight:900;cursor:pointer;display:inline-flex;align-items:center;gap:6px;white-space:nowrap;border:none;box-shadow:0 6px 18px rgba(0,255,135,.3);letter-spacing:.02em">
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M7 8.5L14.5 12 7 15.5V8.5z" fill="#04130a" stroke="#04130a" stroke-width="1.5" stroke-linejoin="round"/><rect x="3" y="4.5" width="18" height="15" rx="3" stroke="#04130a" stroke-width="2.2"/></svg>
-                    Duel
-                  </button>
-                </div>
+                <div class="cm-title">Tell us what to build next</div>
+                <div class="cm-text">Next game, next mode, next feature. Requests go straight to the people building Clutch.</div>
+                <a href="https://discord.gg/abyzAXMKu" target="_blank" rel="noopener" class="cm-link">Suggest something →</a>
               </div>
             </div>
-
-            <!-- LFG CARD 3 -->
             <div class="fac-card">
-              <div style="padding:18px;height:100%;border-radius:16px;background:linear-gradient(180deg,rgba(255,255,255,.04),rgba(255,255,255,.005));border:1px solid var(--b);display:flex;flex-direction:column;gap:14px;transition:all .22s var(--ease)">
-                <div style="display:flex;align-items:center;gap:10px">
-                  <img src="Photos_Gamers/pexels-kevin-malik-8762754.jpg" alt="ZedKnight" style="width:42px;height:42px;border-radius:13px;object-fit:cover;border:2px solid rgba(232,160,32,.45);flex-shrink:0"/>
-                  <div style="min-width:0;flex:1">
-                    <div style="font-size:13.5px;font-weight:900;letter-spacing:-.01em;display:flex;align-items:center;gap:7px;flex-wrap:wrap">ZedKnight<div style="font-size:9px;padding:2px 6px;border-radius:6px;background:rgba(232,160,32,.14);color:var(--gold);font-weight:900">1.3 RATING</div></div>
-                    <div style="font-size:11px;color:var(--txt3);margin-top:2px">Faceit LVL 10 · CS2 · Stockholm</div>
-                  </div>
+              <div class="cm-card">
+                <div class="cm-icon" style="color:var(--gold);background:rgba(232,160,32,.1);border-color:rgba(232,160,32,.3)">
+                  <svg width="20" height="20" viewBox="0 0 24 24" fill="none" aria-hidden="true"><path d="M12 2l8 3v6c0 5-3.5 9-8 11-4.5-2-8-6-8-11V5l8-3z" stroke="currentColor" stroke-width="1.9" stroke-linejoin="round"/><path d="M12 8v5M12 16h.01" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>
                 </div>
-                <div style="padding:11px 12px;border-radius:11px;background:var(--l2);border:1px dashed rgba(255,255,255,.05)">
-                  <div style="font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.12em;color:var(--txt3);margin-bottom:5px">DUEL CONDITIONS</div>
-                  <div style="font-size:12.5px;font-weight:800;color:var(--txt);margin-bottom:3px">Wingman 2v2 · Mirage · 250 CLU</div>
-                  <div style="font-size:11.5px;color:var(--txt2);line-height:1.5">« Bring teammate. Faceit verified. Stream from both sides required. No smurfs »</div>
-                </div>
-                <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:auto">
-                  <div style="font-size:11px;color:var(--txt3);display:flex;align-items:center;gap:6px">
-                    <span style="display:inline-flex;align-items:center;gap:5px;padding:3px 8px;border-radius:7px;background:rgba(232,160,32,.12);color:var(--gold);font-weight:800;border:1px solid rgba(232,160,32,.22)"><span style="width:7px;height:7px;border-radius:50%;background:currentColor;display:inline-block;flex-shrink:0;box-shadow:0 0 6px currentColor"></span>Away</span>
-                    3 min
-                  </div>
-                  <button onclick="quickConnect()" style="padding:10px 16px;border-radius:11px;background:linear-gradient(180deg,#1dffab,#00d972);color:#04130a;font-size:11.5px;font-weight:900;cursor:pointer;display:inline-flex;align-items:center;gap:6px;white-space:nowrap;border:none;box-shadow:0 6px 18px rgba(0,255,135,.3);letter-spacing:.02em">
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M7 8.5L14.5 12 7 15.5V8.5z" fill="#04130a" stroke="#04130a" stroke-width="1.5" stroke-linejoin="round"/><rect x="3" y="4.5" width="18" height="15" rx="3" stroke="#04130a" stroke-width="2.2"/></svg>
-                    Duel
-                  </button>
-                </div>
+                <div class="cm-title">Help shape the beta</div>
+                <div class="cm-text">Spot a bug, flag a rule that feels unfair, test new modes before anyone else.</div>
+                <a href="https://discord.gg/abyzAXMKu" target="_blank" rel="noopener" class="cm-link">Join the testers →</a>
               </div>
             </div>
-
-            <!-- LFG CARD 4 -->
-            <div class="fac-card">
-              <div style="padding:18px;height:100%;border-radius:16px;background:linear-gradient(180deg,rgba(255,255,255,.04),rgba(255,255,255,.005));border:1px solid var(--b);display:flex;flex-direction:column;gap:14px;transition:all .22s var(--ease)">
-                <div style="display:flex;align-items:center;gap:10px">
-                  <img src="Photos_Gamers/pexels-yankrukov-9072275.jpg" alt="NightOwl_X" style="width:42px;height:42px;border-radius:13px;object-fit:cover;border:2px solid rgba(255,77,94,.45);flex-shrink:0"/>
-                  <div style="min-width:0;flex:1">
-                    <div style="font-size:13.5px;font-weight:900;letter-spacing:-.01em;display:flex;align-items:center;gap:7px;flex-wrap:wrap">NightOwl_X<div style="font-size:9px;padding:2px 6px;border-radius:6px;background:rgba(92,140,255,.14);color:var(--blue);font-weight:900">RADIANT</div></div>
-                    <div style="font-size:11px;color:var(--txt3);margin-top:2px">Radiant · Valorant · Seoul</div>
-                  </div>
-                </div>
-                <div style="padding:11px 12px;border-radius:11px;background:var(--l2);border:1px dashed rgba(255,255,255,.05)">
-                  <div style="font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.12em;color:var(--txt3);margin-bottom:5px">DUEL CONDITIONS</div>
-                  <div style="font-size:12.5px;font-weight:800;color:var(--txt);margin-bottom:3px">Deathmatch · 75 CLU Entry</div>
-                  <div style="font-size:11.5px;color:var(--txt2);line-height:1.5">« First to 40 kills. Bind only. 1v1 only. Operator and shotguns. No agents abilities »</div>
-                </div>
-                <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:auto">
-                  <div style="font-size:11px;color:var(--txt3);display:flex;align-items:center;gap:6px">
-                    <span style="display:inline-flex;align-items:center;gap:5px;padding:3px 8px;border-radius:7px;background:rgba(0,255,135,.1);color:var(--acc);font-weight:800;border:1px solid rgba(0,255,135,.22)"><span style="width:7px;height:7px;border-radius:50%;background:currentColor;display:inline-block;flex-shrink:0;box-shadow:0 0 6px currentColor"></span>Online</span>
-                    1 min
-                  </div>
-                  <button onclick="quickConnect()" style="padding:10px 16px;border-radius:11px;background:linear-gradient(180deg,#1dffab,#00d972);color:#04130a;font-size:11.5px;font-weight:900;cursor:pointer;display:inline-flex;align-items:center;gap:6px;white-space:nowrap;border:none;box-shadow:0 6px 18px rgba(0,255,135,.3);letter-spacing:.02em">
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M7 8.5L14.5 12 7 15.5V8.5z" fill="#04130a" stroke="#04130a" stroke-width="1.5" stroke-linejoin="round"/><rect x="3" y="4.5" width="18" height="15" rx="3" stroke="#04130a" stroke-width="2.2"/></svg>
-                    Duel
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            <!-- LFG CARD 5 -->
-            <div class="fac-card">
-              <div style="padding:18px;height:100%;border-radius:16px;background:linear-gradient(180deg,rgba(255,255,255,.04),rgba(255,255,255,.005));border:1px solid var(--b);display:flex;flex-direction:column;gap:14px;transition:all .22s var(--ease)">
-                <div style="display:flex;align-items:center;gap:10px">
-                  <img src="Photos_Gamers/pexels-yankrukov-9072278.jpg" alt="ViperLynx" style="width:42px;height:42px;border-radius:13px;object-fit:cover;border:2px solid rgba(220,38,38,.45);flex-shrink:0"/>
-                  <div style="min-width:0;flex:1">
-                    <div style="font-size:13.5px;font-weight:900;letter-spacing:-.01em;display:flex;align-items:center;gap:7px;flex-wrap:wrap">ViperLynx<div style="font-size:9px;padding:2px 6px;border-radius:6px;background:rgba(220,38,38,.14);color:var(--red);font-weight:900">PREDATOR</div></div>
-                    <div style="font-size:11px;color:var(--txt3);margin-top:2px">Apex Predator · Apex · London</div>
-                  </div>
-                </div>
-                <div style="padding:11px 12px;border-radius:11px;background:var(--l2);border:1px dashed rgba(255,255,255,.05)">
-                  <div style="font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.12em;color:var(--txt3);margin-bottom:5px">DUEL CONDITIONS</div>
-                  <div style="font-size:12.5px;font-weight:800;color:var(--txt);margin-bottom:3px">Arenas 1v1 · KC · 150 CLU Entry</div>
-                  <div style="font-size:11.5px;color:var(--txt2);line-height:1.5">« Bo3 Series. World's Edge + KC + Artillery. Best of 3 rounds to 3. No third-parties »</div>
-                </div>
-                <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:auto">
-                  <div style="font-size:11px;color:var(--txt3);display:flex;align-items:center;gap:6px">
-                    <span style="display:inline-flex;align-items:center;gap:5px;padding:3px 8px;border-radius:7px;background:rgba(232,160,32,.12);color:var(--gold);font-weight:800;border:1px solid rgba(232,160,32,.22)"><span style="width:7px;height:7px;border-radius:50%;background:currentColor;display:inline-block;flex-shrink:0;box-shadow:0 0 6px currentColor"></span>Away</span>
-                    5 min
-                  </div>
-                  <button onclick="quickConnect()" style="padding:10px 16px;border-radius:11px;background:linear-gradient(180deg,#1dffab,#00d972);color:#04130a;font-size:11.5px;font-weight:900;cursor:pointer;display:inline-flex;align-items:center;gap:6px;white-space:nowrap;border:none;box-shadow:0 6px 18px rgba(0,255,135,.3);letter-spacing:.02em">
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M7 8.5L14.5 12 7 15.5V8.5z" fill="#04130a" stroke="#04130a" stroke-width="1.5" stroke-linejoin="round"/><rect x="3" y="4.5" width="18" height="15" rx="3" stroke="#04130a" stroke-width="2.2"/></svg>
-                    Duel
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            <!-- LFG CARD 6 -->
-            <div class="fac-card">
-              <div style="padding:18px;height:100%;border-radius:16px;background:linear-gradient(180deg,rgba(255,255,255,.04),rgba(255,255,255,.005));border:1px solid var(--b);display:flex;flex-direction:column;gap:14px;transition:all .22s var(--ease)">
-                <div style="display:flex;align-items:center;gap:10px">
-                  <img src="Photos_Gamers/pexels-ron-lach-7856690.jpg" alt="PhoenixOG" style="width:42px;height:42px;border-radius:13px;object-fit:cover;border:2px solid rgba(0,212,255,.45);flex-shrink:0"/>
-                  <div style="min-width:0;flex:1">
-                    <div style="font-size:13.5px;font-weight:900;letter-spacing:-.01em;display:flex;align-items:center;gap:7px;flex-wrap:wrap">PhoenixOG<div style="font-size:9px;padding:2px 6px;border-radius:6px;background:rgba(0,212,255,.14);color:var(--blue);font-weight:900">#1 RANKED</div></div>
-                    <div style="font-size:11px;color:var(--txt3);margin-top:2px">Ancient III · Dota 2 · NYC</div>
-                  </div>
-                </div>
-                <div style="padding:11px 12px;border-radius:11px;background:var(--l2);border:1px dashed rgba(255,255,255,.05)">
-                  <div style="font-size:10px;font-weight:800;text-transform:uppercase;letter-spacing:.12em;color:var(--txt3);margin-bottom:5px">DUEL CONDITIONS</div>
-                  <div style="font-size:12.5px;font-weight:800;color:var(--txt);margin-bottom:3px">1v1 Mid · 200 CLU Entry</div>
-                  <div style="font-size:11.5px;color:var(--txt2);line-height:1.5">« Shadow Fiend vs SF only. First blood first tower. No wards. Bo1. MMR verified via Dotabuff »</div>
-                </div>
-                <div style="display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:auto">
-                  <div style="font-size:11px;color:var(--txt3);display:flex;align-items:center;gap:6px">
-                    <span style="display:inline-flex;align-items:center;gap:5px;padding:3px 8px;border-radius:7px;background:rgba(0,255,135,.1);color:var(--acc);font-weight:800;border:1px solid rgba(0,255,135,.22)"><span style="width:7px;height:7px;border-radius:50%;background:currentColor;display:inline-block;flex-shrink:0;box-shadow:0 0 6px currentColor"></span>Online</span>
-                    12 min
-                  </div>
-                  <button onclick="quickConnect()" style="padding:10px 16px;border-radius:11px;background:linear-gradient(180deg,#1dffab,#00d972);color:#04130a;font-size:11.5px;font-weight:900;cursor:pointer;display:inline-flex;align-items:center;gap:6px;white-space:nowrap;border:none;box-shadow:0 6px 18px rgba(0,255,135,.3);letter-spacing:.02em">
-                    <svg width="12" height="12" viewBox="0 0 24 24" fill="none"><path d="M7 8.5L14.5 12 7 15.5V8.5z" fill="#04130a" stroke="#04130a" stroke-width="1.5" stroke-linejoin="round"/><rect x="3" y="4.5" width="18" height="15" rx="3" stroke="#04130a" stroke-width="2.2"/></svg>
-                    Duel
-                  </button>
-                </div>
-              </div>
-            </div>
-          </div>
-          <div class="fac-scroll-indicator" id="fac-dots">
-            <div class="fac-scroll-dot active" onclick="scrollFac(0)"></div>
-            <div class="fac-scroll-dot" onclick="scrollFac(1)"></div>
           </div>
         </div>
 
@@ -1143,9 +629,9 @@
           <div style="display:flex;align-items:flex-end;justify-content:space-between;margin-bottom:28px;position:relative;z-index:1;gap:24px;flex-wrap:wrap">
             <div style="flex:1;min-width:300px">
               <h2 style="font-size:30px;font-weight:950;letter-spacing:-.02em;margin:0;line-height:1.12;max-width:620px">How Clutch <span style="color:var(--acc)">works</span> in 4 clean moves</h2>
-              <p style="font-size:13px;color:var(--txt2);margin:12px 0 0;line-height:1.65;max-width:560px">No house. No luck. No hidden fees. Just you, your rival, and a result checked by the game itself.</p>
+              <p style="font-size:13px;color:var(--txt2);margin:12px 0 0;line-height:1.65;max-width:560px">No luck. No hidden fees. Just you, your rival, and a result checked by the game itself.</p>
             </div>
-            <div class="land-panel-link" style="font-size:12px;background:var(--l1);padding:9px 16px;border-radius:10px;border:1px solid var(--b);white-space:nowrap"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline;vertical-align:-2px;margin-right:3px"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>30 sec setup · <span style="color:var(--acc);font-weight:900">no house edge</span></div>
+            <div class="land-panel-link" style="font-size:12px;background:var(--l1);padding:9px 16px;border-radius:10px;border:1px solid var(--b);white-space:nowrap"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:inline;vertical-align:-2px;margin-right:3px"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>30-second setup · <span style="color:var(--acc);font-weight:900">free to play</span></div>
           </div>
 
           <div style="position:relative;z-index:1;display:grid;grid-template-columns:repeat(4,1fr);gap:14px;align-items:stretch">
@@ -1161,8 +647,8 @@
               </div>
               <div style="flex:1;display:flex;flex-direction:column;gap:8px">
                 <span style="position:absolute;top:22px;right:20px;width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:900;background:rgba(0,255,135,.12);color:var(--acc);border:1px solid rgba(0,255,135,.32)">1</span>
-                <div style="font-size:16.5px;font-weight:900;letter-spacing:-.01em;margin-top:2px">Log In / Sign In</div>
-                <div style="font-size:12.5px;color:var(--txt2);line-height:1.65;flex:1">Sign in with Discord, Telegram, email or a crypto wallet. You start with <span style="color:var(--acc);font-weight:800">500 free CLU</span>, in-app credits with no cash value.</div>
+                <div style="font-size:16.5px;font-weight:900;letter-spacing:-.01em;margin-top:2px">Create Your Account</div>
+                <div style="font-size:12.5px;color:var(--txt2);line-height:1.65;flex:1">Email, Discord, Telegram or a crypto wallet. 30 seconds, and <span style="color:var(--acc);font-weight:800">500 free CLU</span> land in your account. In-app credit, no cash value.</div>
               </div>
               <div style="position:absolute;right:-17px;top:50%;transform:translateY(-50%);width:34px;height:34px;border-radius:50%;background:linear-gradient(145deg,var(--bg2),var(--l1));border:1px solid var(--b);display:flex;align-items:center;justify-content:center;z-index:5;box-shadow:0 4px 12px rgba(0,0,0,.35)">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" style="color:var(--acc)"><path d="M9 6l6 6-6 6" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
@@ -1180,7 +666,7 @@
               <div style="flex:1;display:flex;flex-direction:column;gap:8px">
                 <span style="position:absolute;top:22px;right:20px;width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:900;background:rgba(112,0,255,.16);color:var(--purple-txt);border:1px solid rgba(112,0,255,.4)">2</span>
                 <div style="font-size:16.5px;font-weight:900;letter-spacing:-.01em;margin-top:2px">Create The Duel</div>
-                <div style="font-size:12.5px;color:var(--txt2);line-height:1.65;flex:1">Pick your game, choose the CLU entry and set the rules (BO1 / BO3 / rank-locked). Generate a <span style="color:var(--purple-txt);font-weight:800">share link</span> or QR code — one click.</div>
+                <div style="font-size:12.5px;color:var(--txt2);line-height:1.65;flex:1">Pick a verified mode: LoL Summoner's Rift 1v1, Valorant aim 1v1 or Dota 2 mid 1v1. Free or with CLU. You get a <span style="color:var(--purple-txt);font-weight:800">share link</span> and a QR code.</div>
               </div>
               <div style="position:absolute;right:-17px;top:50%;transform:translateY(-50%);width:34px;height:34px;border-radius:50%;background:linear-gradient(145deg,var(--bg2),var(--l1));border:1px solid var(--b);display:flex;align-items:center;justify-content:center;z-index:5;box-shadow:0 4px 12px rgba(0,0,0,.35)">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" style="color:var(--purple-txt)"><path d="M9 6l6 6-6 6" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
@@ -1198,7 +684,7 @@
               <div style="flex:1;display:flex;flex-direction:column;gap:8px">
                 <span style="position:absolute;top:22px;right:20px;width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:900;background:rgba(232,160,32,.16);color:var(--gold);border:1px solid rgba(232,160,32,.4)">3</span>
                 <div style="font-size:16.5px;font-weight:900;letter-spacing:-.01em;margin-top:2px">Opponent Locks In</div>
-                <div style="font-size:12.5px;color:var(--txt2);line-height:1.65;flex:1">Your rival opens the link, reviews the rules and matches the entry. Both sides locked in, <span style="color:var(--gold);font-weight:800">no backing out now</span>.</div>
+                <div style="font-size:12.5px;color:var(--txt2);line-height:1.65;flex:1">Your rival opens the link, reads the rules and accepts. Both sides locked in, <span style="color:var(--gold);font-weight:800">no backing out now</span>.</div>
               </div>
               <div style="position:absolute;right:-17px;top:50%;transform:translateY(-50%);width:34px;height:34px;border-radius:50%;background:linear-gradient(145deg,var(--bg2),var(--l1));border:1px solid var(--b);display:flex;align-items:center;justify-content:center;z-index:5;box-shadow:0 4px 12px rgba(0,0,0,.35)">
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" style="color:var(--gold)"><path d="M9 6l6 6-6 6" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>
@@ -1219,10 +705,14 @@
               </div>
               <div style="flex:1;display:flex;flex-direction:column;gap:8px">
                 <span style="position:absolute;top:22px;right:20px;width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:900;background:rgba(255,77,94,.16);color:var(--red);border:1px solid rgba(255,77,94,.4)">4</span>
-                <div style="font-size:16.5px;font-weight:900;letter-spacing:-.01em;margin-top:2px">Play &amp; Collect</div>
-                <div style="font-size:12.5px;color:var(--txt2);line-height:1.65;flex:1">Play your match. League and Valorant results come straight from the Riot API, other games use screenshot proof and the match ID. <span style="color:var(--red);font-weight:800">The winner takes the duel</span> and climbs the leaderboard.</div>
+                <div style="font-size:16.5px;font-weight:900;letter-spacing:-.01em;margin-top:2px">Play. The API Decides.</div>
+                <div style="font-size:12.5px;color:var(--txt2);line-height:1.65;flex:1">Play your match. LoL and Valorant results come straight from the Riot API, Dota 2 from the Steam API. <span style="color:var(--red);font-weight:800">The win goes on your record</span> and on the leaderboard.</div>
               </div>
             </div>
+          </div>
+          <div class="how-final-cta">
+            <div class="how-final-txt"><b>Think you're better?</b> Prove it. Your account takes 30 seconds and starts with 500 free CLU.</div>
+            <button class="hero-cta" onclick="quickConnect()">Create my free account</button>
           </div>
         </div>
       </div>
@@ -1437,6 +927,27 @@
           <div class="dash-welcome">
             <h2 id="welcome-msg">Welcome back</h2>
             <p>Here's your duel overview.</p>
+          </div>
+          <!-- YOUR FIRST DUEL — same checklist as the landing, driven by this player's real state -->
+          <div class="panel fd-wrap fd-dash" id="dash-first-duel" data-fd-mount="dashboard" style="margin-bottom:20px;padding:18px 20px"></div>
+          <!-- YOU VS YOUR RIVAL — compact -->
+          <div class="rv-strip" id="dash-rival">
+            <div class="rv-strip-side">
+              <div class="rv-av rv-av-me rv-av-sm" data-rv-initial>Y</div>
+              <div style="min-width:0">
+                <div class="rv-strip-name" data-rv-me>You</div>
+                <div class="rv-strip-meta" data-rv-record>Starts with your first win</div>
+              </div>
+            </div>
+            <div class="rv-strip-vs">VS</div>
+            <div class="rv-strip-side">
+              <div class="rv-av rv-av-rival rv-av-sm">?</div>
+              <div style="min-width:0">
+                <div class="rv-strip-name">Your rival?</div>
+                <div class="rv-strip-meta">Riot checks the result. No excuses.</div>
+              </div>
+            </div>
+            <button class="rv-cta rv-cta-sm" onclick="challengeAFriend()">Challenge a friend</button>
           </div>
           <div class="dash-grid">
             <div class="stat-card">
@@ -1989,7 +1500,7 @@
 
                 <!-- CHALLENGE FAIRNESS BLOCK -->
                 <div id="ap-fairness-wrap" style="background:#0D0E12;border:1px solid #262a36;border-radius:10px;padding:14px 16px;margin-bottom:14px">
-                  <div style="font-size:11px;color:var(--txt3);font-weight:700;letter-spacing:.08em;margin-bottom:10px">CHALLENGE FAIRNESS · PREVIEW</div>
+                  <div style="font-size:11px;color:var(--txt3);font-weight:700;letter-spacing:.08em;margin-bottom:10px">HOW THIS DUEL IS SETTLED</div>
                   <div id="ap-fair-predict" style="display:grid;grid-template-columns:1fr auto 1fr;gap:10px;align-items:center;margin-bottom:10px"></div>
                   <div id="ap-fair-score" style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;gap:14px"></div>
                   <div id="ap-fair-breakdown" style="display:grid;grid-template-columns:repeat(5,1fr);gap:10px"></div>
@@ -2528,12 +2039,9 @@
                       </span>
                     </div>
                     <div class="ps-meta">
-                      <span class="ps-game-dot" id="prof-game-dot" style="background:#00FF87">V</span>
-                      <span id="prof-game-name">VALORANT</span>
+                      <span id="prof-rank-inline">Riot ID not linked</span>
                       <span class="ps-meta-sep">·</span>
-                      <span id="prof-rank-inline">Diamond III</span>
-                      <span class="ps-meta-sep">·</span>
-                      <span class="ps-status online" id="prof-status-el">Online</span>
+                      <span class="ps-status online" id="prof-status-el">Signed in</span>
                       <span class="ps-meta-sep">·</span>
                       <span id="prof-via-badge">—</span>
                     </div>
@@ -2546,7 +2054,7 @@
                 </div>
                 <div class="ps-hdr-right">
                   <div class="ps-actions">
-                    <button class="ps-btn-sec">View Full Analysis</button>
+                    <button class="ps-btn-sec" onclick="fdLoadStats()">Load my LoL stats</button>
                     <button class="ps-btn-pri" onclick="goTo('create')">
                       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/></svg>
                       Duel
@@ -2555,131 +2063,42 @@
                 </div>
               </div>
 
-              <!-- RATING + CONFIDENCE -->
+              <!-- RECORD + RIOT ID + NEXT BADGE — all real: /api/profile/achievements and the player's linked accounts -->
               <div class="ps-ratings">
                 <div class="ps-rating-main">
-                  <div class="ps-rn-label">Clutch Rating</div>
+                  <div class="ps-rn-label">Clutch Record</div>
                   <div class="ps-rn-big">
-                    <div class="ps-rn-score" id="pr-clutch-score">798<span class="ps-rn-max"> / 1000</span></div>
-                    <div class="ps-rn-pct" id="pr-pct">TOP 11%</div>
+                    <div class="ps-rn-score" id="pr-clutch-score">0W · 0L</div>
+                    <div class="ps-rn-pct" id="pr-pct">NEW</div>
                   </div>
-                  <div class="ps-conf">
-                    <div class="ps-conf-row1">
-                      <span class="ps-conf-state high" id="pr-conf-state">HIGH CONFIDENCE</span>
-                      <span class="ps-conf-count" id="pr-conf-count">482 VERIFIED MATCHES</span>
-                    </div>
-                    <div class="ps-conf-bar">
-                      <div class="ps-conf-fill high" id="pr-conf-fill"></div>
-                    </div>
+                  <div class="pr-record-sub" id="pr-record-sub">No duels yet. Your record starts with your first win.</div>
+                </div>
+                <div class="pr-box">
+                  <div class="ps-rn-label">Riot ID</div>
+                  <div class="pr-box-big" id="pr-riot-name">Not linked</div>
+                  <div class="pr-box-sub" id="pr-riot-sub">Link it so Riot can check your LoL and Valorant results.</div>
+                  <div style="display:flex;gap:8px;flex-wrap:wrap;margin-top:auto">
+                    <button class="btn btn-sm btn-p" id="pr-riot-btn" onclick="fdLinkRiot()">Link my Riot ID</button>
                   </div>
                 </div>
-                <!-- Official win-rate card -->
-                <div style="padding:12px 14px;background:#0D0E12;border:1px solid #262a36;border-radius:10px;display:flex;flex-direction:column;gap:8px">
-                  <div class="ps-rn-label">Official</div>
-                  <div style="display:flex;justify-content:space-between;align-items:baseline">
-                    <div style="font-size:22px;font-weight:900;color:#fff" id="pr-off-rank">Diamond III</div>
-                    <div style="font-size:11px;color:var(--txt3);font-weight:600" id="pr-off-season">Ep 9 Act 2</div>
-                  </div>
-                  <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:2px">
-                    <div class="ps-oc-metric"><span class="k">Win Rate</span><span class="v" id="pr-wr-off">52%</span></div>
-                    <div class="ps-oc-metric"><span class="k">Matches</span><span class="v" id="pr-matches-off">482</span></div>
-                  </div>
-                </div>
-                <!-- Wins / Losses stat -->
-                <div style="padding:12px 14px;background:#0D0E12;border:1px solid #262a36;border-radius:10px;display:flex;flex-direction:column;gap:8px">
-                  <div class="ps-rn-label">Record</div>
-                  <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:2px">
-                    <div>
-                      <div style="font-size:24px;font-weight:900;color:#00FF87;letter-spacing:-.02em" id="pr-wins">0</div>
-                      <div style="font-size:11px;color:var(--txt3);font-weight:600;margin-top:-2px">Wins</div>
-                    </div>
-                    <div>
-                      <div style="font-size:24px;font-weight:900;color:#FF4D5E;letter-spacing:-.02em" id="pr-losses">0</div>
-                      <div style="font-size:11px;color:var(--txt3);font-weight:600;margin-top:-2px">Losses</div>
-                    </div>
-                  </div>
-                  <div class="ps-oc-metric" style="padding:6px 0 0;border-top:1px solid #262a36;margin-top:4px"><span class="k">CLU Earned</span><span class="v" style="color:#f0c832" id="pr-earned">0 CLU</span></div>
+                <div class="pr-box">
+                  <div class="ps-rn-label">Next badge</div>
+                  <div class="pr-box-big" id="pr-next-badge">First Blood</div>
+                  <div class="pr-box-sub" id="pr-next-sub">Win your first duel.</div>
+                  <div class="pr-next-track"><div class="pr-next-fill" id="pr-next-fill" style="width:0%"></div></div>
                 </div>
               </div>
 
-              <!-- OFFICIAL vs CLUTCH -->
-              <div class="ps-offclutch" id="profile-oc-block">
-                <div class="ps-oc-tabs" id="oc-tabs">
-                  <button class="ps-oc-tab active" id="oc-tab-off" onclick="switchOCView('off',this)">OFFICIAL</button>
-                  <button class="ps-oc-tab clutch-tab" id="oc-tab-clutch" onclick="switchOCView('clutch',this)">CLUTCH</button>
+              <!-- EMPTY STATE / NEXT MOVE -->
+              <div class="pr-next-move" id="pr-next-move">
+                <div>
+                  <div class="pr-nm-title" id="pr-nm-title">Your first duel is one link away.</div>
+                  <div class="pr-nm-sub">Send a challenge to the friend who keeps talking. The game API settles it.</div>
                 </div>
-                <div class="ps-oc-grid" id="profile-oc-grid">
-                  <div class="ps-oc-col">
-                    <div class="ps-oc-hdr">
-                      <span class="ps-oc-tag offcl">OFFICIAL</span>
-                      <span style="font-size:10px;color:var(--txt3)">Riot Games</span>
-                    </div>
-                    <div class="ps-oc-rank" id="oc-off-rank">Diamond III · 42 RR</div>
-                    <div class="ps-oc-metrics">
-                      <div class="ps-oc-metric"><span class="k">Win Rate</span><span class="v" id="oc-off-wr">52%</span></div>
-                      <div class="ps-oc-metric"><span class="k">Matches</span><span class="v" id="oc-off-matches">482</span></div>
-                      <div class="ps-oc-metric"><span class="k">Season</span><span class="v">Episode 9 Act 2</span></div>
-                      <div class="ps-oc-metric"><span class="k">Current Streak</span><span class="v" id="oc-off-streak">3W</span></div>
-                    </div>
-                  </div>
-                  <div class="ps-oc-col clutch">
-                    <div class="ps-oc-hdr">
-                      <span class="ps-oc-tag clutch">CLUTCH</span>
-                      <span style="font-size:10px;color:var(--txt3)">Opponent-adjusted</span>
-                    </div>
-                    <div class="ps-oc-rank" style="color:#00FF87" id="oc-clutch-rank">798 / 1000 · TOP 11%</div>
-                    <div class="ps-oc-metrics">
-                      <div class="ps-oc-metric"><span class="k">Adjusted Win Rate</span><span class="v" style="color:#00FF87" id="oc-clutch-wr">55.1%</span></div>
-                      <div class="ps-oc-metric"><span class="k">Recent Form</span><span class="v" style="color:#00FF87" id="oc-clutch-form">74 / 100</span></div>
-                      <div class="ps-oc-metric"><span class="k">Opponent Quality</span><span class="v" id="oc-clutch-opp">76 / 100</span></div>
-                      <div class="ps-oc-metric"><span class="k">Pressure (Clutch)</span><span class="v" id="oc-clutch-pres">80 / 100</span></div>
-                    </div>
-                  </div>
-                  <div class="ps-oc-explain">
-                    <strong>Why two scores?</strong> Your official rank reflects the game&apos;s ranking system. CLUTCH additionally considers opponent strength, recent form, consistency, role, individual contribution and match context.
-                  </div>
+                <div style="display:flex;gap:8px;flex-wrap:wrap">
+                  <button class="btn btn-sm btn-s" onclick="goTo('board')">Open the Duel Board</button>
+                  <button class="btn btn-sm btn-p" onclick="challengeAFriend()">Challenge a friend</button>
                 </div>
-              </div>
-
-              <!-- DIMENSIONS -->
-              <div class="ps-dimensions">
-                <div class="ps-sec-title">Performance dimensions · VALORANT</div>
-                <div class="ps-dims-grid" id="pr-dims-grid">
-                  <!-- filled by renderProfile() -->
-                </div>
-              </div>
-
-              <!-- PLAYER DNA -->
-              <div class="ps-dna">
-                <div class="ps-sec-title">Player DNA · Performance tendencies</div>
-                <div class="ps-dna-grid" id="pr-dna-grid">
-                  <!-- filled by renderProfile() -->
-                </div>
-              </div>
-
-              <!-- RECENT FORM -->
-              <div class="ps-form">
-                <div class="ps-sec-title">Recent Form · Last 10 matches</div>
-                <div class="ps-form-strip" id="pr-form-strip"><!-- filled JS --></div>
-                <div class="ps-form-trend" id="pr-form-trend">— trending W +1 over last 5</div>
-              </div>
-
-              <!-- OPPONENT QUALITY -->
-              <div class="ps-opp">
-                <div class="ps-sec-title">Opponent Quality & Fairness</div>
-                <div class="ps-opp-grid" id="pr-opp-grid">
-                  <!-- filled JS -->
-                </div>
-              </div>
-
-              <!-- CHALLENGE FAIRNESS (vs example opponent) -->
-              <div class="ps-fair" id="pr-fair-block">
-                <div class="ps-sec-title">Duel Fairness · vs NovaStriker (example)</div>
-                <div class="ps-fair-predict" id="pr-fair-predict">
-                  <!-- filled JS -->
-                </div>
-                <div class="ps-fair-score" id="pr-fair-score"></div>
-                <div class="ps-fair-breakdown" id="pr-fair-brk"><!-- filled JS --></div>
               </div>
 
             </div><!-- /ps-card -->
@@ -2922,7 +2341,7 @@
       <form id="auth-form-signup" onsubmit="return submitAuth(event,'signup')" style="display:block;margin:0">
         <div class="field" style="margin-bottom:11px">
           <label style="font-size:12px;font-weight:800;color:var(--txt2);letter-spacing:.02em">Gamer tag</label>
-          <input class="fi" id="su-username" type="text" maxlength="22" placeholder="NovaStriker" style="padding:13px 15px;font-size:13.5px" required/>
+          <input class="fi" id="su-username" type="text" maxlength="22" placeholder="YourGamerTag" style="padding:13px 15px;font-size:13.5px" required/>
         </div>
         <div class="field" style="margin-bottom:11px">
           <label style="font-size:12px;font-weight:800;color:var(--txt2);letter-spacing:.02em">Email</label>
@@ -2950,7 +2369,7 @@
       <form id="auth-form-login" onsubmit="return submitAuth(event,'login')" style="display:none;margin:0">
         <div class="field" style="margin-bottom:11px">
           <label style="font-size:12px;font-weight:800;color:var(--txt2);letter-spacing:.02em">Email or gamer tag</label>
-          <input class="fi" id="li-email" type="text" placeholder="you@esports.gg or NovaStriker" style="padding:13px 15px;font-size:13.5px" required/>
+          <input class="fi" id="li-email" type="text" placeholder="you@esports.gg or YourGamerTag" style="padding:13px 15px;font-size:13.5px" required/>
         </div>
         <div class="field" style="margin-bottom:4px">
           <label style="font-size:12px;font-weight:800;color:var(--txt2);letter-spacing:.02em">Password</label>
