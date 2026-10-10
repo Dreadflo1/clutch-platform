@@ -2249,7 +2249,7 @@ if (typeof applyBoardFilters === 'function') {
     var out = _boardCache.slice();
     if (_boardFilter !== 'all') out = out.filter(function(c){ return c.game === _boardFilter; });
     var vOnly = document.getElementById('cb-verified');
-    if (vOnly && vOnly.checked) out = out.filter(function(c){ return PLAYER_PROFILES[c.creator] && PLAYER_PROFILES[c.creator].verified; });
+    if (vOnly && vOnly.checked) out = out.filter(function(c){ return !!c.modeVerifiable; });
     var sortSel = document.getElementById('cb-sort');
     var sortBy = (sortSel && sortSel.value) || 'newest';
     if (sortBy === 'highest') out.sort(function(a,b){ return b.stake - a.stake; });
@@ -2466,7 +2466,10 @@ function loadBoard() {
   var base = ARENA_CONFIG.API_BASE || '';
   var done = function(data) {
     if (data && data.challenges && data.challenges.length) {
-      _boardCache = data.challenges;
+      // API challenges carry creatorName/createdAt; the board renders creator/created.
+      _boardCache = data.challenges.map(function(c) {
+        return Object.assign({}, c, { creator: c.creator || c.creatorName || 'Player', created: c.created || c.createdAt });
+      });
     } else {
       var stored = [];
       try { stored = JSON.parse(localStorage.getItem('clutch_board') || '[]'); } catch(e) { stored = []; }
@@ -2488,7 +2491,7 @@ function applyBoardFilters() {
   }
   var vOnly = document.getElementById('cb-verified');
   if (vOnly && vOnly.checked) {
-    out = out.filter(function(c){ return PLAYER_PROFILES[c.creator] && PLAYER_PROFILES[c.creator].verified; });
+    out = out.filter(function(c){ return !!c.modeVerifiable; });
   }
   var sortSel = document.getElementById('cb-sort');
   var sortBy = (sortSel && sortSel.value) || 'newest';
@@ -2554,7 +2557,7 @@ function renderBoard(challenges) {
   var totalPages = Math.max(1, Math.ceil(challenges.length / perPage));
   challenges = challenges.slice(0, perPage);
   list.innerHTML = challenges.map(function(c) {
-    var prof = PLAYER_PROFILES[c.creator] || { verified:false };
+    var prof = { verified: !!c.modeVerifiable };
     var init = (c.creator || '?').charAt(0);
     var avVar = 'v-' + c.game;
     var pillClr = _initToPillsColor(c.game);
