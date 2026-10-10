@@ -1742,6 +1742,7 @@ function showQRModal(duel, code){
   window._lastDuelCode = code;
   window._lastDuelLink = shareLink;
   window._lastDuelGame = g.name;
+  window._lastDuelTgLink = null;
   var old = document.getElementById('qr-share-modal'); if (old && old.parentNode) old.parentNode.removeChild(old);
 
   function row(k, v){ return '<div style="display:flex;justify-content:space-between;gap:10px;padding:4px 0"><span style="color:var(--txt3)">'+k+'</span><span style="font-weight:800;text-align:right">'+String(v)+'</span></div>'; }
@@ -1773,13 +1774,34 @@ function showQRModal(duel, code){
       + '<button onclick="shareDuel()" class="btn btn-p btn-full" style="height:44px">Send to a rival</button>'
       + '<div style="display:flex;gap:8px">'
         + '<a href="' + _duelShareHref('whatsapp') + '" target="_blank" rel="noopener" onclick="_markRivalLinkSent()" class="btn btn-g" style="flex:1;height:40px;display:flex;align-items:center;justify-content:center;text-decoration:none">WhatsApp</a>'
-        + '<a href="' + _duelShareHref('telegram') + '" target="_blank" rel="noopener" onclick="_markRivalLinkSent()" class="btn btn-g" style="flex:1;height:40px;display:flex;align-items:center;justify-content:center;text-decoration:none">Telegram</a>'
+        + '<a id="qr-tg-share" href="' + _duelShareHref('telegram') + '" target="_blank" rel="noopener" onclick="_markRivalLinkSent()" class="btn btn-g" style="flex:1;height:40px;display:flex;align-items:center;justify-content:center;text-decoration:none">Telegram</a>'
       + '</div>'
       + '<button onclick="copyDuelInvite()" class="btn btn-g btn-full" style="height:40px">Copy message for Discord</button>'
       + '<button onclick="copyDuelLink()" class="btn btn-g btn-full" style="height:36px;font-size:12px">Copy link only</button>'
     + '</div>'
     + '</div>';
   document.body.appendChild(el);
+  _wireTelegramInvite(duel.id);
+}
+// Server duels (CH_ ids) can also open inside Telegram: the bot's /start d_<id>
+// shows the duel with an Accept button (api/telegram.js). The bot name comes from
+// the same probe the Telegram sign-in uses; until it answers, the button keeps
+// the plain site link, so nothing waits on it.
+var _tgBotName = null;
+function _tgBot(){
+  if (_tgBotName !== null) return Promise.resolve(_tgBotName);
+  return fetch((ARENA_CONFIG.API_BASE || '') + '/api/auth/telegram').then(function(r){ return r.json(); })
+    .then(function(p){ _tgBotName = (p && p.configured && p.bot_username) || ''; return _tgBotName; })
+    .catch(function(){ return ''; });
+}
+function _wireTelegramInvite(duelId){
+  window._lastDuelTgLink = null;
+  if (!/^CH_\d+_[0-9a-f]{8}$/.test(String(duelId || ''))) return;
+  _tgBot().then(function(bot){
+    if (!bot || window._lastDuelCode == null || !document.getElementById('qr-share-modal')) return;
+    window._lastDuelTgLink = 'https://t.me/' + bot + '?start=d_' + duelId;
+    var a = document.getElementById('qr-tg-share'); if (a) a.href = _duelShareHref('telegram');
+  });
 }
 function closeQRModal(){ var el = document.getElementById('qr-share-modal'); if (el && el.parentNode) el.parentNode.removeChild(el); }
 function _copyText(txt, okMsg){
@@ -1803,7 +1825,7 @@ function _duelInviteText(){
 function _duelShareHref(app){
   var t = encodeURIComponent(_duelInviteText());
   if (app === 'whatsapp') return 'https://wa.me/?text=' + t;
-  if (app === 'telegram') return 'https://t.me/share/url?url=' + encodeURIComponent(window._lastDuelLink || location.origin) + '&text=' + encodeURIComponent('I just challenged you to a 1v1 on CLUTCH. Prove it.');
+  if (app === 'telegram') return 'https://t.me/share/url?url=' + encodeURIComponent(window._lastDuelTgLink || window._lastDuelLink || location.origin) + '&text=' + encodeURIComponent('I just challenged you to a 1v1 on CLUTCH. Prove it.');
   return window._lastDuelLink || location.origin;
 }
 function copyDuelInvite(){ _markRivalLinkSent(); _copyText(_duelInviteText(), 'Invite copied, paste it to your rival'); }
