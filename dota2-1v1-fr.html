@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Duel 1v1 mid Dota 2 vérifié par l’API Steam | CLUTCH</title>
+<meta name="description" content="Règle ton 1v1 mid Dota 2 pour de bon : défie un rival, joue le match, et l’API Steam désigne le gagnant. Premier sang ou deux tours. Bêta gratuite, 500 CLU offerts, aucun argent en jeu."/>
+<meta name="keywords" content="dota 2 1v1, 1v1 mid dota, défi dota 2, duel dota 2, 1v1 sf, défier un ami dota"/>
+<meta name="robots" content="index, follow, max-image-preview:large"/>
+<link rel="canonical" href="https://www.clutch.best/dota2-1v1-fr.html"/>
+<link rel="alternate" hreflang="en" href="https://www.clutch.best/dota2-1v1.html"/>
+<link rel="alternate" hreflang="fr" href="https://www.clutch.best/dota2-1v1-fr.html"/>
+<meta property="og:type" content="website"/>
+<meta property="og:url" content="https://www.clutch.best/dota2-1v1-fr.html"/>
+<meta property="og:title" content="Duels 1v1 mid Dota 2, tranchés par l’API Steam"/>
+<meta property="og:description" content="Règle ton 1v1 mid Dota 2 pour de bon : défie un rival, joue le match, et l’API Steam désigne le gagnant. Premier sang ou deux tours. Bêta gratuite, 500 CLU offerts, aucun argent en jeu."/>
+<meta property="og:image" content="https://www.clutch.best/og-image.jpg"/>
+<meta property="og:site_name" content="CLUTCH"/>
+<meta name="twitter:card" content="summary_large_image"/>
+<meta name="twitter:title" content="Duels 1v1 mid Dota 2, tranchés par l’API Steam"/>
+<meta name="twitter:description" content="Règle ton 1v1 mid Dota 2 pour de bon : défie un rival, joue le match, et l’API Steam désigne le gagnant. Premier sang ou deux tours. Bêta gratuite, 500 CLU offerts, aucun argent en jeu."/>
+<meta name="twitter:image" content="https://www.clutch.best/og-image.jpg"/>
+<link rel="stylesheet" href="styles.css"/>
+<style>
+  body{background:radial-gradient(1100px 560px at 15% -8%,rgba(0,255,135,.06),transparent 60%),radial-gradient(900px 520px at 85% 2%,rgba(123,61,255,.08),transparent 60%),var(--bg,#05070f);color:var(--txt,#e9edff);font-family:Inter,system-ui,-apple-system,"Segoe UI",Roboto,Arial,sans-serif;margin:0;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:860px;margin:0 auto;padding:30px 20px 90px}
+  .head{display:flex;align-items:center;gap:14px;margin-bottom:34px}
+  .mk{width:40px;height:40px;border-radius:11px;display:grid;place-items:center;background:linear-gradient(150deg,var(--acc,#00ff87),#00c96a);color:#03130a;box-shadow:0 10px 26px rgba(0,255,135,.26);flex:0 0 auto}
+  .head .nm{font-size:15px;font-weight:800;letter-spacing:.02em}
+  .back{margin-left:auto;display:inline-flex;align-items:center;gap:7px;font-size:12.5px;font-weight:700;color:var(--txt2,#9aa6c8);text-decoration:none;border:1px solid var(--b,#1e2542);padding:9px 14px;border-radius:10px}
+  .back:hover{color:var(--txt,#e9edff);border-color:var(--acc,#00ff87)}
+  h1{font-size:clamp(26px,5vw,38px);font-weight:800;letter-spacing:-.02em;line-height:1.12;margin:0 0 16px}
+  .lede{font-size:15.5px;line-height:1.7;color:var(--txt2,#c3cbe6);margin:0 0 26px}
+  .cta{display:inline-flex;align-items:center;gap:9px;background:linear-gradient(150deg,var(--acc,#00ff87),#00c96a);color:#03130a;font-weight:800;font-size:14.5px;text-decoration:none;padding:14px 22px;border-radius:12px;box-shadow:0 12px 30px rgba(0,255,135,.22)}
+  .cta:hover{filter:brightness(1.06)}
+  .note{font-size:12.5px;color:var(--txt3,#5f6a92);margin:12px 0 0}
+  h2{font-size:19px;font-weight:800;letter-spacing:-.01em;margin:40px 0 14px}
+  h3{font-size:14.5px;font-weight:700;margin:0 0 6px}
+  p{font-size:14px;line-height:1.72;color:var(--txt2,#c3cbe6);margin:0 0 12px}
+  ol.steps{counter-reset:s;list-style:none;padding:0;margin:0}
+  ol.steps li{counter-increment:s;position:relative;padding:0 0 14px 42px;font-size:14px;line-height:1.65;color:var(--txt2,#c3cbe6)}
+  ol.steps li:before{content:counter(s);position:absolute;left:0;top:0;width:26px;height:26px;border-radius:8px;background:var(--acc,#00ff87);color:#03130a;font-weight:800;font-size:12.5px;display:grid;place-items:center}
+  .cards{display:grid;gap:12px;grid-template-columns:repeat(auto-fit,minmax(240px,1fr))}
+  .card{border:1px solid var(--b,#1e2542);background:rgba(13,18,39,.5);border-radius:14px;padding:16px 18px}
+  .card p{margin:0;font-size:13px}
+  .faq{border-top:1px solid var(--b,#1e2542);padding:16px 0 4px}
+  .faq h3{color:var(--txt,#e9edff)}
+  .foot{margin-top:46px;padding-top:18px;border-top:1px solid var(--b,#1e2542);font-size:12.5px;color:var(--txt3,#5f6a92);display:flex;gap:16px;flex-wrap:wrap}
+  .foot a{color:var(--txt2,#9aa6c8);text-decoration:none}
+  .foot a:hover{color:var(--acc,#00ff87)}
+</style>
+<script type="application/ld+json">{"@context": "https://schema.org", "@type": "FAQPage", "mainEntity": [{"@type": "Question", "name": "C’est des jeux d’argent ?", "acceptedAnswer": {"@type": "Answer", "text": "Non. Il n’y a pas de maison, pas de cotes et aucun hasard. Tu gagnes un duel en jouant mieux, et pendant la bêta gratuite il n’y a aucun argent sur la plateforme : tout le monde reçoit 500 CLU, des crédits internes qui ne s’encaissent pas."}}, {"@type": "Question", "name": "Pourquoi mes données de match doivent être publiques ?", "acceptedAnswer": {"@type": "Answer", "text": "L’API Steam ne renvoie que les matchs des joueurs qui exposent leurs données. Active-le une fois dans les paramètres Dota 2 et chaque duel se règle automatiquement."}}, {"@type": "Question", "name": "Faut-il installer quelque chose ?", "acceptedAnswer": {"@type": "Answer", "text": "Non. Tu relies ton Steam64 ID une fois et tu joues à Dota 2 comme d’habitude."}}, {"@type": "Question", "name": "Et si l’API ne peut pas lire le match ?", "acceptedAnswer": {"@type": "Answer", "text": "Le duel reste ouvert jusqu’à ce que le match puisse être lu. Rien n’est réglé au hasard."}}]}</script>
+</head>
+<body>
+<div class="wrap">
+  <div class="head">
+    <div class="mk"><svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l7 3v5c0 4.6-3 8.6-7 10-4-1.4-7-5.4-7-10V6l7-3z"/><path d="M9 12l2 2 4-4"/></svg></div>
+    <div class="nm">CLUTCH</div>
+    <a class="back" href="/">Ouvrir CLUTCH</a>
+  </div>
+
+  <h1>1v1 mid Dota 2, tranché par les données du match</h1>
+  <p class="lede">Tout le monde dit gagner le miroir SF. Très peu ont un bilan pour le prouver. Sur CLUTCH tu joues le 1v1 mid, premier sang ou deux tours, et le résultat vient directement de l’API Steam. Personne ne peut contester qui a gagné.</p>
+  <a class="cta" href="/?ref=seo-dota2-fr">Lancer un duel Dota 2</a>
+  <p class="note">Bêta gratuite. Tu commences avec 500 CLU, des crédits internes sans valeur monétaire. 18+.</p>
+
+  <h2>Comment marche un duel</h2>
+  <ol class="steps">
+    <li>Inscris-toi et relie ton Steam64 ID une seule fois (le numéro 7656119... de ton profil Steam).</li>
+    <li>Crée un défi : choisis Dota 2, le format 1v1 mid et l’entrée en CLU.</li>
+    <li>Envoie le lien à ton rival, ou accepte un défi ouvert sur le tableau.</li>
+    <li>Joue le match. CLUTCH le lit via l’API Steam et crédite le gagnant.</li>
+  </ol>
+
+  <h2>Comment le résultat est vérifié</h2>
+  <p>On récupère le match que vous avez joué via l’API Web Steam et le duel est réglé sur ce qu’elle enregistre : qui a fait le premier sang, qui a pris deux tours. Pas de captures d’écran, pas besoin de croire qui que ce soit sur parole. Tes données de match Dota 2 doivent être publiques (Paramètres Dota 2, Social, Exposer les données de match publiques) pour que le match puisse être lu.</p>
+
+  <h2>Les formats</h2>
+  <div class="cards">
+    <div class="card"><h3>1v1 mid</h3><p>Premier sang ou deux tours. L’API Steam vérifie le résultat.</p></div>
+    <div class="card"><h3>5v5 en lobby perso</h3><p>Tes cinq contre les leurs dans un lobby. L’équipe qui gagne le match gagne le duel. L’API Steam vérifie le résultat.</p></div>
+    <div class="card"><h3>Règles de picks</h3><p>Miroir, héros libre ou liste de bans : mettez-vous d’accord dans le défi avant de lancer.</p></div>
+  </div>
+
+  <h2>Questions</h2>
+  <div class="faq"><h3>C’est des jeux d’argent ?</h3><p>Non. Il n’y a pas de maison, pas de cotes et aucun hasard. Tu gagnes un duel en jouant mieux, et pendant la bêta gratuite il n’y a aucun argent sur la plateforme : tout le monde reçoit 500 CLU, des crédits internes qui ne s’encaissent pas.</p></div>
+  <div class="faq"><h3>Pourquoi mes données de match doivent être publiques ?</h3><p>L’API Steam ne renvoie que les matchs des joueurs qui exposent leurs données. Active-le une fois dans les paramètres Dota 2 et chaque duel se règle automatiquement.</p></div>
+  <div class="faq"><h3>Faut-il installer quelque chose ?</h3><p>Non. Tu relies ton Steam64 ID une fois et tu joues à Dota 2 comme d’habitude.</p></div>
+  <div class="faq"><h3>Et si l’API ne peut pas lire le match ?</h3><p>Le duel reste ouvert jusqu’à ce que le match puisse être lu. Rien n’est réglé au hasard.</p></div>
+
+  <h2>Trouver un rival</h2>
+  <p>Personne à défier ? Poste ton pseudo Steam et ta tranche de MMR sur le Discord CLUTCH, ou accepte un défi ouvert sur le tableau. <a href="https://discord.gg/abyzAXMKu" target="_blank" rel="noopener" style="color:var(--acc,#00ff87)">Rejoindre le Discord CLUTCH</a>.</p>
+
+  <h2>Prêt ?</h2>
+  <p>Choisis ton rival, fixez les règles, et laisse le match trancher.</p>
+  <a class="cta" href="/?ref=seo-dota2-fr">Lancer un duel Dota 2</a>
+
+  <div class="foot">
+    <a href="/">Accueil CLUTCH</a>
+    <a href="/lol-1v1.html">League of Legends 1v1</a>
+    <a href="/valorant-1v1.html">Valorant 1v1</a>
+    <a href="/dota2-1v1.html">Dota 2 1v1</a>
+    <a href="https://discord.gg/abyzAXMKu" target="_blank" rel="noopener">Discord</a>
+    <a href="/lol-1v1-fr.html">LoL 1v1 (FR)</a>
+    <a href="/valorant-1v1-fr.html">Valorant 1v1 (FR)</a>
+    <a href="/dota2-1v1-fr.html">Dota 2 1v1 (FR)</a>
+    <a href="/terms.html">Conditions</a>
+  </div>
+  <p style="font-size:11px;opacity:.6;margin-top:16px">CLUTCH n’est pas approuvé par Valve Corporation. Dota 2 et Steam sont des marques de Valve Corporation.</p>
+</div>
+</body>
+</html>
