@@ -47,7 +47,7 @@ _Dernière éval : 2026-08-11 · v1.0.0 · déployé sur Vercel (`clutch-wine.ve
 - [x] `_kv.js` **fail-loud en prod** si `KV_REST_API_URL`/`_TOKEN` manquent (plus de fallback mémoire silencieux ; le fallback ne sert qu'en dev). _(2026-08-11)_
 - [ ] Confirmer côté Vercel que **KV est réellement provisionné** et branché (action dashboard, hors code).
 - [ ] Définir tous les **secrets** en env Vercel : `CHALLENGE_SECRET`, secret JWT (`JWT_SECRET`), `TELEGRAM_BOT_TOKEN`, clés jeux (`RIOT_API_KEY`, `STEAM_API_KEY`, `CLASH_ROYALE_API_KEY`, `BRAWL_STARS_API_KEY`).
-- [ ] Retirer / isoler le **code démo** (`p2p.js` pool virtuel + timer fake, feed & sondages fictifs de `hub.js`) derrière un flag `DEMO_MODE`.
+- [x] Retirer / isoler le **code démo** (`p2p.js` pool virtuel + timer fake, feed & sondages fictifs de `hub.js`) derrière un flag `DEMO_MODE`. _(2026-10-10, PR #7 + #8 : contenu fictif supprimé plutôt que mis derrière un flag ; `p2p.js` n'est plus chargé par aucune page, reste à supprimer le fichier)_
 - [x] Supprimer le dossier parasite `C:Users...civio` à la racine. _(2026-08-11)_
 
 ## Phase 1 — Intégrité de l'argent _(non négociable)_
@@ -124,7 +124,7 @@ juridictions, donc à cadrer explicitement.
 ## Phase 5 — Qualité & scale
 
 - [ ] Découper le monolithe `index.html` (modules JS/build).
-- [ ] **Tests** (unitaires escrow/settle, e2e du flux défi) + **CI** GitHub Actions.
+- [ ] **Tests** (unitaires escrow/settle, e2e du flux défi) + **CI** GitHub Actions. _(commencé : `tests/` registry 2026-10-06, recent + telegram 2026-10-10 ; pas encore escrow/settle ni CI)_
 - [ ] Observabilité : logs structurés, alertes sur disputes / soldes négatifs.
 
 ---

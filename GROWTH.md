@@ -58,3 +58,20 @@ To build: a consent banner (accept and reject equally visible), the CSP updated 
 ## 5. Weekly growth numbers (reported in the Monday review)
 
 New qualified players vs 20 · qualify rate · CLU and cash cost per player, by channel · D7 return of last week's cohort · D30 of the cohort a month ago · best and worst channel, and what to change.
+
+### Week 0 (Oct 6 to 12), reviewed 2026-10-12
+
+| Number | Value | How measured |
+|---|---|---|
+| New qualified players | **0 known** vs 20 | registry log lines on Oct 10, 11, 12 (23 h each): 0 accounts. Oct 6 to 9 not readable (prod logs keep about 1 day) |
+| Accounts flagged / excluded | 0 seen | same reads |
+| Running total qualified | **0 known** | no evidence of any qualified player |
+| Qualify rate | not measurable | 0 new accounts seen, nothing to divide |
+| Cash cost per qualified player | €0 spent, per-player cost undefined | no ad spend, no paid tools, no ambassador rewards |
+| CLU cost per qualified player | undefined | 500 CLU grant per account, but 0 accounts seen and 0 qualified |
+| D7 return (last week's cohort) | not measurable | no cohort yet |
+| D30 | not measurable | no cohort a month old |
+| Best / worst channel | none | no channel ran: nothing published on social, Founders' 20 not run, SEO pages live but no sign-up traced to `ref=seo-*` on the days read |
+| Visitors | not measurable | Vercel Web Analytics is off; API traffic on Oct 12 was about 20 log lines |
+
+What to change: get one channel actually running (publishing is the blocker, see STRATEGY.md "This week"), and send a daily registry summary so the weekly numbers no longer depend on 1-day log retention.

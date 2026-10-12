@@ -23,7 +23,7 @@ Until then we say "built to SOC 2 controls", never "SOC 2 compliant" or "certifi
 | # | Control (SOC 2 area) | Today | To do | Stage |
 |---|---|---|---|---|
 | 1 | **Individual admin access + MFA** (access control) | one shared `ADMIN_SECRET` for everyone | named admin accounts, MFA, roles (referee vs payouts), every admin action logged with who did it | 1 |
-| 2 | **Change management** (change control) | pushes straight to main, no tests in repo, no CI | branch protection, PR required, CI runs tests on every PR | 1 |
+| 2 | **Change management** (change control) | most changes now go through PRs but nothing enforces it; 3 test files in `tests/` (registry 2026-10-06, recent feed + Telegram 2026-10-10), no escrow/settle/payments suites, no CI, no branch protection (checked 2026-10-12) | branch protection, PR required, CI runs tests on every PR | 1 |
 | 3 | **Dependency and secret scanning** (vulnerability management) | none | Dependabot + GitHub secret scanning | 1 |
 | 4 | **Backups and restore test** (availability) | none for KV | daily KV export, one restore drill per quarter | 2 |
 | 5 | **Monitoring and alerts** (monitoring) | logs only | alerts on negative balances, escrow drift, auth-failure spikes, dispute spikes | 2 |
@@ -34,3 +34,5 @@ Until then we say "built to SOC 2 controls", never "SOC 2 compliant" or "certifi
 | 10 | **Access reviews + evidence collection** | none | quarterly access review; evidence collected by a compliance tool before the audit | 3 |
 
 Each item ticked here gets a date, like ROADMAP.md.
+
+_Review 2026-10-12: no control closed this week. Next up: #2 (CI + branch protection), then #1 (named admins + MFA)._
