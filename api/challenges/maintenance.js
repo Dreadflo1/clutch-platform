@@ -6,7 +6,9 @@
  *   - accepted + past settleDeadline → draw, refund both players
  *
  * Then writes the daily registry summary (registry.daily log line, KV copy,
- * Telegram to the founders). That step is best-effort and can never fail the sweep.
+ * Telegram to the founders), then the daily ledger reconciliation (escrow
+ * invariant: wallets vs counters, audit.ledger.reconcile log line, KV copy,
+ * Telegram alert on any drift). Both steps are best-effort and can never fail the sweep.
  *
  * Money-moving, so it is gated by CRON_SECRET. Vercel Cron sends
  * `Authorization: Bearer <CRON_SECRET>` automatically when that env var is set.
@@ -15,6 +17,7 @@
 import { kvGet, kvLock, kvUnlock } from '../_kv.js';
 import { getOpenList, getActiveList, cancelOpen, refundDraw } from '../_challenges.js';
 import { runDailySummary } from '../_registry.js';
+import { runLedgerReconcile } from '../_ledger.js';
 
 const IS_PROD =
   process.env.VERCEL_ENV === 'production' || process.env.NODE_ENV === 'production';
@@ -80,8 +83,13 @@ export default async function handler(req, res) {
   let daily = null;
   try { daily = await runDailySummary(now); } catch { /* runDailySummary already never throws */ }
 
+  // ── Ledger reconciliation (never breaks the sweep) ──
+  let ledger = null;
+  try { ledger = await runLedgerReconcile(now); } catch { /* runLedgerReconcile already never throws */ }
+
   return res.status(200).json({
     ok: true, sweptAt: new Date(now).toISOString(), ...result,
     dailySummary: daily ? daily.date : null,
+    ledger: ledger ? { date: ledger.date, ok: ledger.ok, drift: ledger.drift } : null,
   });
 }

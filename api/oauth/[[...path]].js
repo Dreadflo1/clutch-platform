@@ -17,6 +17,7 @@
 import crypto from 'crypto';
 import { kvGet, kvSet } from '../_kv.js';
 import { registerAccount } from '../_registry.js';
+import { grantBalance } from '../_balance.js';
 import { verifyJwt, signJwt } from '../_jwt.js';
 
 // New Discord-login accounts start with the same play balance as every other
@@ -362,7 +363,7 @@ export default async function handler(req, res) {
           ...(gathered.email ? { email: gathered.email } : {}),
         };
         await kvSet(userId, acct);
-        await kvSet(`bal:${userId}`, { available: STARTING_BALANCE, escrow: 0, version: 1 });
+        await grantBalance(userId, STARTING_BALANCE); // creates the wallet + counts the grant, atomically
         await kvSet(`txlog:${userId}`, []);
         await registerAccount(userId, { via: platform, req, ref: readCookie(req, 'clutch_oauth_ref') });
       }

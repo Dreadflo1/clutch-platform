@@ -10,6 +10,7 @@
 import crypto from 'crypto';
 import { kvGet, kvSet, kvSetNx } from '../_kv.js';
 import { registerAccount } from '../_registry.js';
+import { grantBalance } from '../_balance.js';
 import { signJwt } from '../_jwt.js';
 import { ageFromDob, confirmAge, MIN_AGE } from '../_age.js';
 import { limit } from '../_ratelimit.js';
@@ -79,7 +80,7 @@ export default async function handler(req, res) {
     const name = cleanName(body.name, email.split('@')[0]);
     const user = { addr: null, email, name, via: 'email', createdAt: Date.now() };
     await kvSet(userId, user);
-    await kvSet(`bal:${userId}`, { available: STARTING_BALANCE, escrow: 0, version: 1 });
+    await grantBalance(userId, STARTING_BALANCE); // creates the wallet + counts the grant, atomically
     await kvSet(`txlog:${userId}`, []);
     await confirmAge(userId, body.dob); // record the 18+ confirmation
     await registerAccount(userId, { via: 'email', req, ref: body.ref });
