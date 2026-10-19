@@ -75,3 +75,20 @@ New qualified players vs 20 · qualify rate · CLU and cash cost per player, by 
 | Visitors | not measurable | Vercel Web Analytics is off; API traffic on Oct 12 was about 20 log lines |
 
 What to change: get one channel actually running (publishing is the blocker, see STRATEGY.md "This week"), and send a daily registry summary so the weekly numbers no longer depend on 1-day log retention.
+
+### Week 1 (Oct 13 to 19), reviewed 2026-10-19
+
+| Number | Value | How measured |
+|---|---|---|
+| New qualified players | **0** vs 20 | registry log lines read every morning Oct 13 to 19 (23 h each): 0 accounts, 0 qualified |
+| Accounts flagged / excluded | 0 | same reads |
+| Running total qualified | **0 known** | |
+| Qualify rate | not measurable | 0 new accounts |
+| Cash cost per qualified player | €0 spent, per-player cost undefined | organic only |
+| CLU cost per qualified player | undefined | 0 accounts granted |
+| D7 return (week 0 cohort) | not measurable | empty cohort |
+| D30 | not measurable | no cohort a month old |
+| Best / worst channel | none ran | no post published, no rival links sent; SEO pages live with no `ref=seo-*` sign-up |
+| Visitors | not measurable | Web Analytics off; API traffic about 15 to 20 log lines a day |
+
+What to change: stop adding channels that need Flavien's accounts until one has run. This week is one post plus three Discord admin messages, and the SEO pages get indexed (Search Console, IndexNow).

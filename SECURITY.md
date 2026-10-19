@@ -36,3 +36,5 @@ Until then we say "built to SOC 2 controls", never "SOC 2 compliant" or "certifi
 Each item ticked here gets a date, like ROADMAP.md.
 
 _Review 2026-10-12: no control closed this week. Next up: #2 (CI + branch protection), then #1 (named admins + MFA)._
+
+_Review 2026-10-19: no control closed. #5 (monitoring) has its first piece built, a daily escrow drift alert to Telegram (PR #12, not merged). This week: #2 (CI workflow by Claude, branch protection by Flavien)._
