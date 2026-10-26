@@ -1,0 +1,34 @@
+name: tests
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Syntax check front-end scripts
+        run: |
+          for f in app.js hub.js; do
+            if [ -f "$f" ]; then
+              node -e "new Function(require('fs').readFileSync('$f','utf8'))"
+              echo "ok $f"
+            fi
+          done
+      - name: Run tests
+        run: |
+          set -e
+          for f in tests/*.test.mjs; do
+            echo "== $f"
+            node "$f"
+          done
