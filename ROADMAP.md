@@ -57,8 +57,8 @@ _Dernière éval : 2026-08-11 · v1.0.0 · déployé sur Vercel (`clutch-wine.ve
 - [x] Endpoint **`/api/wallet/withdraw`** avec plafonds (min/max + cap journalier) et journalisation. _(2026-08-11)_
 - [x] Corrigé un **bug bloquant** dans `settle.js` : le 2e joueur était rejeté par `status !== 'active'` (le statut passe à `awaiting_result` après le 1er) → le settlement ne pouvait jamais se terminer. _(2026-08-11)_
 - [ ] Rendre l'escrow **idempotent** (clés de tx déterministes) pour survivre aux retries serverless.
-- [ ] **Test live contre KV réel** : les scripts Lua ne sont validés qu'en mémoire (11/11 sur le smoke test) ; à rejouer avec un vrai backend Upstash avant confiance totale.
-- [ ] Réconciliation : total available + escrow doit être invariant ; ajouter un check périodique.
+- [ ] **Test live contre KV réel** : les scripts Lua ne sont validés qu'en mémoire (11/11 sur le smoke test) ; à rejouer avec un vrai backend Upstash avant confiance totale. _(2026-10-14, PR #12 : flux ledger rejoué sur un vrai Redis 7 ; erreurs Lua d'Upstash REST désormais mappées en `BalanceError`. Reste : Upstash réel.)_
+- [ ] Réconciliation : total available + escrow doit être invariant ; ajouter un check périodique. _(construit 2026-10-14 dans PR #12 : check quotidien dans le cron `maintenance`, alerte Telegram si écart ≠ 0 ; à cocher après merge et premier run à 0)_
 
 ## Phase 2 — Settlement de confiance _(le cœur du produit)_
 
@@ -124,7 +124,7 @@ juridictions, donc à cadrer explicitement.
 ## Phase 5 — Qualité & scale
 
 - [ ] Découper le monolithe `index.html` (modules JS/build).
-- [ ] **Tests** (unitaires escrow/settle, e2e du flux défi) + **CI** GitHub Actions. _(commencé : `tests/` registry 2026-10-06, recent + telegram 2026-10-10 ; pas encore escrow/settle ni CI)_
+- [ ] **Tests** (unitaires escrow/settle, e2e du flux défi) + **CI** GitHub Actions. _(commencé : `tests/` registry 2026-10-06, recent + telegram 2026-10-10, daily + ledger 2026-10-14 ; CI `.github/workflows/tests.yml` ajoutée 2026-10-26 dans PR #12 ; pas encore escrow/settle ni e2e)_
 - [ ] Observabilité : logs structurés, alertes sur disputes / soldes négatifs.
 
 ---
