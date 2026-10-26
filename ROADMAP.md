@@ -124,7 +124,7 @@ juridictions, donc à cadrer explicitement.
 ## Phase 5 — Qualité & scale
 
 - [ ] Découper le monolithe `index.html` (modules JS/build).
-- [ ] **Tests** (unitaires escrow/settle, e2e du flux défi) + **CI** GitHub Actions. _(commencé : `tests/` registry 2026-10-06, recent + telegram 2026-10-10 ; pas encore escrow/settle ni CI)_
+- [ ] **Tests** (unitaires escrow/settle, e2e du flux défi) + **CI** GitHub Actions. _(commencé : `tests/` registry 2026-10-06, recent + telegram 2026-10-10, daily + ledger 2026-10-14 ; CI `.github/workflows/tests.yml` ajoutée 2026-10-26 dans PR #12 ; pas encore escrow/settle ni e2e)_
 - [ ] Observabilité : logs structurés, alertes sur disputes / soldes négatifs.
 
 ---

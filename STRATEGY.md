@@ -97,8 +97,8 @@ Still missing, to build in week 0:
 |---|---|---|---|---|---|
 | 0 | Oct 6 to 12 | **First checkpoint: 3 real players by Tue 2026-10-07 08:00** (Flavien). **Word of mouth, founders**: Flavien personally challenges 20 LoL/Valorant players he knows, in pairs. Meanwhile build the registry, flags and counter. | 20 | 20 | **0 known** (0 seen on Oct 10, 11, 12; Oct 6 to 9 not readable). Checkpoint of 3 by Oct 7 missed. Founders' 20 not run. Registry, flags, counter built. |
 | 1 | Oct 13 to 19 | **Bring a rival**: every player gets a bold "call out your rival" duel link (the `?join=` QR share exists). Start an opt-in waitlist/newsletter on the landing (double opt-in). | 20 | 40 | **0** (0 accounts on every daily read, Oct 13 to 19). Nothing published, no rival links sent, waitlist not built (no visitors to collect). Daily registry summary and ledger check built in PR #12, not merged. |
-| 2 | Oct 20 to 26 | **Communities + SEO**: duel nights with 3 EU gaming Discords and 2 student esports clubs (partnered with admins). Ship SEO pages per game ("LoL 1v1 duel", "défi Valorant 1v1") and fix meta/sitemap. | 20 | 60 | SEO pages shipped early: LoL + Valorant EN/FR (Oct 6 to 9), Dota 2 EN/FR + IndexNow in PR #11 |
-| 3 | Oct 27 to Nov 2 | **Smart social ads + ambassadors**: first small targeted test (Instagram/TikTok, 18+, EU, LoL/Valorant) measured per qualified player; first 5 ambassadors with tracked invite links. | 20 | 80 | |
+| 2 | Oct 20 to 26 | **Communities + SEO**: duel nights with 3 EU gaming Discords and 2 student esports clubs (partnered with admins). Ship SEO pages per game ("LoL 1v1 duel", "défi Valorant 1v1") and fix meta/sitemap. | 20 | 60 | **0** (0 accounts on every daily read, Oct 20 to 26). Post not published, Discord admin message ready (Oct 20) but not sent. SEO pages shipped early: LoL + Valorant EN/FR (Oct 6 to 9), Dota 2 EN/FR + IndexNow in PR #11; no `ref=seo-*` sign-up yet. |
+| 3 | Oct 27 to Nov 2 | **Founders' network, smallest version** (changed 2026-10-26: no ad spend, and ambassadors need players first): Flavien sends one duel link to 5 people he plays with, and publishes the ready post. Claude keeps the SEO pages and the copy ready. | 20 | 80 | |
 
 Focus games: LoL and Valorant first, because they are auto-verified, so results are trusted and disputes stay low.
 
@@ -119,7 +119,7 @@ Focus games: LoL and Valorant first, because they are auto-verified, so results 
 1. Incorporation country (Bulgaria / Estonia / Malta).
 2. Publishing (2026-10-12): who posts the ready content (`creatives/content-plan-oct.md`) on which accounts, and from which date. Claude has no social accounts; nothing has been published, so acquisition has had no channel running.
 3. Turn on Vercel Web Analytics (cookieless, allowed without consent per GROWTH.md section 4)? Today there is no visitor count at all.
-4. Pace after two weeks at 0 qualified players (2026-10-19): keep +20/week (now 40 behind) or re-baseline the table from the first week a channel actually runs.
+4. Pace after three weeks at 0 qualified players (2026-10-26): keep +20/week (now 60 behind) or re-baseline the table from the first week a channel actually runs. Claude's default if no answer: re-baseline.
 
 ## Weekly review (every Monday)
 
@@ -144,10 +144,18 @@ Focus games: LoL and Valorant first, because they are auto-verified, so results 
 - **Off track:** both weeks at 0. Stage 1 (Nov 2, 2 weeks left): 80 qualified by Nov 2 is out of reach from 0; Lua still not run on real Upstash, no idempotency keys, no CI. IndexNow ping not run (Claude's sandbox cannot reach the endpoint).
 - **Root cause, unchanged:** no channel has run. Every channel in the table needs an account or a send from Flavien, and none happened. SEO is the only channel that runs without him, and it brings no measurable traffic yet. Cost per player: €0 cash, CLU undefined.
 
-## This week (Oct 20 to 26)
+## Review 2026-10-26 (week 2, Oct 20 to 26)
 
-1. **Money integrity: turn the invariant check on.** Flavien merges PR #12 and confirms on Vercel that `CRON_SECRET`, `TELEGRAM_BOT_TOKEN`, `ADMIN_TELEGRAM_CHAT_ID`, KV, `RIOT_API_KEY` and `STEAM_API_KEY` are set. Claude reads the first `audit.ledger.reconcile` line (target drift 0) and then handles Stripe refunds and chargebacks, which the ledger does not reverse yet.
-2. **Acquisition, week 2 channel "Communities + SEO": one post and three admin messages.** Flavien publishes the ready Instagram post (`ref=ig-hottake`) and sends Claude's prepared message to the admins of 3 EU LoL/Valorant Discords, offering a free duel night. Flavien adds clutch.best to Google Search Console once and submits `/sitemap.xml`. Claude writes the Discord message and ships the next SEO page. Target: first qualified players; any number above 0 changes the plan.
-3. **Change control: CI on every PR.** Claude adds a GitHub Actions workflow that runs every `tests/*.test.mjs` on pull requests (SECURITY.md #2). Flavien turns on branch protection for `main` (one setting).
+- **Qualified players: 0 vs 20 target.** Registry log lines read every morning Oct 20 to 26: 0 new accounts, 0 qualified, 0 flagged. Running total **0 known**, 60 behind the table. API traffic fell to 3 requests in the 23 h before the Oct 26 read.
+- **Stage metrics:** weekly active, settled duels/week, dispute rate: 0. **Escrow invariant: check built, not running** (PR #12, open and green since Oct 14, not merged).
+- **Shipped:** Discord admin message for the duel-night channel (`creatives/discord-admins-2026-10-20.md`, Oct 20). CI workflow `.github/workflows/tests.yml` runs every `tests/*.test.mjs` and a syntax check of `app.js` / `hub.js` on each PR and push to main (Oct 26, in PR #12). Nothing else merged; no input from Flavien since Oct 10.
+- **Off track:** three weeks at 0. Stage 1 ends Nov 2 and its exit numbers will be missed. Money-integrity items still open: PR #12 unmerged, Lua not run on real Upstash, no idempotency keys, Stripe refunds and chargebacks not reversed.
+- **Root cause, unchanged:** no channel has run. Each one needs a send or a merge from Flavien.
 
-Next: run `node tools/indexnow.mjs`; named admin accounts with MFA (SECURITY.md #1); idempotency keys on escrow; delete the unused `p2p.js`.
+## This week (Oct 27 to Nov 2)
+
+1. **Money integrity: merge PR #12.** One click. It fixes the live double-settle bug, turns on the nightly ledger check and the daily registry summary, and brings CI. Then Flavien confirms `CRON_SECRET`, `TELEGRAM_BOT_TOKEN`, `ADMIN_TELEGRAM_CHAT_ID`, KV, `RIOT_API_KEY` and `STEAM_API_KEY` on Vercel, and Claude reads the first reconcile line (target drift 0).
+2. **Acquisition, week 3 channel "Founders' network, smallest version": 15 minutes from Flavien.** Publish the ready Instagram post (`ref=ig-hottake`) and send one duel link to 5 people he plays with. Any qualified player above 0 restarts the table from that week.
+3. **Change control: branch protection on `main`.** CI exists once PR #12 merges; Flavien sets "require a PR and the tests check" on `main` (SECURITY.md #2).
+
+Next: Stripe refund and chargeback handling in the ledger; named admin accounts with MFA (SECURITY.md #1); idempotency keys on escrow; run `node tools/indexnow.mjs`; delete the unused `p2p.js`.

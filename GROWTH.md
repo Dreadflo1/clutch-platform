@@ -92,3 +92,17 @@ What to change: get one channel actually running (publishing is the blocker, see
 | Visitors | not measurable | Web Analytics off; API traffic about 15 to 20 log lines a day |
 
 What to change: stop adding channels that need Flavien's accounts until one has run. This week is one post plus three Discord admin messages, and the SEO pages get indexed (Search Console, IndexNow).
+
+### Week 2 (Oct 20 to 26), reviewed 2026-10-26
+
+| Number | Value | How measured |
+|---|---|---|
+| New qualified players | **0** vs 20 | registry log lines read every morning Oct 20 to 26: 0 accounts, 0 qualified |
+| Accounts flagged / excluded | 0 | same reads |
+| Running total qualified | **0 known** | |
+| Qualify rate, CLU and cash cost per player | not measurable; €0 spent | 0 accounts |
+| D7 / D30 retention | not measurable | empty cohorts |
+| Best / worst channel | none ran | post not published, Discord admin message not sent |
+| Visitors | not measurable | Web Analytics off; 3 API requests in the 23 h before the Oct 26 read |
+
+What to change: ask for the smallest possible send (one post, 5 duel links) instead of new channels.
