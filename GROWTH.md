@@ -106,3 +106,17 @@ What to change: stop adding channels that need Flavien's accounts until one has 
 | Visitors | not measurable | Web Analytics off; 3 API requests in the 23 h before the Oct 26 read |
 
 What to change: ask for the smallest possible send (one post, 5 duel links) instead of new channels.
+
+### Week 3 (Oct 27 to Nov 2), reviewed 2026-11-02
+
+| Number | Value | How measured |
+|---|---|---|
+| New qualified players | **0** vs 20 | registry log lines read every morning Oct 27 to Nov 2 |
+| Accounts flagged / excluded | 0 | same reads |
+| Running total qualified | **0 known** | four weeks |
+| Qualify rate, CLU and cash cost per player | not measurable; €0 spent | 0 accounts |
+| D7 / D30 retention | not measurable | empty cohorts |
+| Best / worst channel | none ran | |
+| Visitors | not measurable | Web Analytics off; 0 to 20 API requests a day |
+
+What to change: nothing new to try without a send; the table is re-baselined from the first week a channel runs (STRATEGY.md).

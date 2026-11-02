@@ -98,7 +98,9 @@ Still missing, to build in week 0:
 | 0 | Oct 6 to 12 | **First checkpoint: 3 real players by Tue 2026-10-07 08:00** (Flavien). **Word of mouth, founders**: Flavien personally challenges 20 LoL/Valorant players he knows, in pairs. Meanwhile build the registry, flags and counter. | 20 | 20 | **0 known** (0 seen on Oct 10, 11, 12; Oct 6 to 9 not readable). Checkpoint of 3 by Oct 7 missed. Founders' 20 not run. Registry, flags, counter built. |
 | 1 | Oct 13 to 19 | **Bring a rival**: every player gets a bold "call out your rival" duel link (the `?join=` QR share exists). Start an opt-in waitlist/newsletter on the landing (double opt-in). | 20 | 40 | **0** (0 accounts on every daily read, Oct 13 to 19). Nothing published, no rival links sent, waitlist not built (no visitors to collect). Daily registry summary and ledger check built in PR #12, not merged. |
 | 2 | Oct 20 to 26 | **Communities + SEO**: duel nights with 3 EU gaming Discords and 2 student esports clubs (partnered with admins). Ship SEO pages per game ("LoL 1v1 duel", "défi Valorant 1v1") and fix meta/sitemap. | 20 | 60 | **0** (0 accounts on every daily read, Oct 20 to 26). Post not published, Discord admin message ready (Oct 20) but not sent. SEO pages shipped early: LoL + Valorant EN/FR (Oct 6 to 9), Dota 2 EN/FR + IndexNow in PR #11; no `ref=seo-*` sign-up yet. |
-| 3 | Oct 27 to Nov 2 | **Founders' network, smallest version** (changed 2026-10-26: no ad spend, and ambassadors need players first): Flavien sends one duel link to 5 people he plays with, and publishes the ready post. Claude keeps the SEO pages and the copy ready. | 20 | 80 | |
+| 3 | Oct 27 to Nov 2 | **Founders' network, smallest version** (changed 2026-10-26: no ad spend, and ambassadors need players first): Flavien sends one duel link to 5 people he plays with, and publishes the ready post. Claude keeps the SEO pages and the copy ready. | 20 | 80 | **0** (0 accounts on every daily read, Oct 27 to Nov 2). No send, no post. |
+
+_Re-baselined 2026-11-02 (Claude's stated default, no answer from Flavien): the +20/week pace now starts in the first week a channel actually runs. Weeks 0 to 3 stay above as the record. Next row: week R1, Flavien's post and 5 duel links, target 20 qualified._
 
 Focus games: LoL and Valorant first, because they are auto-verified, so results are trusted and disputes stay low.
 
@@ -119,7 +121,8 @@ Focus games: LoL and Valorant first, because they are auto-verified, so results 
 1. Incorporation country (Bulgaria / Estonia / Malta).
 2. Publishing (2026-10-12): who posts the ready content (`creatives/content-plan-oct.md`) on which accounts, and from which date. Claude has no social accounts; nothing has been published, so acquisition has had no channel running.
 3. Turn on Vercel Web Analytics (cookieless, allowed without consent per GROWTH.md section 4)? Today there is no visitor count at all.
-4. Pace after three weeks at 0 qualified players (2026-10-26): keep +20/week (now 60 behind) or re-baseline the table from the first week a channel actually runs. Claude's default if no answer: re-baseline.
+4. Pace: re-baselined 2026-11-02 by Claude's stated default (no answer). Flavien can restore the original table.
+5. Whether to keep the daily acquisition routine running while nothing is being published (each run reads 0 and changes nothing).
 
 ## Weekly review (every Monday)
 
@@ -152,10 +155,18 @@ Focus games: LoL and Valorant first, because they are auto-verified, so results 
 - **Off track:** three weeks at 0. Stage 1 ends Nov 2 and its exit numbers will be missed. Money-integrity items still open: PR #12 unmerged, Lua not run on real Upstash, no idempotency keys, Stripe refunds and chargebacks not reversed.
 - **Root cause, unchanged:** no channel has run. Each one needs a send or a merge from Flavien.
 
-## This week (Oct 27 to Nov 2)
+## Review 2026-11-02 (week 3, Oct 27 to Nov 2)
 
-1. **Money integrity: merge PR #12.** One click. It fixes the live double-settle bug, turns on the nightly ledger check and the daily registry summary, and brings CI. Then Flavien confirms `CRON_SECRET`, `TELEGRAM_BOT_TOKEN`, `ADMIN_TELEGRAM_CHAT_ID`, KV, `RIOT_API_KEY` and `STEAM_API_KEY` on Vercel, and Claude reads the first reconcile line (target drift 0).
-2. **Acquisition, week 3 channel "Founders' network, smallest version": 15 minutes from Flavien.** Publish the ready Instagram post (`ref=ig-hottake`) and send one duel link to 5 people he plays with. Any qualified player above 0 restarts the table from that week.
-3. **Change control: branch protection on `main`.** CI exists once PR #12 merges; Flavien sets "require a PR and the tests check" on `main` (SECURITY.md #2).
+- **Qualified players: 0 vs 20 target.** Registry log lines read every morning Oct 27 to Nov 2: 0 accounts, 0 qualified, 0 flagged. Running total **0 known** after four weeks. API traffic 0 to 20 requests a day.
+- **Stage metrics:** weekly active, settled duels/week, dispute rate: 0. **Escrow invariant: check built, not running** (PR #12 green since Oct 14, CI passing since Oct 26, not merged).
+- **Shipped:** nothing new; code held so as not to stack on the unmerged PR #12. No input from Flavien since Oct 10.
+- **Stage 1 (target today, Nov 2): missed.** Exit numbers at 0, money-integrity items still open (PR #12 unmerged, Lua not run on real Upstash, no idempotency keys, Stripe refunds and chargebacks not reversed), branch protection off. New Stage 1 date: two weeks after PR #12 merges.
+- **Pace re-baselined** as announced on Oct 26 (see the week-by-week table).
+
+## This week (Nov 3 to 9)
+
+1. **Money integrity: merge PR #12** (unchanged, still the highest-leverage action; fixes the live double-settle bug, turns on the ledger check, daily summary and CI). Then confirm the Vercel env vars and Claude reads the first reconcile line.
+2. **Acquisition, week R1: the same 15-minute send.** Publish the ready Instagram post (`ref=ig-hottake`) and send one duel link to 5 people Flavien plays with. No new channel until one has run.
+3. **Branch protection on `main`** (SECURITY.md #2), once CI is on main.
 
 Next: Stripe refund and chargeback handling in the ledger; named admin accounts with MFA (SECURITY.md #1); idempotency keys on escrow; run `node tools/indexnow.mjs`; delete the unused `p2p.js`.
