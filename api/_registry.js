@@ -13,6 +13,11 @@
  *   reg:all               SET of every registered userId
  *   reg:qualified         SET of qualified userIds
  *   regip:<ipHash>:<week> SET of userIds created from that IP hash that ISO week
+ *   regday:<YYYY-MM-DD>   HASH of that UTC day's counters (accounts, qualified, flagged,
+ *                         duels, a:<ref>, q:<ref>), expires after ~100 days
+ *   regtotals             HASH of running totals for flagged and duels (counted since
+ *                         this counter shipped; accounts/qualified totals come from the sets)
+ *   registry:daily:<day>  JSON daily summary written by the maintenance cron, kept 90 days
  *
  * Privacy: the IP is never stored, only a salted SHA-256 prefix, used solely
  * for fraud detection (legitimate interest, see GROWTH.md section 4).
@@ -20,7 +25,7 @@
  * or a money settlement.
  */
 import crypto from 'crypto';
-import { kvGet, kvSet, kvSetNx, kvActive, kvEval, memGetSync, memSetSync } from './_kv.js';
+import { kvGet, kvSet, kvSetNx, kvActive, kvEval, kvLock, memGetSync, memSetSync } from './_kv.js';
 import { clientIp } from './_ratelimit.js';
 import { auditLog } from './_log.js';
 
@@ -36,6 +41,19 @@ const DAY = 24 * 3600 * 1000;
 const LUA_SADD = "return redis.call('SADD', KEYS[1], ARGV[1])";
 const LUA_SMEMBERS = "return redis.call('SMEMBERS', KEYS[1])";
 const LUA_SCARD = "return redis.call('SCARD', KEYS[1])";
+const LUA_HGETALL = "return redis.call('HGETALL', KEYS[1])";
+// KEYS[1] = day hash, KEYS[2] = totals hash; ARGV[1] = day TTL, ARGV[2..] = day fields.
+// Fields prefixed with '!' are also added to the running totals.
+const LUA_BUMP = `for i = 2, #ARGV do
+  local f = ARGV[i]
+  if string.sub(f, 1, 1) == '!' then
+    f = string.sub(f, 2)
+    redis.call('HINCRBY', KEYS[2], f, 1)
+  end
+  redis.call('HINCRBY', KEYS[1], f, 1)
+end
+redis.call('EXPIRE', KEYS[1], ARGV[1])
+return 1`;
 
 async function sAdd(key, member) {
   if (kvActive()) return Number(await kvEval(LUA_SADD, [key], [member])) || 0;
@@ -51,6 +69,43 @@ export async function sMembers(key) {
 async function sCard(key) {
   if (kvActive()) return Number(await kvEval(LUA_SCARD, [key], [])) || 0;
   return (memGetSync(key) || []).length;
+}
+
+// ── daily counters (one small hash per UTC day, one EVAL per event) ──
+const REGDAY_TTL = 100 * 24 * 3600;       // seconds
+const DAILY_KEEP = 90 * 24 * 3600;        // seconds a daily summary is kept
+
+export function utcDay(ts = Date.now()) {
+  return new Date(ts).toISOString().slice(0, 10);
+}
+
+/** Increment counters for the UTC day of `ts`. Never throws. '!field' also bumps the running total. */
+async function bumpDaily(fields, ts = Date.now()) {
+  try {
+    const dayKey = `regday:${utcDay(ts)}`;
+    if (kvActive()) {
+      await kvEval(LUA_BUMP, [dayKey, 'regtotals'], [String(REGDAY_TTL), ...fields]);
+      return;
+    }
+    const day = memGetSync(dayKey) || {};
+    const tot = memGetSync('regtotals') || {};
+    for (let f of fields) {
+      if (f[0] === '!') { f = f.slice(1); tot[f] = (tot[f] || 0) + 1; }
+      day[f] = (day[f] || 0) + 1;
+    }
+    memSetSync(dayKey, day, REGDAY_TTL);
+    memSetSync('regtotals', tot);
+  } catch (e) {
+    console.warn('[registry] daily counter failed', e?.message);
+  }
+}
+
+async function hGetAll(key) {
+  if (!kvActive()) return memGetSync(key) || {};
+  const flat = (await kvEval(LUA_HGETALL, [key], [])) || [];
+  const out = {};
+  for (let i = 0; i + 1 < flat.length; i += 2) out[flat[i]] = Number(flat[i + 1]) || 0;
+  return out;
 }
 
 // ── helpers ──────────────────────────────────────────────────────────
@@ -92,6 +147,8 @@ export async function registerAccount(userId, { via = 'unknown', req = null, ref
     await sAdd('reg:all', userId);
     if (ipHash) await sAdd(`regip:${ipHash}:${isoWeek(createdAt)}`, userId);
     auditLog('registry.account', { userId, via, ref: rec.ref });
+    // Legacy back-fills are old accounts, not new sign-ups: keep them out of the daily count.
+    if (via !== 'legacy') await bumpDaily(['accounts', `a:${rec.ref || 'direct'}`], createdAt);
     return true;
   } catch (e) {
     console.warn('[registry] register failed', e?.message);
@@ -123,6 +180,7 @@ export async function markHandle(userId, game, handle) {
 
 /** Record a settled duel for both players (called from settleToWinner). */
 export async function recordDuel(aId, bId, ts = Date.now()) {
+  await bumpDaily(['!duels'], ts);
   for (const [me, opp] of [[aId, bId], [bId, aId]]) {
     try {
       await ensureRegistered(me);
@@ -169,12 +227,21 @@ async function ipCountFor(rec) {
 async function maybeQualify(rec) {
   if (rec.qualifiedAt || !meetsQualification(rec)) return;
   const flags = flagsFor(rec, { ipCount: await ipCountFor(rec) });
-  if (flags.length) return; // flagged accounts never count
+  if (flags.length) {
+    // flagged accounts never count; count each one once, the first time it is excluded
+    if (!rec.flaggedAt) {
+      rec.flaggedAt = Date.now();
+      await kvSet(`reg:${rec.userId}`, rec);
+      await bumpDaily(['!flagged']);
+    }
+    return;
+  }
   rec.qualifiedAt = Date.now();
   await kvSet(`reg:${rec.userId}`, rec);
   const added = await sAdd('reg:qualified', rec.userId);
   auditLog('registry.qualified', { userId: rec.userId, via: rec.via, ref: rec.ref });
   if (added) {
+    await bumpDaily(['qualified', `q:${rec.ref || 'direct'}`]);
     const total = await sCard('reg:qualified');
     if (total > 0 && total % 3 === 0) await notifyMilestone(total);
   }
@@ -182,11 +249,15 @@ async function maybeQualify(rec) {
 
 /** Telegram ping to the founders every 3 new qualified players (best-effort). */
 export async function notifyMilestone(total) {
+  return sendAdminTelegram(`CLUTCH: ${total} real players qualified (fraud excluded). Weekly target: ${WEEKLY_TARGET}.`);
+}
+
+/** Plain-text message to the founders' chat (ADMIN_TELEGRAM_CHAT_ID). Best-effort, never throws. */
+export async function sendAdminTelegram(text) {
   const token = process.env.TELEGRAM_BOT_TOKEN;
   const chat = process.env.ADMIN_TELEGRAM_CHAT_ID;
   if (!token || !chat) return false;
   try {
-    const text = `CLUTCH: ${total} real players qualified (fraud excluded). Weekly target: ${WEEKLY_TARGET}.`;
     const r = await fetch(`https://api.telegram.org/bot${token}/sendMessage`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
@@ -281,4 +352,118 @@ export async function loadReport({ isBanned } = {}) {
     if (isBanned && (await isBanned(r.userId))) banned.add(r.userId);
   }));
   return buildReport(records, { banned, ipCounts });
+}
+
+// ── daily summary (maintenance cron, 03:00 UTC) ──────────────────────
+const MAX_REFS = 10;   // sources listed in the summary; the rest are summed as "other"
+
+/** Split a day hash into totals and per-source { accounts, qualified }. Pure. */
+export function summarizeDay(day = {}) {
+  const sources = {};
+  for (const [k, v] of Object.entries(day)) {
+    const m = /^([aq]):(.+)$/.exec(k);
+    if (!m) continue;
+    const s = (sources[m[2]] = sources[m[2]] || { accounts: 0, qualified: 0 });
+    s[m[1] === 'a' ? 'accounts' : 'qualified'] += Number(v) || 0;
+  }
+  const sorted = Object.entries(sources).sort((x, y) =>
+    y[1].qualified - x[1].qualified || y[1].accounts - x[1].accounts || x[0].localeCompare(y[0]));
+  const bySource = Object.fromEntries(sorted.slice(0, MAX_REFS));
+  if (sorted.length > MAX_REFS) {
+    const other = { accounts: 0, qualified: 0 };
+    for (const [, s] of sorted.slice(MAX_REFS)) { other.accounts += s.accounts; other.qualified += s.qualified; }
+    bySource.other = other;
+  }
+  return {
+    accounts: Number(day.accounts) || 0,
+    qualified: Number(day.qualified) || 0,
+    flagged: Number(day.flagged) || 0,
+    duels: Number(day.duels) || 0,
+    bySource,
+  };
+}
+
+/** Plain-text Telegram body: counts and source names only, no personal data. Pure. */
+export function formatDailyText(s) {
+  const src = Object.entries(s.bySource);
+  const lines = [
+    `CLUTCH daily summary, ${s.date} (UTC)`,
+    `New accounts: ${s.day.accounts} (total ${s.totals.accounts})`,
+    `New qualified players: ${s.day.qualified} (total ${s.totals.qualified})`,
+    `Week ${s.week}: ${s.weekQualified} qualified of ${s.target} target`,
+    `Flagged and excluded: ${s.day.flagged} (total ${s.totals.flagged})`,
+    `Settled duels: ${s.day.duels} (total ${s.totals.duels})`,
+    src.length
+      ? 'By source, accounts/qualified: ' + src.map(([k, v]) => `${k} ${v.accounts}/${v.qualified}`).join(', ')
+      : 'By source: none',
+  ];
+  return lines.join('\n');
+}
+
+/**
+ * Build the summary for the UTC day before `now` (the cron runs at 03:00 UTC,
+ * so that is the last full day). Reads: 1 day hash, up to 6 more for the ISO
+ * week, the totals hash and two SCARDs. No scan over accounts.
+ */
+export async function buildDailySummary(now = Date.now()) {
+  const dayTs = now - DAY;
+  const date = utcDay(dayTs);
+  const day = summarizeDay(await hGetAll(`regday:${date}`));
+
+  // Qualified so far in that ISO week: Monday .. date.
+  const week = isoWeek(dayTs);
+  const dow = (new Date(dayTs).getUTCDay() + 6) % 7; // Mon=0
+  let weekQualified = day.qualified;
+  for (let i = 1; i <= dow; i++) {
+    const h = await hGetAll(`regday:${utcDay(dayTs - i * DAY)}`);
+    weekQualified += Number(h.qualified) || 0;
+  }
+
+  const tot = await hGetAll('regtotals');
+  const { bySource, ...dayCounts } = day;
+  return {
+    date,
+    day: dayCounts,
+    bySource,
+    week,
+    weekQualified,
+    target: WEEKLY_TARGET,
+    totals: {
+      accounts: await sCard('reg:all'),
+      qualified: await sCard('reg:qualified'),
+      flagged: Number(tot.flagged) || 0,
+      duels: Number(tot.duels) || 0,
+    },
+  };
+}
+
+/**
+ * Daily registry summary: one `registry.daily` log line, a KV copy kept 90 days
+ * (registry:daily:<date>) and a Telegram message to ADMIN_TELEGRAM_CHAT_ID,
+ * sent at most once per day. Never throws: returns the summary or null.
+ */
+export async function runDailySummary(now = Date.now()) {
+  try {
+    const s = await buildDailySummary(now);
+    auditLog('registry.daily', s);
+    await kvSet(`registry:daily:${s.date}`, s, DAILY_KEEP);
+    // One message per day even if the cron is retried.
+    if (await kvLock(`lock:registry:daily:${s.date}`, 36 * 3600)) {
+      s.telegramSent = await sendAdminTelegram(formatDailyText(s));
+    }
+    return s;
+  } catch (e) {
+    console.warn('[registry] daily summary failed', e?.message);
+    return null;
+  }
+}
+
+/** Stored daily summaries for the last `days` days, newest first (for weekly reviews). */
+export async function dailyHistory(days = 7, now = Date.now()) {
+  const out = [];
+  for (let i = 1; i <= Math.min(days, 90); i++) {
+    const s = await kvGet(`registry:daily:${utcDay(now - i * DAY)}`);
+    if (s) out.push(s);
+  }
+  return out;
 }
