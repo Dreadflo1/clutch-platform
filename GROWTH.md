@@ -120,3 +120,17 @@ What to change: ask for the smallest possible send (one post, 5 duel links) inst
 | Visitors | not measurable | Web Analytics off; 0 to 20 API requests a day |
 
 What to change: nothing new to try without a send; the table is re-baselined from the first week a channel runs (STRATEGY.md).
+
+### Week R1 (Nov 3 to 9), reviewed 2026-11-09
+
+| Number | Value | How measured |
+|---|---|---|
+| New qualified players | **0** vs 20 | request-path counts read every morning Nov 3 to 9: no registry calls |
+| Accounts flagged / excluded | 0 | same reads |
+| Running total qualified | **0 known** | five weeks |
+| Qualify rate, CLU and cash cost per player | not measurable; €0 spent | 0 accounts |
+| D7 / D30 retention | not measurable | empty cohorts |
+| Best / worst channel | none ran | |
+| Visitors | not measurable | Web Analytics off; 8 to 17 API requests a day |
+
+What to change: nothing until the first send; R1 carries over.

@@ -99,8 +99,9 @@ Still missing, to build in week 0:
 | 1 | Oct 13 to 19 | **Bring a rival**: every player gets a bold "call out your rival" duel link (the `?join=` QR share exists). Start an opt-in waitlist/newsletter on the landing (double opt-in). | 20 | 40 | **0** (0 accounts on every daily read, Oct 13 to 19). Nothing published, no rival links sent, waitlist not built (no visitors to collect). Daily registry summary and ledger check built in PR #12, not merged. |
 | 2 | Oct 20 to 26 | **Communities + SEO**: duel nights with 3 EU gaming Discords and 2 student esports clubs (partnered with admins). Ship SEO pages per game ("LoL 1v1 duel", "défi Valorant 1v1") and fix meta/sitemap. | 20 | 60 | **0** (0 accounts on every daily read, Oct 20 to 26). Post not published, Discord admin message ready (Oct 20) but not sent. SEO pages shipped early: LoL + Valorant EN/FR (Oct 6 to 9), Dota 2 EN/FR + IndexNow in PR #11; no `ref=seo-*` sign-up yet. |
 | 3 | Oct 27 to Nov 2 | **Founders' network, smallest version** (changed 2026-10-26: no ad spend, and ambassadors need players first): Flavien sends one duel link to 5 people he plays with, and publishes the ready post. Claude keeps the SEO pages and the copy ready. | 20 | 80 | **0** (0 accounts on every daily read, Oct 27 to Nov 2). No send, no post. |
+| R1 | Nov 3 to 9 | **Founders' network, smallest version** (repeat): Flavien publishes the ready post (`ref=ig-hottake`) and sends one duel link to 5 people he plays with. | 20 | 20 | **0** (0 accounts on every daily read, Nov 3 to 9). No send, no post, so the channel did not run and R1 carries over. |
 
-_Re-baselined 2026-11-02 (Claude's stated default, no answer from Flavien): the +20/week pace now starts in the first week a channel actually runs. Weeks 0 to 3 stay above as the record. Next row: week R1, Flavien's post and 5 duel links, target 20 qualified._
+_Re-baselined 2026-11-02 (Claude's stated default, no answer from Flavien): the +20/week pace now starts in the first week a channel actually runs. Weeks 0 to 3 stay above as the record. Next row: week R1, Flavien's post and 5 duel links, target 20 qualified. R1 did not run (Nov 3 to 9), so it carries over to Nov 10 to 16._
 
 Focus games: LoL and Valorant first, because they are auto-verified, so results are trusted and disputes stay low.
 
@@ -163,10 +164,19 @@ Focus games: LoL and Valorant first, because they are auto-verified, so results 
 - **Stage 1 (target today, Nov 2): missed.** Exit numbers at 0, money-integrity items still open (PR #12 unmerged, Lua not run on real Upstash, no idempotency keys, Stripe refunds and chargebacks not reversed), branch protection off. New Stage 1 date: two weeks after PR #12 merges.
 - **Pace re-baselined** as announced on Oct 26 (see the week-by-week table).
 
-## This week (Nov 3 to 9)
+## Review 2026-11-09 (week R1, Nov 3 to 9)
 
-1. **Money integrity: merge PR #12** (unchanged, still the highest-leverage action; fixes the live double-settle bug, turns on the ledger check, daily summary and CI). Then confirm the Vercel env vars and Claude reads the first reconcile line.
-2. **Acquisition, week R1: the same 15-minute send.** Publish the ready Instagram post (`ref=ig-hottake`) and send one duel link to 5 people Flavien plays with. No new channel until one has run.
+- **Qualified players: 0 vs 20 target.** Request-path counts read every morning Nov 3 to 9 (23 h each) showed only `/api/challenges` and `/api/news`: 0 registry calls, 0 accounts, 0 qualified, 0 flagged. Running total **0 known** after five weeks. API traffic 8 to 17 requests a day.
+- **Cost and retention:** €0 cash, CLU undefined, D7/D30 not measurable (empty cohorts).
+- **Stage metrics:** weekly active, settled duels/week, dispute rate: 0. **Escrow invariant: check built, not running** (PR #12 green, not merged).
+- **Shipped:** nothing; code held so as not to stack on the unmerged PR #12. No input from Flavien since Oct 10.
+- **Off track:** Stage 1 (re-dated to two weeks after PR #12 merges) has not started its clock. Stage 2 (Dec 31) needs a running channel to be reachable at all.
+- **Plan change:** none possible without a send. Week R1 carries over unchanged, because adding channels that also need Flavien would not move the number.
+
+## This week (Nov 10 to 16)
+
+1. **Money integrity: merge PR #12** (unchanged; fixes the live double-settle bug, turns on the ledger check, daily summary and CI). Then confirm the Vercel env vars and Claude reads the first reconcile line.
+2. **Acquisition, week R1 carried over: the same 15-minute send.** Publish the ready Instagram post (`ref=ig-hottake`) and send one duel link to 5 people Flavien plays with.
 3. **Branch protection on `main`** (SECURITY.md #2), once CI is on main.
 
 Next: Stripe refund and chargeback handling in the ledger; named admin accounts with MFA (SECURITY.md #1); idempotency keys on escrow; run `node tools/indexnow.mjs`; delete the unused `p2p.js`.

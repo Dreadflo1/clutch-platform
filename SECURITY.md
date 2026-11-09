@@ -42,3 +42,5 @@ _Review 2026-10-19: no control closed. #5 (monitoring) has its first piece built
 _Review 2026-10-26: #2 half built. CI workflow `.github/workflows/tests.yml` added in PR #12 (Oct 26), running all tests on every PR; branch protection on `main` still off. #5 escrow drift alert still waiting on the PR #12 merge._
 
 _Review 2026-11-02: no control closed. #2 CI waits on the PR #12 merge, branch protection still off._
+
+_Review 2026-11-09: no control closed. #2 CI waits on the PR #12 merge, branch protection still off._
