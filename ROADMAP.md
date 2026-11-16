@@ -136,3 +136,5 @@ tout le reste repose sur des soldes non fiables. Le différenciateur produit
 (settlement auto-vérifié, Phase 2) ne vaut que si l'argent en dessous est solide.
 
 _Revue 2026-11-09 : rien de livré cette semaine, PR #12 toujours non fusionnée (CI verte)._
+
+_Revue 2026-11-16 : rien de livré cette semaine, PR #12 toujours non fusionnée (CI verte)._

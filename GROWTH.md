@@ -134,3 +134,17 @@ What to change: nothing new to try without a send; the table is re-baselined fro
 | Visitors | not measurable | Web Analytics off; 8 to 17 API requests a day |
 
 What to change: nothing until the first send; R1 carries over.
+
+### Week R1 second attempt (Nov 10 to 16), reviewed 2026-11-16
+
+| Number | Value | How measured |
+|---|---|---|
+| New qualified players | **0** vs 20 | request-path counts read every morning Nov 10 to 16: no registry calls |
+| Accounts flagged / excluded | 0 | same reads |
+| Running total qualified | **0 known** | six weeks |
+| Qualify rate, CLU and cash cost per player | not measurable; €0 spent | 0 accounts |
+| D7 / D30 retention | not measurable | empty cohorts |
+| Best / worst channel | none ran | |
+| Visitors | not measurable | Web Analytics off; 11 to 16 API requests a day |
+
+What to change: nothing until the first send; R1 carries over.

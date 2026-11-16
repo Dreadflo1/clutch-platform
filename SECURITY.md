@@ -44,3 +44,5 @@ _Review 2026-10-26: #2 half built. CI workflow `.github/workflows/tests.yml` add
 _Review 2026-11-02: no control closed. #2 CI waits on the PR #12 merge, branch protection still off._
 
 _Review 2026-11-09: no control closed. #2 CI waits on the PR #12 merge, branch protection still off._
+
+_Review 2026-11-16: no control closed. #2 CI waits on the PR #12 merge, branch protection still off._
