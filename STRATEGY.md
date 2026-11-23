@@ -101,8 +101,10 @@ Still missing, to build in week 0:
 | 3 | Oct 27 to Nov 2 | **Founders' network, smallest version** (changed 2026-10-26: no ad spend, and ambassadors need players first): Flavien sends one duel link to 5 people he plays with, and publishes the ready post. Claude keeps the SEO pages and the copy ready. | 20 | 80 | **0** (0 accounts on every daily read, Oct 27 to Nov 2). No send, no post. |
 | R1 | Nov 3 to 9 | **Founders' network, smallest version** (repeat): Flavien publishes the ready post (`ref=ig-hottake`) and sends one duel link to 5 people he plays with. | 20 | 20 | **0** (0 accounts on every daily read, Nov 3 to 9). No send, no post, so the channel did not run and R1 carries over. |
 | R1 (2nd) | Nov 10 to 16 | Same send, carried over. | 20 | 20 | **0** (0 accounts on every daily read, Nov 10 to 16). No send, no post; R1 carries over again. |
+| R1 (3rd) | Nov 17 to 23 | Same send, carried over. **First account arrived on its own via an AI assistant** (`ref=chatgpt.com`, Nov 22). | 20 | 20 | **0 qualified, 1 account** (email sign-up Nov 22 17:56 UTC, no handle bound or duel settled yet). No send, no post. |
+| A1 | Nov 24 to 30 | **AI-assistant referrals** (new, runs without Flavien): `llms.txt` shipped Nov 23; Claude makes the SEO pages answer the questions people ask assistants ("where can I 1v1 my friend in LoL / Valorant"). Flavien's send stays open. | 20 | 20 | |
 
-_Re-baselined 2026-11-02 (Claude's stated default, no answer from Flavien): the +20/week pace now starts in the first week a channel actually runs. Weeks 0 to 3 stay above as the record. Next row: week R1, Flavien's post and 5 duel links, target 20 qualified. R1 did not run (Nov 3 to 9, Nov 10 to 16), so it carries over to Nov 17 to 23._
+_Re-baselined 2026-11-02 (Claude's stated default, no answer from Flavien): the +20/week pace now starts in the first week a channel actually runs. Weeks 0 to 3 stay above as the record. Next row: week R1, Flavien's post and 5 duel links, target 20 qualified. R1 did not run (Nov 3 to 9, Nov 10 to 16), so it carried over to Nov 17 to 23. From Nov 24 the row is A1, the first channel that runs without a send._
 
 Focus games: LoL and Valorant first, because they are auto-verified, so results are trusted and disputes stay low.
 
@@ -183,10 +185,20 @@ Focus games: LoL and Valorant first, because they are auto-verified, so results 
 - **Off track:** unchanged. Stage 1 clock has not started; Stage 2 (Dec 31) is out of reach without a running channel.
 - **Plan change:** none possible without a send. R1 carries over a third time.
 
-## This week (Nov 17 to 23)
+## Review 2026-11-23 (week R1 third attempt, Nov 17 to 23)
 
-1. **Money integrity: merge PR #12** (unchanged; fixes the live double-settle bug, turns on the ledger check, daily summary and CI). Then confirm the Vercel env vars and Claude reads the first reconcile line.
-2. **Acquisition, week R1 carried over again: the same 15-minute send.** Publish the ready Instagram post (`ref=ig-hottake`) and send one duel link to 5 people Flavien plays with.
-3. **Branch protection on `main`** (SECURITY.md #2), once CI is on main.
+- **Qualified players: 0 vs 20 target. First account: 1.** An email sign-up on Nov 22 at 17:56 UTC, logged as `audit.registry.account` with `ref=chatgpt.com`. It has not bound a game handle or settled a duel, so it is not qualified. Flagged/excluded: 0. Running total: **0 qualified, 1 account** after seven weeks.
+- **Cost and retention:** €0 cash; CLU cost is the 500 CLU starting grant for one unqualified account, so cost per qualified player is undefined. D7 for this account can be read Nov 29; D30 not measurable.
+- **Best channel:** AI-assistant referral (1 account, no effort spent). Worst: every channel that needed a send (0, none ran).
+- **Stage metrics:** weekly active 1 at most, settled duels/week 0, dispute rate 0. **Escrow invariant: check built, not running** (PR #12 green, not merged).
+- **Shipped:** `llms.txt` (Nov 23, in PR #12), a short factual summary for AI assistants with links to the six game pages.
+- **Trust/legal flag:** `terms.html` says users must be 18 or older, while this file says 16+ to play. Public copy must match the terms, so `llms.txt` states no age until Flavien settles it.
+- **Plan change:** the next channel is A1, AI-assistant referrals, because it is the only one that produced an account and it needs nobody to post.
 
-Next: Stripe refund and chargeback handling in the ledger; named admin accounts with MFA (SECURITY.md #1); idempotency keys on escrow; run `node tools/indexnow.mjs`; delete the unused `p2p.js`.
+## This week (Nov 24 to 30)
+
+1. **Money integrity: merge PR #12** (unchanged; fixes the live double-settle bug, turns on the ledger check, daily summary and CI). It also deploys `llms.txt`.
+2. **Acquisition, A1: AI-assistant referrals.** Claude adds a short question-and-answer block to each game page (how a duel is verified, what it costs, how to challenge a friend) so assistants can quote it, and watches `ref=chatgpt.com` and other assistant refs daily. Flavien's post and 5 duel links remain the fastest extra boost.
+3. **Settle the age rule** (trust/legal): 16+ or 18+ to play. Then Claude aligns `terms.html`, the sign-up age check and public copy.
+
+Next: branch protection on `main` (SECURITY.md #2); Stripe refund and chargeback handling in the ledger; named admin accounts with MFA (SECURITY.md #1); idempotency keys on escrow; run `node tools/indexnow.mjs`; delete the unused `p2p.js`.

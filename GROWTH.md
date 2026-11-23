@@ -148,3 +148,19 @@ What to change: nothing until the first send; R1 carries over.
 | Visitors | not measurable | Web Analytics off; 11 to 16 API requests a day |
 
 What to change: nothing until the first send; R1 carries over.
+
+### Week R1 third attempt (Nov 17 to 23), reviewed 2026-11-23
+
+| Number | Value | How measured |
+|---|---|---|
+| New qualified players | **0** vs 20 | registry logs; the one account has no settled duel |
+| New accounts | **1** | `audit.registry.account` Nov 22 17:56 UTC, via email, `ref=chatgpt.com` |
+| Accounts flagged / excluded | 0 | same logs |
+| Running total | **0 qualified, 1 account** | seven weeks |
+| Qualify rate | 0 of 1 | |
+| CLU and cash cost per qualified player | undefined; €0 cash, 500 CLU granted to 1 unqualified account | |
+| D7 / D30 retention | D7 readable Nov 29; D30 not measurable | |
+| Best / worst channel | best: AI-assistant referral (1); worst: channels needing a send (none ran) | |
+| Visitors | not measurable | Web Analytics off; 3 to 19 API requests a day |
+
+What to change: make AI-assistant referrals the week's channel (A1). `llms.txt` shipped Nov 23; next, citable Q&A on the game pages.

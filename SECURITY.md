@@ -46,3 +46,5 @@ _Review 2026-11-02: no control closed. #2 CI waits on the PR #12 merge, branch p
 _Review 2026-11-09: no control closed. #2 CI waits on the PR #12 merge, branch protection still off._
 
 _Review 2026-11-16: no control closed. #2 CI waits on the PR #12 merge, branch protection still off._
+
+_Review 2026-11-23: no control closed. #2 CI waits on the PR #12 merge, branch protection still off. New trust/legal flag: terms say 18+, STRATEGY says 16+; needs one answer._
