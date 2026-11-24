@@ -75,3 +75,92 @@ New qualified players vs 20 · qualify rate · CLU and cash cost per player, by 
 | Visitors | not measurable | Vercel Web Analytics is off; API traffic on Oct 12 was about 20 log lines |
 
 What to change: get one channel actually running (publishing is the blocker, see STRATEGY.md "This week"), and send a daily registry summary so the weekly numbers no longer depend on 1-day log retention.
+
+### Week 1 (Oct 13 to 19), reviewed 2026-10-19
+
+| Number | Value | How measured |
+|---|---|---|
+| New qualified players | **0** vs 20 | registry log lines read every morning Oct 13 to 19 (23 h each): 0 accounts, 0 qualified |
+| Accounts flagged / excluded | 0 | same reads |
+| Running total qualified | **0 known** | |
+| Qualify rate | not measurable | 0 new accounts |
+| Cash cost per qualified player | €0 spent, per-player cost undefined | organic only |
+| CLU cost per qualified player | undefined | 0 accounts granted |
+| D7 return (week 0 cohort) | not measurable | empty cohort |
+| D30 | not measurable | no cohort a month old |
+| Best / worst channel | none ran | no post published, no rival links sent; SEO pages live with no `ref=seo-*` sign-up |
+| Visitors | not measurable | Web Analytics off; API traffic about 15 to 20 log lines a day |
+
+What to change: stop adding channels that need Flavien's accounts until one has run. This week is one post plus three Discord admin messages, and the SEO pages get indexed (Search Console, IndexNow).
+
+### Week 2 (Oct 20 to 26), reviewed 2026-10-26
+
+| Number | Value | How measured |
+|---|---|---|
+| New qualified players | **0** vs 20 | registry log lines read every morning Oct 20 to 26: 0 accounts, 0 qualified |
+| Accounts flagged / excluded | 0 | same reads |
+| Running total qualified | **0 known** | |
+| Qualify rate, CLU and cash cost per player | not measurable; €0 spent | 0 accounts |
+| D7 / D30 retention | not measurable | empty cohorts |
+| Best / worst channel | none ran | post not published, Discord admin message not sent |
+| Visitors | not measurable | Web Analytics off; 3 API requests in the 23 h before the Oct 26 read |
+
+What to change: ask for the smallest possible send (one post, 5 duel links) instead of new channels.
+
+### Week 3 (Oct 27 to Nov 2), reviewed 2026-11-02
+
+| Number | Value | How measured |
+|---|---|---|
+| New qualified players | **0** vs 20 | registry log lines read every morning Oct 27 to Nov 2 |
+| Accounts flagged / excluded | 0 | same reads |
+| Running total qualified | **0 known** | four weeks |
+| Qualify rate, CLU and cash cost per player | not measurable; €0 spent | 0 accounts |
+| D7 / D30 retention | not measurable | empty cohorts |
+| Best / worst channel | none ran | |
+| Visitors | not measurable | Web Analytics off; 0 to 20 API requests a day |
+
+What to change: nothing new to try without a send; the table is re-baselined from the first week a channel runs (STRATEGY.md).
+
+### Week R1 (Nov 3 to 9), reviewed 2026-11-09
+
+| Number | Value | How measured |
+|---|---|---|
+| New qualified players | **0** vs 20 | request-path counts read every morning Nov 3 to 9: no registry calls |
+| Accounts flagged / excluded | 0 | same reads |
+| Running total qualified | **0 known** | five weeks |
+| Qualify rate, CLU and cash cost per player | not measurable; €0 spent | 0 accounts |
+| D7 / D30 retention | not measurable | empty cohorts |
+| Best / worst channel | none ran | |
+| Visitors | not measurable | Web Analytics off; 8 to 17 API requests a day |
+
+What to change: nothing until the first send; R1 carries over.
+
+### Week R1 second attempt (Nov 10 to 16), reviewed 2026-11-16
+
+| Number | Value | How measured |
+|---|---|---|
+| New qualified players | **0** vs 20 | request-path counts read every morning Nov 10 to 16: no registry calls |
+| Accounts flagged / excluded | 0 | same reads |
+| Running total qualified | **0 known** | six weeks |
+| Qualify rate, CLU and cash cost per player | not measurable; €0 spent | 0 accounts |
+| D7 / D30 retention | not measurable | empty cohorts |
+| Best / worst channel | none ran | |
+| Visitors | not measurable | Web Analytics off; 11 to 16 API requests a day |
+
+What to change: nothing until the first send; R1 carries over.
+
+### Week R1 third attempt (Nov 17 to 23), reviewed 2026-11-23
+
+| Number | Value | How measured |
+|---|---|---|
+| New qualified players | **0** vs 20 | registry logs; the one account has no settled duel |
+| New accounts | **1** | `audit.registry.account` Nov 22 17:56 UTC, via email, `ref=chatgpt.com` |
+| Accounts flagged / excluded | 0 | same logs |
+| Running total | **0 qualified, 1 account** | seven weeks |
+| Qualify rate | 0 of 1 | |
+| CLU and cash cost per qualified player | undefined; €0 cash, 500 CLU granted to 1 unqualified account | |
+| D7 / D30 retention | D7 readable Nov 29; D30 not measurable | |
+| Best / worst channel | best: AI-assistant referral (1); worst: channels needing a send (none ran) | |
+| Visitors | not measurable | Web Analytics off; 3 to 19 API requests a day |
+
+What to change: make AI-assistant referrals the week's channel (A1). `llms.txt` shipped Nov 23; next, citable Q&A on the game pages.

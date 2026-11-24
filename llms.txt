@@ -1,0 +1,22 @@
+# Clutch
+
+> Clutch (clutch.best) is a free beta site for 1v1 duels in League of Legends, Valorant and Dota 2. You challenge another player, you both play the 1v1, and the game's official API checks who won. No screenshots, no arguing over the result.
+
+Key facts:
+- Games: League of Legends and Valorant (verified through the Riot API), Dota 2 (verified through the Steam Web API).
+- How it works: create a challenge, share the duel link with a rival, link your game account, play the match, and the result is settled automatically from the game's own match data.
+- Free beta: every new account gets 500 CLU, practice credits with no cash value. No payment is needed to play.
+- The beta is open in Europe first.
+- Fair play: disputes count against both players until an admin rules; repeated confirmed faults lead to a ban.
+- Sign up with an email address; no download needed.
+
+## Pages
+
+- [Home](https://www.clutch.best/): create or accept a 1v1 duel
+- [League of Legends 1v1 duels](https://www.clutch.best/lol-1v1.html)
+- [Valorant 1v1 duels](https://www.clutch.best/valorant-1v1.html)
+- [Dota 2 1v1 duels](https://www.clutch.best/dota2-1v1.html)
+- [Défis 1v1 LoL (FR)](https://www.clutch.best/lol-1v1-fr.html)
+- [Défis 1v1 Valorant (FR)](https://www.clutch.best/valorant-1v1-fr.html)
+- [Défis 1v1 Dota 2 (FR)](https://www.clutch.best/dota2-1v1-fr.html)
+- [Terms of use](https://www.clutch.best/terms.html)

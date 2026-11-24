@@ -57,7 +57,7 @@ export async function creditDeposit({ userId, provider, ref, clu, meta = {} }) {
 
   let bal;
   try {
-    bal = await mutateBalance(userId, { dAvailable: clu });
+    bal = await mutateBalance(userId, { dAvailable: clu, ledger: { field: 'deposits', amount: clu } });
   } catch (e) {
     // Marked-but-not-credited: safer than risking a double credit. Queue it for
     // human reconciliation rather than silently retrying (a lost KV response
@@ -117,7 +117,9 @@ export async function createPayoutRequest({ userId, clu, rail, destination, meta
   }
 
   // Debit first — fails (throws BalanceError) if underfunded; never overdraws.
-  const bal = await mutateBalance(userId, { dAvailable: -clu, minAvailable: clu });
+  const bal = await mutateBalance(userId, {
+    dAvailable: -clu, minAvailable: clu, ledger: { field: 'withdrawals', amount: clu },
+  });
 
   // Count it toward the lifetime withdrawal total (advisory; small races here
   // are bounded by the daily cap and are not fund-critical).
@@ -190,7 +192,10 @@ export async function markPayoutManual(payout, note) {
  */
 export async function failPayoutAndRefund(payout, reason) {
   if (payout.status === 'failed' || payout.status === 'sent') return; // already terminal
-  const bal = await mutateBalance(payout.userId, { dAvailable: payout.clu });
+  // The CLU never left: take it back out of the withdrawals counter.
+  const bal = await mutateBalance(payout.userId, {
+    dAvailable: payout.clu, ledger: { field: 'withdrawals', amount: -payout.clu },
+  });
   const txId = `tx_${Date.now()}_${crypto.randomBytes(4).toString('hex')}`;
   await appendTx(payout.userId, {
     id: txId, userId: payout.userId, type: 'refund', amount: payout.clu,
@@ -225,7 +230,7 @@ export async function resolveReconcile(payKey, action) {
   if (rec.status === 'credited') { await removeReconcile(payKey); return 'already_credited'; }
 
   if (action === 'credit') {
-    const bal = await mutateBalance(rec.userId, { dAvailable: rec.clu });
+    const bal = await mutateBalance(rec.userId, { dAvailable: rec.clu, ledger: { field: 'deposits', amount: rec.clu } });
     const txId = `tx_${Date.now()}_${crypto.randomBytes(4).toString('hex')}`;
     await appendTx(rec.userId, {
       id: txId, userId: rec.userId, type: 'deposit', provider: rec.provider,

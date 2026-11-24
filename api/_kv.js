@@ -212,3 +212,49 @@ export async function kvListRange(key, start = 0, stop = -1) {
     return [];
   }
 }
+
+/**
+ * List keys matching `prefix*` with a BOUNDED cursor SCAN (no KEYS). Stops after
+ * `maxKeys` matches or `maxCalls` SCAN round trips, whichever comes first, and
+ * reports `truncated` so a caller never mistakes a partial list for the full one.
+ * SCAN walks the whole keyspace (MATCH only filters), so cost grows with the total
+ * number of keys, not just the matches: fine for today's small store, not for
+ * millions of keys. May return a key twice (Redis SCAN semantics): dedupe here.
+ */
+export async function kvScanPrefix(prefix, { maxKeys = 5000, maxCalls = 400, count = 1000 } = {}) {
+  assertConfigured();
+  if (!kvActive()) {
+    const keys = [];
+    for (const k of [...memStore.keys()]) {
+      if (!k.startsWith(prefix) || memExpired(k)) continue;
+      if (keys.length >= maxKeys) return { keys, truncated: true };
+      keys.push(k);
+    }
+    return { keys, truncated: false };
+  }
+  const seen = new Set();
+  let cursor = '0';
+  for (let calls = 0; calls < maxCalls; calls++) {
+    const [next, batch] = await kvCommand(['SCAN', cursor, 'MATCH', prefix + '*', 'COUNT', String(count)]);
+    for (const k of batch || []) {
+      if (seen.has(k)) continue;
+      if (seen.size >= maxKeys) return { keys: [...seen], truncated: true };
+      seen.add(k);
+    }
+    cursor = String(next);
+    if (cursor === '0') return { keys: [...seen], truncated: false };
+  }
+  return { keys: [...seen], truncated: true };
+}
+
+/** Parsed values of many keys (MGET in batches). Missing or unparsable keys give null. */
+export async function kvMGet(keys, batch = 200) {
+  assertConfigured();
+  if (!kvActive()) return keys.map(k => memGetSync(k));
+  const out = [];
+  for (let i = 0; i < keys.length; i += batch) {
+    const raw = (await kvCommand(['MGET', ...keys.slice(i, i + batch)])) || [];
+    for (const s of raw) { try { out.push(s ? JSON.parse(s) : null); } catch { out.push(null); } }
+  }
+  return out;
+}

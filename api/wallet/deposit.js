@@ -43,7 +43,7 @@ export default async function handler(req, res) {
   // Credit balance atomically
   let bal;
   try {
-    bal = await mutateBalance(user.userId, { dAvailable: amount });
+    bal = await mutateBalance(user.userId, { dAvailable: amount, ledger: { field: 'deposits', amount } });
   } catch (e) {
     if (e instanceof BalanceError && e.code === 'NO_ACCOUNT') {
       return res.status(404).json({ error: 'Account not found' });
