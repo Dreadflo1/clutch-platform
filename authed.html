@@ -43,6 +43,8 @@
     // Allow OAuth providers to send query ?platform=...&name=... (direct URL)
     var params = {};
     for (var k of qs.keys()) params[k] = qs.get(k);
+    // Drop the token from the address bar / history as soon as it is read.
+    try { if (location.hash || location.search) history.replaceState(null, '', location.pathname); } catch(e){}
 
     // Try localStorage bridge (backend callback stored there)
     var bridge = null;

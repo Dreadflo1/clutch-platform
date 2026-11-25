@@ -2,6 +2,15 @@
 //  CLU v2 — Main Application Script
 // ═══════════════════════════════════════════════════════
 
+// HTML-escape anything that came from a player, a provider profile or the API
+// before it goes into innerHTML. Defined here so it never depends on load order.
+function escHtml(s) {
+  return String(s == null ? '' : s).replace(/[&<>"']/g, function(c) {
+    return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+  });
+}
+if (!window._escAcc) window._escAcc = escHtml;
+
 var CLU_USD   = (window.ARENA_CONFIG && ARENA_CONFIG.TOKEN_USD_RATE) || 0.10;
 var PLATFORM_FEE = 0.025;
 
@@ -693,9 +702,10 @@ function submitAuth(e, mode) {
     name = (document.getElementById('su-username')||{}).value || '';
     dob = (document.getElementById('su-dob')||{}).value || '';
   }
+  var website = (document.getElementById('su-website')||{}).value || ''; // honeypot, empty for people
   fetch((ARENA_CONFIG.API_BASE || '') + '/api/auth/email', {
     method: 'POST', headers: {'Content-Type':'application/json'},
-    body: JSON.stringify({ mode: mode, email: email, password: password, name: name, dob: dob, ref: _campaignRef() })
+    body: JSON.stringify({ mode: mode, email: email, password: password, name: name, dob: dob, website: website, ref: _campaignRef() })
   }).then(function(res){ return res.json().catch(function(){ return {}; }).then(function(data){ return { ok: res.ok, data: data }; }); })
     .then(async function(r){
       if (!r.ok || !r.data.token) { toast(r.data.error || 'Sign-in failed', 'error'); restore(); return; }
@@ -2592,7 +2602,8 @@ function loadBoard() {
     // duels can move up without blocking the initial board paint.
     _ensureMyCohort().then(function(c){ if (c) applyBoardFilters(); });
   };
-  fetch(base + '/api/challenges').then(function(r){ return r.json(); }).then(done).catch(function(){ done(null); });
+  // Sent with the session (if any) so the server can mark the viewer's own duels.
+  authFetch('/api/challenges').then(function(r){ return r.json(); }).then(done).catch(function(){ done(null); });
 }
 function applyBoardFilters() {
   var out = _boardCache.slice();
@@ -2668,13 +2679,13 @@ function renderBoard(challenges) {
   challenges = challenges.slice(0, perPage);
   list.innerHTML = challenges.map(function(c) {
     var prof = { verified: !!c.modeVerifiable };
-    var init = (c.creator || '?').charAt(0);
+    var init = escHtml((c.creator || '?').charAt(0));
     var avVar = 'v-' + c.game;
     var pillClr = _initToPillsColor(c.game);
     var gameDisp = _initToDisplayName(c.game);
     var shortG = _initToShortName(c.game);
-    var isOwn = U.addr && c.creator === U.addr;
-    var cohort = c.creatorCohort || 'Unranked';
+    var isOwn = !!c.mine || (U.addr && c.creator === U.addr);
+    var cohort = escHtml(c.creatorCohort || 'Unranked');
     var cohortClr = COHORT_COLORS[cohort] || 'var(--txt3)';
     var cohortSameAsMe = _myCohort && cohort === _myCohort;
     var cohortTag = '<span style="color:'+cohortClr+';font-weight:700'+(cohortSameAsMe?';text-decoration:underline':'')+'" title="Skill cohort — activity-based, not a hard match requirement">'+cohort+'</span>';
@@ -2682,7 +2693,7 @@ function renderBoard(challenges) {
     var parts = c.participants || '1 / 2';
     var verifiedBadge = prof.verified ? '<div class="cb-avatar-check">✓</div>' : '';
     var isNew = c.isNew ? '<div class="cb-new-badge">New</div>' : '';
-    var rankShort = c.crRankShort || '';
+    var rankShort = escHtml(c.crRankShort || '');
     var free = !!c.free || (c.stake||0)===0;
     var typeTag = free
       ? '<div class="cb-type-tag free"><span class="ico">★</span>FREE</div>'
@@ -2690,7 +2701,7 @@ function renderBoard(challenges) {
     var stakeBlock = free
       ? '<div class="cb-stake" style="color:#b88aff"><span class="clu-ico" style="background:#7000FF;color:#fff">★</span> <span style="color:#b88aff">0</span> <span style="color:var(--txt3);font-weight:700">· No escrow</span></div>'
       : '<div class="cb-stake"><span class="clu-ico">◈</span> '+(c.stake||0).toLocaleString()+' <span style="color:var(--txt3);font-weight:700">CLU</span></div>';
-    return '<div class="cb-card '+(free?'free':'paid')+'" data-id="'+c.id+'">'
+    return '<div class="cb-card '+(free?'free':'paid')+'" data-id="'+escHtml(c.id)+'">'
       + '<div class="cb-card-bg"></div>'
       + '<div class="cb-card-inner">'
       +   '<div class="cb-card-hdr">'
@@ -2704,14 +2715,14 @@ function renderBoard(challenges) {
       +   '<div class="cb-player-row">'
       +     '<div class="cb-avatar '+avVar+'">'+init+verifiedBadge+'</div>'
       +     '<div class="cb-player-info">'
-      +       '<div class="cb-player-name">'+c.creator
+      +       '<div class="cb-player-name">'+escHtml(c.creator)
       +         (prof.verified ? ' <svg width="12" height="12" viewBox="0 0 24 24" fill="#00FF87"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>' : '')
       +       '</div>'
       +       '<div class="cb-player-rank"><span class="rnk-gem" style="color:'+pillClr+'">'+_rankIcon(c.game)+'</span> '+rankShort+(rankShort?' · ':'')+cohortTag+'</div>'
       +     '</div>'
       +   '</div>'
-      +   '<div class="cb-title-row">'+c.title+'</div>'
-      +   '<div class="cb-desc-row">'+(c.desc || '')+'</div>'
+      +   '<div class="cb-title-row">'+escHtml(c.title || '')+'</div>'
+      +   '<div class="cb-desc-row">'+escHtml(c.desc || '')+'</div>'
       +   '<div class="cb-meta-row">'
       +     '<div class="cb-meta-left">'
       +       stakeBlock
@@ -4107,7 +4118,7 @@ function renderLeaderboard() {
     var isMe=U.addr&&p.addr.toLowerCase()===U.addr.toLowerCase();
     return '<div class="lb-item" style="'+(isMe?'background:var(--acc-lo);border-radius:var(--r);padding:0 10px;':'')+'">'
       +'<div class="lb-av" style="background:'+randomColor(p.addr)+'22;color:'+randomColor(p.addr)+'">'+av+'</div>'
-      +'<div class="lb-name">'+(isMe?'<span style="color:var(--acc)">You — '+U.name+'</span>':shortAddr(p.addr))+'</div>'
+      +'<div class="lb-name">'+(isMe?'<span style="color:var(--acc)">You — '+escHtml(U.name)+'</span>':shortAddr(p.addr))+'</div>'
       +'<div style="margin-left:auto;display:flex;gap:20px;align-items:center">'
       +'<div style="font-size:13px">'+p.games+' duels played</div>'
       +'<div class="lb-wins" style="font-size:11px;color:var(--txt3)">'+p.wins+' wins</div>'

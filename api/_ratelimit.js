@@ -13,13 +13,17 @@
  *    brute-forcer can't spread guesses for ONE account across many IPs.
  *  - Dev (no KV) falls back to an in-memory window — fine for local testing.
  */
-import { kvActive, kvEval, memGetSync, memSetSync } from './_kv.js';
+import { kvActive, kvEval, kvGet, kvDel, memGetSync, memSetSync } from './_kv.js';
 import { securityLog } from './_log.js';
 
 export function clientIp(req) {
+  // Prefer the headers Vercel's edge sets itself (a client cannot forge them),
+  // then the first X-Forwarded-For hop.
+  const vff = req.headers['x-vercel-forwarded-for'];
   const xff = req.headers['x-forwarded-for'];
-  return (xff && String(xff).split(',')[0].trim())
+  return (vff && String(vff).split(',')[0].trim())
     || req.headers['x-real-ip']
+    || (xff && String(xff).split(',')[0].trim())
     || (req.socket && req.socket.remoteAddress)
     || 'unknown';
 }
@@ -28,7 +32,7 @@ export function clientIp(req) {
 // running count so the caller can compare against the limit.
 const LUA_INCR = "local c = redis.call('INCR', KEYS[1]) if c == 1 then redis.call('EXPIRE', KEYS[1], ARGV[1]) end return c";
 
-async function hit(key, windowSec) {
+export async function hit(key, windowSec) {
   if (kvActive()) {
     try {
       const c = await kvEval(LUA_INCR, [key], [String(windowSec)]);
@@ -44,6 +48,24 @@ async function hit(key, windowSec) {
   rec.n += 1;
   memSetSync(key, rec, Math.max(1, Math.ceil((rec.reset - now) / 1000)));
   return rec.n;
+}
+
+/** Current count of a hit() counter without incrementing it (0 if none). */
+export async function peekHits(key) {
+  if (kvActive()) {
+    try { return Number(await kvGet(key)) || 0; } catch { return 0; }
+  }
+  const rec = memGetSync(key);
+  return rec && rec.reset >= Date.now() ? rec.n : 0;
+}
+
+/** Reset a hit() counter (e.g. after a successful login). */
+export async function clearHits(key) {
+  if (kvActive()) {
+    try { await kvDel(key); } catch {}
+    return;
+  }
+  memSetSync(key, { n: 0, reset: 0 }, 1);
 }
 
 /**

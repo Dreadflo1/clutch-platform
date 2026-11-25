@@ -18,6 +18,8 @@ import crypto from 'crypto';
 import { kvGet, kvSet } from '../_kv.js';
 import { registerAccount } from '../_registry.js';
 import { verifyJwt, signJwt } from '../_jwt.js';
+import { cleanDisplayName } from '../_sanitize.js';
+import { sealField } from '../_crypto.js';
 
 // New Discord-login accounts start with the same play balance as every other
 // signup (non-cashable until real deposits — see _payments.js). Kept in sync
@@ -199,7 +201,10 @@ export default async function handler(req, res) {
       params.set('openid.mode', 'check_authentication');
       const vr = await fetch(STEAM_AUTHORIZE, { method: 'POST', body: params });
       const body = await vr.text();
-      const valid = /is_valid\s*:\s*true/i.test(body);
+      // The assertion must come from Steam and be addressed to our return URL.
+      const opOk = url.searchParams.get('openid.op_endpoint') === STEAM_AUTHORIZE;
+      const rtOk = (url.searchParams.get('openid.return_to') || '').startsWith(returnTo);
+      const valid = opOk && rtOk && /is_valid\s*:\s*true/i.test(body);
       const claimed = url.searchParams.get('openid.claimed_id') || '';
       const idMatch = claimed.match(/\/id\/([^/]+)$|\/profiles\/(\d+)$/);
       const steamId = (idMatch && (idMatch[2] || idMatch[1])) || claimed;
@@ -290,7 +295,7 @@ export default async function handler(req, res) {
     return finish(res, platform, null, true, 'state mismatch (possible CSRF)');
   }
   // one-time use — clear both flow cookies
-  try { res.setHeader('Set-Cookie', ['clutch_oauth_state=; Path=/; Max-Age=0; SameSite=Lax', 'clutch_oauth_uid=; Path=/; Max-Age=0; SameSite=Lax', 'clutch_oauth_login=; Path=/; Max-Age=0; SameSite=Lax', 'clutch_oauth_ref=; Path=/; Max-Age=0; SameSite=Lax']); } catch (e) {}
+  try { res.setHeader('Set-Cookie', ['clutch_oauth_state', 'clutch_oauth_uid', 'clutch_oauth_login', 'clutch_oauth_ref'].map((n) => `${n}=; Path=/; Max-Age=0; SameSite=Lax; HttpOnly; Secure`)); } catch (e) {}
 
   let data = null;
   try {
@@ -334,7 +339,11 @@ export default async function handler(req, res) {
     // who they are (uid cookie set from the JWT at the authorize step).
     const uid = readCookie(req, 'clutch_oauth_uid');
     if (uid) {
-      const record = { platform, name: user.name, displayName: user.displayName || user.name, status: 'verified', connectedAt: Date.now(), ...gathered };
+      const record = {
+        platform, name: cleanDisplayName(user.name, platform, 64), displayName: cleanDisplayName(user.displayName || user.name, platform, 64),
+        status: 'verified', connectedAt: Date.now(), ...gathered,
+        ...(gathered.email ? { email: sealField(gathered.email) } : {}),
+      };
       try {
         await kvSet(`conn:${uid}:${platform}`, record);
         const list = (await kvGet(`connlist:${uid}`)) || [];
@@ -355,11 +364,11 @@ export default async function handler(req, res) {
       if (!acct) {
         acct = {
           addr: `${info.prefix}_${info.providerId}`,
-          name: info.name || `${platform}_${String(info.providerId).slice(0, 6)}`,
+          name: cleanDisplayName(info.name, `${platform}_${String(info.providerId).slice(0, 6)}`),
           via: platform,
           providerId: String(info.providerId),
           createdAt: Date.now(),
-          ...(gathered.email ? { email: gathered.email } : {}),
+          ...(gathered.email ? { email: sealField(gathered.email) } : {}),
         };
         await kvSet(userId, acct);
         await kvSet(`bal:${userId}`, { available: STARTING_BALANCE, escrow: 0, version: 1 });
@@ -384,9 +393,11 @@ function finish(res, platform, user, isError, errorMsg, extra) {
     q.set('error_description', errorMsg || 'Authentication failed');
     return res.redirect(`${base}?${q.toString()}`);
   }
-  q.set('name', user.name);
-  if (user.displayName) q.set('displayName', user.displayName);
+  q.set('name', cleanDisplayName(user.name, platform, 64));
+  if (user.displayName) q.set('displayName', cleanDisplayName(user.displayName, platform, 64));
   if (extra && extra.token) q.set('token', extra.token);
   if (extra && extra.login) q.set('login', extra.login);
-  return res.redirect(`${base}?${q.toString()}`);
+  // Fragment, not query: a session token in the query string would land in
+  // server logs and browser history. authed.html reads either.
+  return res.redirect(`${base}#${q.toString()}`);
 }

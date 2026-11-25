@@ -14,6 +14,7 @@
  *   3. Fetch match details
  *   4. Return structured win/loss data
  */
+import { limit } from '../_ratelimit.js';
 import { extractRiotResult } from '../_verify.js';
 
 const RIOT_REGIONS = {
@@ -77,6 +78,8 @@ export default async function handler(req, res) {
   if (req.method === 'OPTIONS') {
     return res.status(200).end();
   }
+  // Public proxy that spends our game-API quota: cap calls per IP.
+  if (!(await limit(req, res, 'verify', { limit: 30, windowSec: 60 }))) return;
 
   const apiKey = process.env.RIOT_API_KEY;
   if (!apiKey) {

@@ -13,6 +13,7 @@ import { createPayoutRequest, BalanceError } from '../_payments.js';
 import { isAdult } from '../_age.js';
 import { limit } from '../_ratelimit.js';
 import { auditLog } from '../_log.js';
+import { bodyOr400 } from '../_sanitize.js';
 
 const DAILY_WITHDRAW_CAP = 10000;
 const MIN_WITHDRAW = 10;
@@ -31,11 +32,12 @@ export default async function handler(req, res) {
     return res.status(403).json({ error: 'Withdrawals require 18+ age confirmation (ID verification via Stripe applies at cash-out).', code: 'age_required' });
   }
 
-  const body = typeof req.body === 'string' ? JSON.parse(req.body) : req.body;
-  const amount = parseInt(body.amount);
+  const body = bodyOr400(req, res);
+  if (!body) return;
+  const amount = Number(body.amount);
   const rail = body.rail;
 
-  if (isNaN(amount) || amount < MIN_WITHDRAW || amount > MAX_WITHDRAW) {
+  if (!Number.isInteger(amount) || amount < MIN_WITHDRAW || amount > MAX_WITHDRAW) {
     return res.status(400).json({ error: `Amount must be ${MIN_WITHDRAW}-${MAX_WITHDRAW} CLU` });
   }
   if (!RAILS.includes(rail)) {
@@ -46,9 +48,9 @@ export default async function handler(req, res) {
   let destination = null;
   let payoutMeta = {};
   if (rail === 'crypto') {
-    destination = (body.destination || '').trim();
-    const currency = (body.currency || '').trim().toLowerCase();
-    if (destination.length < 12 || destination.length > 128) {
+    destination = typeof body.destination === 'string' ? body.destination.trim() : '';
+    const currency = typeof body.currency === 'string' ? body.currency.trim().toLowerCase() : '';
+    if (destination.length < 12 || destination.length > 128 || !/^[A-Za-z0-9:._-]+$/.test(destination)) {
       return res.status(400).json({ error: 'A valid destination crypto address is required' });
     }
     if (!/^[a-z0-9]{2,20}$/.test(currency)) {

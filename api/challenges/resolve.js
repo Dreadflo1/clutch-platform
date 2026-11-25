@@ -13,35 +13,21 @@ import { BalanceError } from '../_balance.js';
 import { saveChallenge, settleToWinner, refundDraw } from '../_challenges.js';
 import { applyRuling, exonerateBoth } from '../_integrity.js';
 import { auditLog } from '../_log.js';
+import { authorizeBearer } from '../_secrets.js';
+import { bodyOr400, isChallengeId } from '../_sanitize.js';
 
-const IS_PROD =
-  process.env.VERCEL_ENV === 'production' || process.env.NODE_ENV === 'production';
-
-function authorize(req, res) {
-  const secret = process.env.ADMIN_SECRET;
-  if (!secret) {
-    if (IS_PROD) {
-      res.status(503).json({ error: 'Admin resolution not configured (ADMIN_SECRET unset)' });
-      return false;
-    }
-    return true; // dev convenience
-  }
-  if (req.headers.authorization !== `Bearer ${secret}`) {
-    res.status(401).json({ error: 'Unauthorized' });
-    return false;
-  }
-  return true;
-}
+const authorize = (req, res) => authorizeBearer(req, res, 'ADMIN_SECRET', 'Admin resolution');
 
 export default async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST') return res.status(405).json({ error: 'POST only' });
-  if (!authorize(req, res)) return;
+  if (!(await authorize(req, res))) return;
 
-  const body = typeof req.body === 'string' ? JSON.parse(req.body) : req.body;
+  const body = bodyOr400(req, res);
+  if (!body) return;
   const { challengeId, resolution, note } = body;
 
-  if (!challengeId || !['creator', 'opponent', 'draw'].includes(resolution)) {
+  if (!isChallengeId(challengeId) || !['creator', 'opponent', 'draw'].includes(resolution)) {
     return res.status(400).json({ error: "challengeId and resolution ('creator'|'opponent'|'draw') required" });
   }
 

@@ -11,30 +11,13 @@
  */
 import { kvGet, kvLock, kvUnlock } from '../_kv.js';
 import { getOpenList, getActiveList, cancelOpen, refundDraw } from '../_challenges.js';
+import { authorizeBearer } from '../_secrets.js';
 
-const IS_PROD =
-  process.env.VERCEL_ENV === 'production' || process.env.NODE_ENV === 'production';
-
-function authorize(req, res) {
-  const secret = process.env.CRON_SECRET;
-  if (!secret) {
-    // Never leave a money-moving sweep open in production.
-    if (IS_PROD) {
-      res.status(503).json({ error: 'Maintenance sweep not configured (CRON_SECRET unset)' });
-      return false;
-    }
-    return true; // dev convenience
-  }
-  if (req.headers.authorization !== `Bearer ${secret}`) {
-    res.status(401).json({ error: 'Unauthorized' });
-    return false;
-  }
-  return true;
-}
+const authorize = (req, res) => authorizeBearer(req, res, 'CRON_SECRET', 'Maintenance sweep');
 
 export default async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(200).end();
-  if (!authorize(req, res)) return;
+  if (!(await authorize(req, res))) return;
 
   const now = Date.now();
   const result = { cancelled: 0, refunded: 0, scannedOpen: 0, scannedActive: 0, errors: 0 };

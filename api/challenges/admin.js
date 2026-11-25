@@ -14,19 +14,9 @@ import { kvGet } from '../_kv.js';
 import { getActiveList, getOpenList } from '../_challenges.js';
 import { loadReport } from '../_registry.js';
 import { isBanned } from '../_integrity.js';
+import { authorizeBearer } from '../_secrets.js';
 
-const IS_PROD =
-  process.env.VERCEL_ENV === 'production' || process.env.NODE_ENV === 'production';
-
-function authorize(req, res) {
-  const secret = process.env.ADMIN_SECRET;
-  if (!secret) {
-    if (IS_PROD) { res.status(503).json({ error: 'Admin overview not configured (ADMIN_SECRET unset)' }); return false; }
-    return true;
-  }
-  if (req.headers.authorization !== `Bearer ${secret}`) { res.status(401).json({ error: 'Unauthorized' }); return false; }
-  return true;
-}
+const authorize = (req, res) => authorizeBearer(req, res, 'ADMIN_SECRET', 'Admin overview');
 
 function view(ch) {
   return {
@@ -46,7 +36,7 @@ function view(ch) {
 export default async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'GET') return res.status(405).json({ error: 'GET only' });
-  if (!authorize(req, res)) return;
+  if (!(await authorize(req, res))) return;
 
   if ((req.query && req.query.view) === 'players') {
     return res.status(200).json(await loadReport({ isBanned }));

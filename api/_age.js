@@ -10,12 +10,16 @@
  * cash-out later.
  */
 import { kvGet, kvSet } from './_kv.js';
+import { sealField, openField, isSealed } from './_crypto.js';
 
 export const MIN_AGE = 16;    // minimum to register / play
 export const ADULT_AGE = 18;  // minimum for real money
 
 /** Whole years from a YYYY-MM-DD (or parseable date) to now; null if invalid. */
 export function ageFromDob(dob) {
+  // Stored DOBs are encrypted; accept those as well as raw input.
+  if (isSealed(dob)) dob = openField(dob);
+  if (typeof dob !== 'string' && !(dob instanceof Date)) return null;
   const d = new Date(dob);
   if (isNaN(d.getTime())) return null;
   const now = new Date();
@@ -23,6 +27,7 @@ export function ageFromDob(dob) {
   let age = now.getFullYear() - d.getFullYear();
   const m = now.getMonth() - d.getMonth();
   if (m < 0 || (m === 0 && now.getDate() < d.getDate())) age -= 1;
+  if (age > 120) return null;
   return age;
 }
 
@@ -32,7 +37,7 @@ export async function confirmAge(userId, dob) {
   if (age === null) return { ok: false, error: 'invalid_dob' };
   if (age < MIN_AGE) return { ok: false, error: 'under_min', age };
   const adult = age >= ADULT_AGE;
-  await kvSet(`age:${userId}`, { confirmed: true, adult, age, dob: String(dob).slice(0, 10), confirmedAt: Date.now() });
+  await kvSet(`age:${userId}`, { confirmed: true, adult, age, dob: sealField(String(dob).slice(0, 10)), confirmedAt: Date.now() });
   return { ok: true, adult, age };
 }
 

@@ -15,23 +15,14 @@ import { kvGet, kvLock, kvUnlock } from '../_kv.js';
 import {
   getPendingPayoutIds, getPayout, markPayoutSent, failPayoutAndRefund,
 } from '../_payments.js';
+import { authorizeBearer } from '../_secrets.js';
+import { bodyOr400 } from '../_sanitize.js';
 
-const IS_PROD =
-  process.env.VERCEL_ENV === 'production' || process.env.NODE_ENV === 'production';
-
-function authorize(req, res) {
-  const secret = process.env.ADMIN_SECRET;
-  if (!secret) {
-    if (IS_PROD) { res.status(503).json({ error: 'Payouts admin not configured (ADMIN_SECRET unset)' }); return false; }
-    return true;
-  }
-  if (req.headers.authorization !== `Bearer ${secret}`) { res.status(401).json({ error: 'Unauthorized' }); return false; }
-  return true;
-}
+const authorize = (req, res) => authorizeBearer(req, res, 'ADMIN_SECRET', 'Payouts admin');
 
 export default async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(200).end();
-  if (!authorize(req, res)) return;
+  if (!(await authorize(req, res))) return;
 
   if (req.method === 'GET') {
     const ids = await getPendingPayoutIds(200);
@@ -40,7 +31,8 @@ export default async function handler(req, res) {
   }
 
   if (req.method === 'POST') {
-    const body = typeof req.body === 'string' ? JSON.parse(req.body) : req.body;
+    const body = bodyOr400(req, res);
+    if (!body) return;
     const { payoutId, action, ref, reason } = body;
     if (!payoutId || !['sent', 'failed'].includes(action)) {
       return res.status(400).json({ error: "payoutId and action ('sent'|'failed') required" });

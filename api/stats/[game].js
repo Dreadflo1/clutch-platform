@@ -6,6 +6,7 @@
  * readable stats + an explainable clutchScore. Cached in KV to respect rate
  * limits. MVP: League of Legends (Riot match-v5), which already has a key wired.
  */
+import { limit } from '../_ratelimit.js';
 import { kvGet, kvSet } from '../_kv.js';
 import { riotResolvePuuid, riotGetMatchIds, riotGetMatchDetail, extractRiotResult } from '../_verify.js';
 
@@ -48,6 +49,8 @@ export function aggregateLol(rows) {
 
 export default async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(200).end();
+  // Public proxy that spends our game-API quota: cap calls per IP.
+  if (!(await limit(req, res, 'stats', { limit: 30, windowSec: 60 }))) return;
   if (req.method !== 'GET') return res.status(405).json({ error: 'GET only' });
 
   const game = String(req.query.game || '').toLowerCase();
