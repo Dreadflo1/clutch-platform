@@ -51,7 +51,7 @@ Never: near-miss effects, loss-chasing prompts, streak pressure tied to spending
 | Our own product events stored server-side: sign-up, game ID linked, duel created, duel settled (this is the service itself) | Meta / TikTok / Google ad pixels and retargeting | Hidden pixels in images or emails without consent |
 | Cookieless audience measurement (Vercel Web Analytics, or self-hosted Plausible/Umami) | Email open-tracking pixels | Device fingerprinting for marketing |
 | Campaign links (`?utm_source=`, `?ref=`) saved on the account at sign-up for attribution | Server-side conversions API (only for consenting users) | Pinpointing a person's location, buying or scraping data |
-| Hashed IP for fraud detection only, short retention, documented | | Profiling or ad targeting of 16–17 year olds |
+| Hashed IP for fraud detection only, short retention, documented | | Any account, profiling or ad targeting of anyone under 18 |
 
 To build: a consent banner (accept and reject equally visible), the CSP updated for any third party, a privacy policy listing every tool, and a retention rule per data type.
 

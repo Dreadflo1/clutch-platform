@@ -64,7 +64,7 @@ export default async function handler(req, res) {
   }
 
   if (mode === 'signup') {
-    // Age gate — 16+ to play; DOB verified. (18+ needed for real money later.)
+    // Age gate — 18+ to sign up; DOB verified.
     const age = ageFromDob(body.dob);
     if (age === null) return res.status(400).json({ error: 'Enter a valid date of birth.' });
     if (age < MIN_AGE) return res.status(403).json({ error: `You must be at least ${MIN_AGE} to sign up for CLUTCH.`, code: 'under_min' });

@@ -127,8 +127,8 @@ export default async function handler(req, res) {
     }
   }
 
-  // Age gate — must confirm 16+ to play. (Real cash-out is 18+, gated at
-  // deposit/withdraw.) Banned players can still CANCEL to reclaim a stake above,
+  // Age gate — must confirm 18+ to play (money endpoints re-check it).
+  // Banned players can still CANCEL to reclaim a stake above,
   // but neither can start or accept new duels.
   if (!(await isAgeConfirmed(user.userId))) {
     return res.status(403).json({ error: 'Confirm your date of birth to play.', code: 'age_required' });

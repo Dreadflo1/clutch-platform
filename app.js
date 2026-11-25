@@ -1030,9 +1030,9 @@ function renderDisputeStatus() {
 }
 
 // ── CONNECTION ────────────────────────────────────────
-// ── AGE GATE (16+ to play · 18+ for money) ────────────
+// ── AGE GATE (18+ to play) ────────────────────────────
 // Shown for wallet/Telegram accounts that haven't confirmed a DOB yet (email
-// signup collects it inline). Blocks the app until 16+ is confirmed.
+// signup collects it inline). Blocks the app until 18+ is confirmed.
 function showAgeGate() {
   if (document.getElementById('age-gate')) return;
   var el = document.createElement('div');
@@ -1040,7 +1040,7 @@ function showAgeGate() {
   el.style.cssText = 'position:fixed;inset:0;z-index:10000;background:rgba(0,0,0,.72);display:flex;align-items:center;justify-content:center;padding:20px';
   el.innerHTML = '<div style="background:var(--l1);border:1px solid var(--b);border-radius:16px;max-width:380px;width:100%;padding:24px;text-align:center">'
     + '<div style="font-size:18px;font-weight:900;margin-bottom:6px">Confirm your age</div>'
-    + '<div style="font-size:12.5px;color:var(--txt2);line-height:1.6;margin-bottom:16px">You must be <b>16+</b> to play. <b>18+</b> is required to deposit or cash out — ID verification via Stripe applies at cash-out.</div>'
+    + '<div style="font-size:12.5px;color:var(--txt2);line-height:1.6;margin-bottom:16px">You must be <b>18 or older</b> to use CLUTCH. ID verification via Stripe applies at cash-out.</div>'
     + '<input id="age-gate-dob" type="date" class="fi" style="padding:12px 14px;font-size:14px;width:100%;margin-bottom:10px"/>'
     + '<div id="age-gate-err" style="font-size:11.5px;color:var(--red);min-height:16px;margin-bottom:10px"></div>'
     + '<button class="btn btn-p btn-full" onclick="submitAgeGate()">Confirm</button>'
@@ -1059,7 +1059,7 @@ function submitAgeGate() {
       if (x.status === 200 && x.d.confirmed) {
         U.age = { confirmed: true, adult: !!x.d.adult };
         var g = document.getElementById('age-gate'); if (g && g.parentNode) g.parentNode.removeChild(g);
-        toast('Age confirmed' + (x.d.adult ? '' : ' — 18+ needed for real money'), 'success');
+        toast('Age confirmed', 'success');
       } else if (errEl) { errEl.textContent = x.d.error || 'Could not confirm'; }
     }).catch(function () { if (errEl) errEl.textContent = 'Connection error'; });
 }
