@@ -6,6 +6,7 @@
  */
 import { requireAuth } from './_auth.js';
 import { kvGet } from './_kv.js';
+import { openField } from './_crypto.js';
 
 export default async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(200).end();
@@ -17,7 +18,11 @@ export default async function handler(req, res) {
   const list = (await kvGet(`connlist:${user.userId}`)) || [];
   const records = await Promise.all(list.map((p) => kvGet(`conn:${user.userId}:${p}`)));
   const accounts = {};
-  for (const r of records) if (r && r.platform) accounts[r.platform] = r;
+  for (const r of records) {
+    if (!r || !r.platform) continue;
+    // Emails are stored encrypted; the owner sees their own in clear.
+    accounts[r.platform] = r.email ? { ...r, email: openField(r.email) } : r;
+  }
 
   return res.status(200).json({ accounts, count: Object.keys(accounts).length });
 }

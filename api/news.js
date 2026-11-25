@@ -7,6 +7,7 @@
  * parses XML, returns sorted JSON articles.
  * Cached in-memory for 8 hours (3 refreshes/day).
  */
+import { limit } from './_ratelimit.js';
 
 let _cache = null;
 let _cacheTime = 0;
@@ -74,6 +75,8 @@ async function fetchFeed(feed) {
 
 export default async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(200).end();
+  // Public proxy that spends our game-API quota: cap calls per IP.
+  if (!(await limit(req, res, 'news', { limit: 60, windowSec: 60 }))) return;
 
   const limit = Math.min(parseInt(req.query.limit) || 20, 40);
 

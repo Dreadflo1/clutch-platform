@@ -9,6 +9,7 @@ import { registerAccount } from '../_registry.js';
 import { signJwt } from '../_jwt.js';
 import { limit } from '../_ratelimit.js';
 import { securityLog } from '../_log.js';
+import { readJson, cleanDisplayName } from '../_sanitize.js';
 
 const STARTING_BALANCE = 500;
 
@@ -30,11 +31,14 @@ function verifyTelegramAuth(data) {
   const secretKey = crypto.createHash('sha256').update(botToken).digest();
   const hmac = crypto.createHmac('sha256', secretKey).update(checkString).digest('hex');
 
-  if (hmac !== hash) return false;
+  const a = Buffer.from(hmac);
+  const b = Buffer.from(String(hash));
+  if (a.length !== b.length || !crypto.timingSafeEqual(a, b)) return false;
 
-  // Check auth_date is not older than 1 hour
-  const authDate = parseInt(data.auth_date);
-  if (Date.now() / 1000 - authDate > 3600) return false;
+  // auth_date must be a real timestamp within the last hour (and not in the future).
+  const authDate = parseInt(data.auth_date, 10);
+  const age = Date.now() / 1000 - authDate;
+  if (!Number.isFinite(age) || age > 3600 || age < -300) return false;
 
   return true;
 }
@@ -56,9 +60,10 @@ export default async function handler(req, res) {
 
   if (!(await limit(req, res, 'auth', { limit: 15, windowSec: 60 }))) return;
 
-  const body = typeof req.body === 'string' ? JSON.parse(req.body) : req.body;
+  const body = readJson(req);
+  if (!body) return res.status(400).json({ error: 'Invalid JSON body' });
 
-  if (!body.id || !body.hash) {
+  if (!body.id || !/^\d{1,20}$/.test(String(body.id)) || typeof body.hash !== 'string') {
     return res.status(400).json({ error: 'Telegram auth data required' });
   }
 
@@ -75,7 +80,7 @@ export default async function handler(req, res) {
   if (!user) {
     user = {
       addr: `tg_${tgId}`,
-      name: body.username ? `@${body.username}` : body.first_name || `TG_${tgId}`,
+      name: cleanDisplayName(body.username ? `@${body.username}` : body.first_name, `TG_${tgId}`),
       via: 'telegram',
       telegramId: tgId,
       createdAt: Date.now(),

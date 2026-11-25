@@ -9,9 +9,9 @@ import crypto from 'crypto';
 import { requireAuth } from '../_auth.js';
 import { kvGet, kvSet } from '../_kv.js';
 import { mutateBalance, BalanceError } from '../_balance.js';
+import { bodyOr400 } from '../_sanitize.js';
 
-const IS_PROD =
-  process.env.VERCEL_ENV === 'production' || process.env.NODE_ENV === 'production';
+import { IS_DEPLOYED } from '../_secrets.js';
 const DAILY_DEPOSIT_CAP = 10000;
 const MIN_DEPOSIT = 10;
 const MAX_DEPOSIT = 5000;
@@ -19,14 +19,16 @@ const MAX_DEPOSIT = 5000;
 export default async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST') return res.status(405).json({ error: 'POST only' });
-  if (IS_PROD) {
+  // Off on every deployment, previews included: a preview may share the prod database.
+  if (IS_DEPLOYED) {
     return res.status(410).json({ error: 'Direct deposit is disabled — use /api/wallet/nowpayments-create (crypto) or /api/wallet/stripe-checkout (fiat)' });
   }
 
   const user = requireAuth(req, res);
   if (!user) return;
 
-  const body = typeof req.body === 'string' ? JSON.parse(req.body) : req.body;
+  const body = bodyOr400(req, res);
+  if (!body) return;
   const amount = parseInt(body.amount);
 
   if (isNaN(amount) || amount < MIN_DEPOSIT || amount > MAX_DEPOSIT) {

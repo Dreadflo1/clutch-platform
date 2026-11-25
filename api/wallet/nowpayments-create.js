@@ -14,6 +14,7 @@ import { requireAuth } from '../_auth.js';
 import { cluFromUsd } from '../_payments.js';
 import { isAdult } from '../_age.js';
 import { limit } from '../_ratelimit.js';
+import { bodyOr400, trustedOrigin } from '../_sanitize.js';
 
 const MIN_USD = 1;
 const MAX_USD = 500;
@@ -33,13 +34,14 @@ export default async function handler(req, res) {
   const apiKey = process.env.NOWPAYMENTS_API_KEY;
   if (!apiKey) return res.status(503).json({ error: 'Crypto deposits are not configured' });
 
-  const body = typeof req.body === 'string' ? JSON.parse(req.body) : req.body;
+  const body = bodyOr400(req, res);
+  if (!body) return;
   const usd = Math.round(parseFloat(body.usd) * 100) / 100;
   if (isNaN(usd) || usd < MIN_USD || usd > MAX_USD) {
     return res.status(400).json({ error: `usd must be ${MIN_USD}-${MAX_USD}` });
   }
 
-  const origin = req.headers.origin || `https://${req.headers.host || ''}`;
+  const origin = trustedOrigin(req);
   const payload = {
     price_amount: usd,
     price_currency: 'usd',

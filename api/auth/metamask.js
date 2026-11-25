@@ -9,6 +9,7 @@ import { registerAccount } from '../_registry.js';
 import { signJwt } from '../_jwt.js';
 import { limit } from '../_ratelimit.js';
 import { securityLog } from '../_log.js';
+import { readJson } from '../_sanitize.js';
 
 const STARTING_BALANCE = 500;
 
@@ -16,11 +17,12 @@ export default async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(200).end();
   if (req.method !== 'POST') return res.status(405).json({ error: 'POST only' });
 
-  const body = typeof req.body === 'string' ? JSON.parse(req.body) : req.body;
-  const addr = (body.addr || '').trim().toLowerCase();
-  const signature = body.signature;
+  const body = readJson(req);
+  if (!body) return res.status(400).json({ error: 'Invalid JSON body' });
+  const addr = typeof body.addr === 'string' ? body.addr.trim().toLowerCase() : '';
+  const signature = typeof body.signature === 'string' ? body.signature : '';
 
-  if (!addr || !signature) {
+  if (!/^0x[a-f0-9]{40}$/.test(addr) || !signature || signature.length > 200) {
     return res.status(400).json({ error: 'addr and signature required' });
   }
 
@@ -54,6 +56,8 @@ export default async function handler(req, res) {
   const userId = `user_${addr}`;
   let user = await kvGet(userId);
   if (!user) {
+    // Bot protection: wallets are free to generate, so cap new accounts per IP.
+    if (!(await limit(req, res, 'signup', { limit: 5, windowSec: 3600 }))) return;
     user = {
       addr,
       name: addr.slice(0, 6) + '...' + addr.slice(-4),

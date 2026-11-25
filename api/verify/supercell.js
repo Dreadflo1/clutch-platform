@@ -9,6 +9,7 @@
  *   CLASH_ROYALE_API_KEY — from https://developer.clashroyale.com
  *   BRAWL_STARS_API_KEY  — from https://developer.brawlstars.com
  */
+import { limit } from '../_ratelimit.js';
 
 const APIS = {
   clashroyale: {
@@ -75,6 +76,8 @@ function extractBSBattle(battle) {
 
 export default async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(200).end();
+  // Public proxy that spends our game-API quota: cap calls per IP.
+  if (!(await limit(req, res, 'verify', { limit: 30, windowSec: 60 }))) return;
 
   const { game, playerTag } = req.query;
 

@@ -22,6 +22,7 @@ import { persist, saveChallenge, settleToWinner, refundDraw } from '../_challeng
 import { markHandle } from '../_registry.js';
 import { recordDisputeBoth } from '../_integrity.js';
 import { limit } from '../_ratelimit.js';
+import { readJson, isChallengeId } from '../_sanitize.js';
 
 // The verifying match must have STARTED after acceptance (small negative slack
 // only for clock skew), so a player cannot point at a game they pre-played and
@@ -63,10 +64,21 @@ export default async function handler(req, res) {
   if (!user) return;
   if (!(await limit(req, res, 'settle', { limit: 20, windowSec: 60, id: user.userId }))) return;
 
-  const body = typeof req.body === 'string' ? JSON.parse(req.body) : req.body;
+  const body = readJson(req);
+  if (!body) return res.status(400).json({ error: 'Invalid JSON body' });
   const { challengeId, result, matchId, handle, region } = body;
 
-  if (!challengeId) return res.status(400).json({ error: 'challengeId required' });
+  if (!isChallengeId(challengeId)) return res.status(400).json({ error: 'challengeId required' });
+  // Shape checks on what the game-API lookups receive.
+  if (matchId !== undefined && matchId !== null && !/^[A-Za-z0-9_-]{1,40}$/.test(String(matchId))) {
+    return res.status(400).json({ error: 'Invalid matchId' });
+  }
+  if (handle !== undefined && handle !== null && (typeof handle !== 'string' || handle.length > 64 || /[<>"'`]/.test(handle))) {
+    return res.status(400).json({ error: 'Invalid handle' });
+  }
+  if (region !== undefined && region !== null && !/^[a-z0-9]{2,12}$/i.test(String(region))) {
+    return res.status(400).json({ error: 'Invalid region' });
+  }
 
   const verifiedMode = Boolean(matchId);
   const scoreMode = body.myScore !== undefined && body.oppScore !== undefined;

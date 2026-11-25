@@ -21,28 +21,59 @@ import { isBanned } from '../_integrity.js';
 import { isAgeConfirmed } from '../_age.js';
 import { getUserStats, cohortFromStats } from '../_userstats.js';
 import { limit } from '../_ratelimit.js';
+import { secretFor } from '../_secrets.js';
+import { readJson, cleanText, isChallengeId } from '../_sanitize.js';
 
-const CHALLENGE_SECRET = process.env.CHALLENGE_SECRET || 'dev-challenge-secret-change-me';
+const challengeSecret = () => secretFor('CHALLENGE_SECRET', 'challenge');
+const CHALLENGE_TYPES = ['outcome', 'target', 'custom'];
 const VALID_GAMES = ['valorant','lol','dota2','clashroyale','brawlstars','cs2','fortnite','apex','ow2','rl','fifa','cod'];
 
 function signChallenge(ch) {
   const canonical = JSON.stringify({ id: ch.id, game: ch.game, stake: ch.stake, creator: ch.creatorUserId, createdAt: ch.createdAt });
-  return crypto.createHmac('sha256', CHALLENGE_SECRET).update(canonical).digest('hex');
+  return crypto.createHmac('sha256', challengeSecret()).update(canonical).digest('hex');
 }
 
-function verifyChallengeSig(ch) {
-  return ch.sig === signChallenge(ch);
+/**
+ * What anyone may see of an open challenge on the public board. Internal fields
+ * (the HMAC, raw user ids, submissions) stay server-side; the viewer's own
+ * challenges keep creatorUserId so the client can offer Cancel.
+ */
+export function publicOpenView(c, viewerId) {
+  const mine = Boolean(viewerId) && c.creatorUserId === viewerId;
+  return {
+    id: c.id,
+    game: c.game,
+    modeId: c.modeId,
+    modeLabel: c.modeLabel,
+    modeVerifiable: Boolean(c.modeVerifiable),
+    mode: c.mode,
+    challengeType: c.challengeType || c.betType || 'outcome',
+    condition: c.condition,
+    stake: c.stake,
+    creatorName: c.creatorName,
+    creatorWins: Number(c.creatorWins) || 0,
+    creatorCohort: c.creatorCohort,
+    status: c.status,
+    createdAt: c.createdAt,
+    expiresAt: c.expiresAt,
+    mine,
+    ...(mine ? { creatorUserId: c.creatorUserId } : {}),
+  };
 }
 
-function validateChallenge(body) {
+export function validateChallenge(body) {
   const errors = [];
   if (!body.game || !VALID_GAMES.includes(body.game)) errors.push('invalid game');
-  const stake = parseInt(body.stake);
-  if (isNaN(stake) || stake < 10) errors.push('stake must be >= 10 CLU');
+  const stake = Number(body.stake);
+  if (!Number.isInteger(stake) || stake < 10) errors.push('stake must be >= 10 CLU');
   if (stake > 100000) errors.push('stake cannot exceed 100,000 CLU');
   if (!body.mode || typeof body.mode !== 'string' || body.mode.length < 2) errors.push('mode is required');
   if (body.mode && body.mode.length > 200) errors.push('mode too long');
-  if (/[<>]/.test(body.mode || '')) errors.push('invalid characters');
+  if (body.mode !== undefined && typeof body.mode !== 'string') errors.push('mode must be text');
+  if (body.condition !== undefined && body.condition !== null && typeof body.condition !== 'string') errors.push('condition must be text');
+  if (/[<>]/.test(typeof body.mode === 'string' ? body.mode : '')) errors.push('invalid characters');
+  const type = body.challengeType || body.betType || 'outcome';
+  if (!CHALLENGE_TYPES.includes(type)) errors.push('invalid challengeType');
   return errors;
 }
 
@@ -66,17 +97,17 @@ export default async function handler(req, res) {
     const raw = await Promise.all(ids.map(id => kvGet(`ch:${id}`)));
     const mine = raw
       .filter(Boolean)
-      .map(c => (c.challengeType ? c : { ...c, challengeType: c.betType || 'outcome' }));
+      .map(({ sig, ...c }) => (c.challengeType ? c : { ...c, challengeType: c.betType || 'outcome' }));
     return res.status(200).json({ challenges: mine, count: mine.length });
   }
 
   // GET — public list of open challenges, no auth needed
   if (req.method === 'GET') {
     const challenges = await getOpenList();
+    const viewer = authenticate(req); // optional: marks the viewer's own challenges
     const open = challenges
       .filter(c => c.expiresAt > Date.now() && c.status === 'open')
-      // Normalize legacy records so the client only ever sees `challengeType`.
-      .map(c => (c.challengeType ? c : { ...c, challengeType: c.betType || 'outcome' }));
+      .map(c => publicOpenView(c, viewer && viewer.userId));
     return res.status(200).json({ challenges: open, count: open.length });
   }
 
@@ -88,10 +119,14 @@ export default async function handler(req, res) {
   // Every POST here locks or moves escrow (create / accept / cancel).
   if (!(await limit(req, res, 'challenge', { limit: 20, windowSec: 60, id: user.userId }))) return;
 
-  const body = typeof req.body === 'string' ? JSON.parse(req.body) : req.body;
+  const body = readJson(req);
+  if (!body) return res.status(400).json({ error: 'Invalid JSON body' });
+  if (body.challengeId !== undefined && !isChallengeId(body.challengeId)) {
+    return res.status(400).json({ error: 'Invalid challengeId' });
+  }
 
   // ── CANCEL FLOW ── creator reclaims the stake of an unaccepted challenge
-  if (req.query.cancel && body.challengeId) {
+  if (req.query.cancel !== undefined && body.challengeId) {
     // Share the accept lock so cancel and accept are mutually exclusive.
     const lockKey = `lock:accept:${body.challengeId}`;
     const gotLock = await kvLock(lockKey, 10);
@@ -138,7 +173,7 @@ export default async function handler(req, res) {
   }
 
   // ── ACCEPT FLOW ──
-  if (req.query.accept && body.challengeId) {
+  if (req.query.accept !== undefined && body.challengeId) {
     const challenges = await getOpenList();
     const idx = challenges.findIndex(c => c.id === body.challengeId);
     if (idx === -1) return res.status(404).json({ error: 'Challenge not found or expired' });
@@ -208,7 +243,7 @@ export default async function handler(req, res) {
   const errors = validateChallenge(body);
   if (errors.length) return res.status(400).json({ errors });
 
-  const stake = parseInt(body.stake);
+  const stake = Number(body.stake);
 
   // Structured mode: validate the modeId against the catalog for this game.
   // Unknown/absent modeId falls back to the free-form "custom" mode.
@@ -221,6 +256,7 @@ export default async function handler(req, res) {
   // this is a bias for display/sort order, never a hard accept restriction.
   const creatorStats = await getUserStats(user.userId);
   const creatorCohort = cohortFromStats(creatorStats);
+  const expiryHours = Math.max(1, Math.min(parseInt(body.expiryHours, 10) || 24, 168));
 
   const challenge = {
     id: 'CH_' + Date.now() + '_' + crypto.randomBytes(4).toString('hex'),
@@ -228,19 +264,20 @@ export default async function handler(req, res) {
     modeId,
     modeLabel: modeDef ? modeDef.label : 'Custom duel',
     modeVerifiable,
-    mode: (body.mode || (modeDef ? modeDef.label : '')).replace(/[<>"']/g, '').slice(0, 200),
+    mode: cleanText(body.mode || (modeDef ? modeDef.label : '')),
     // challengeType: how the outcome is measured (outcome | target | custom).
     // Accepts the legacy `betType` key on input during the client transition.
     challengeType: body.challengeType || body.betType || 'outcome',
-    condition: (body.condition || body.mode || '').replace(/[<>"']/g, '').slice(0, 200),
+    condition: cleanText(body.condition || body.mode || ''),
     stake,
     creatorUserId: user.userId,
     creatorName: user.addr ? (user.addr.slice(0, 6) + '...' + user.addr.slice(-4)) : 'Player',
-    creatorWins: parseInt(body.creatorWins) || 0,
+    // Server-side record only: a client-sent win count is ignored.
+    creatorWins: Number(creatorStats && creatorStats.wins) || 0,
     creatorCohort,
     status: 'open',
     createdAt: Date.now(),
-    expiresAt: Date.now() + Math.min(parseInt(body.expiryHours) || 24, 168) * 3600000,
+    expiresAt: Date.now() + expiryHours * 3600000,
     opponentUserId: null,
     opponentName: null,
     creatorResult: null,

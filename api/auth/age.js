@@ -6,6 +6,8 @@
  */
 import { requireAuth } from '../_auth.js';
 import { confirmAge, ageStatus, MIN_AGE } from '../_age.js';
+import { readJson } from '../_sanitize.js';
+import { limit } from '../_ratelimit.js';
 
 export default async function handler(req, res) {
   if (req.method === 'OPTIONS') return res.status(200).end();
@@ -18,7 +20,9 @@ export default async function handler(req, res) {
   }
   if (req.method !== 'POST') return res.status(405).json({ error: 'POST only' });
 
-  const body = typeof req.body === 'string' ? JSON.parse(req.body) : req.body || {};
+  const body = readJson(req);
+  if (!body) return res.status(400).json({ error: 'Invalid JSON body' });
+  if (!(await limit(req, res, 'age', { limit: 10, windowSec: 600, id: user.userId }))) return;
   const result = await confirmAge(user.userId, body.dob);
   if (!result.ok) {
     if (result.error === 'under_min') {
