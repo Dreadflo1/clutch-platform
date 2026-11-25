@@ -108,7 +108,7 @@ Focus games: LoL and Valorant first, because they are auto-verified, so results 
 - Settlement: API auto-verify for LoL / Valorant / Dota 2; score consensus (both report, match = pay, mismatch = dispute) for everything else. AI screenshot verification was tried and **dropped**.
 - Fair-ban model: provisional disputes count against both (ban at 3); admin ruling gives the loser a confirmed fault (ban at 2) and exonerates the honest player.
 - Free 500 CLU is playable, never cashable: withdrawals capped at net deposits.
-- Ages: 16+ to play, 18+ for real money.
+- Ages: 18+ to sign up and play (matches terms.html). Nobody under 18.
 - Fee 2.5%, charged on any accepted duel that resolves (win, draw, dispute or no-show); a never-accepted duel cancels fully refunded.
 - Terminology: **Challenge** = the open offer, **Duel** = the match. Never "bet", "wager", "odds", "stakes", "winner takes all", "casino".
 - Main domain: clutch.best.

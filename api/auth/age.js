@@ -1,6 +1,6 @@
 /**
  * POST /api/auth/age  { dob: 'YYYY-MM-DD' }   (auth required)
- * Confirms the signed-in user's date of birth (16+ to play; 18+ unlocks money).
+ * Confirms the signed-in user's date of birth (18+ required to use CLUTCH).
  * Used by wallet/Telegram accounts — email signup collects the DOB inline.
  * GET returns the current { confirmed, adult } status.
  */

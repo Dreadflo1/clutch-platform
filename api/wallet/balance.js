@@ -33,6 +33,6 @@ export default async function handler(req, res) {
     escrow: bal.escrow,
     withdrawable, // how much of `available` is cashable (= net deposited)
     integrity, // { disputes, threshold, banned }
-    age,        // { confirmed (16+), adult (18+) }
+    age,        // { confirmed (18+), adult (18+) }
   });
 }
